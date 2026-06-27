@@ -107,13 +107,16 @@ fn prompt_paste_token() -> Result<String, TwcError> {
     Ok(token)
 }
 
-/// Opens browser for Timeweb token page and receives the token.
+/// Opens browser for Timeweb token page and prompts in terminal.
 #[cfg(feature = "auth")]
 fn prompt_browser_flow() -> Result<String, TwcError> {
-    let config_path =
-        AppConfig::path().unwrap_or_else(|_| std::path::PathBuf::from("config.toml"));
-    auth::run_auth_flow(&config_path).map_err(|e| TwcError::Api(e.to_string()))?;
-    auth::load_token(&config_path).map_err(|e| TwcError::Api(e.to_string()))
+    let url = "https://timeweb.cloud/my/api-keys/create";
+    println!("  Opening {url} in your browser...");
+    if open::that(url).is_err() {
+        println!("  Could not open browser. Visit the URL manually.");
+    }
+    println!();
+    prompt_paste_token()
 }
 
 /// Saves the token to config file (and keyring if auth feature is on).
