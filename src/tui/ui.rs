@@ -126,7 +126,7 @@ fn render_content(frame: &mut Frame, area: Rect, app: &App, palette: &super::the
 }
 
 fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, palette: &super::themes::Palette) {
-    let left = "↑↓ select  Tab switch  r refresh  ? help  q quit";
+    let left = "k/j ↑↓  h/l ←→  Tab tabs  g first  $ last  r refresh  ? help  q quit";
     let right = match &app.status_message {
         Some(msg) => msg.clone(),
         None => String::new()
@@ -154,8 +154,12 @@ fn render_help_overlay(frame: &mut Frame, area: Rect, palette: &super::themes::P
         )),
         Line::from(""),
         Line::from("  q / Esc      Quit"),
-        Line::from("  ↑ ↓ / j k   Navigate resource list"),
+        Line::from("  ↑ ↓ / k j   Navigate resource list"),
+        Line::from("  h / ←       Move left"),
+        Line::from("  l / →       Move right"),
         Line::from("  Tab          Cycle resource tabs"),
+        Line::from("  g            Go to first"),
+        Line::from("  $            Go to last"),
         Line::from("  r            Force refresh"),
         Line::from("  ?            Toggle this help"),
     ];

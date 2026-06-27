@@ -66,8 +66,26 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
             app.select_next();
             true
         }
+        KeyCode::Left | KeyCode::Char('h') => {
+            app.select_previous();
+            true
+        }
+        KeyCode::Right | KeyCode::Char('l') => {
+            app.select_next();
+            true
+        }
         KeyCode::Tab => {
             app.next_tab();
+            true
+        }
+        KeyCode::Char('g') => {
+            app.selected = 0;
+            true
+        }
+        KeyCode::Char('$') => {
+            if app.current_list_len() > 0 {
+                app.selected = app.current_list_len() - 1;
+            }
             true
         }
         KeyCode::Char('r') => {
