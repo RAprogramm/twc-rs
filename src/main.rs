@@ -20,64 +20,16 @@ use error::TwcError;
 use output::OutputFormat;
 use timeweb_rs::authenticated;
 
-/// Prompts the user interactively to provide an API token.
-fn prompt_token() -> String {
-    use dialoguer::Select;
-
-    println!("\n  No API token configured.\n");
-
-    #[cfg(feature = "auth")]
-    let options = vec![
-        "Paste token from clipboard",
-        "Open browser to create token",
-    ];
-    #[cfg(not(feature = "auth"))]
-    let options = vec!["Paste token from clipboard"];
-
-    let selection = Select::new()
-        .with_prompt("How to authenticate?")
-        .items(&options)
-        .default(0)
-        .interact()
-        .unwrap_or(0);
-
-    match selection {
-        0 => {
-            let token: String = dialoguer::Input::new()
-                .with_prompt("Paste your API token")
-                .interact()
-                .expect("failed to read token");
-            let token = token.trim().to_string();
-            if token.is_empty() {
-                eprintln!("Error: empty token");
-                std::process::exit(1);
-            }
-            token
-        }
-        #[cfg(feature = "auth")]
-        1 => {
-            let config_path = AppConfig::path()
-                .unwrap_or_else(|_| std::path::PathBuf::from("config.toml"));
-            if let Err(e) = crate::auth::run_auth_flow(&config_path) {
-                eprintln!("Auth failed: {e}");
-                std::process::exit(1);
-            }
-            crate::auth::load_token(&config_path).unwrap_or_else(|_| {
-                eprintln!("Error: token not found after auth");
-                std::process::exit(1);
-            })
-        }
-        _ => std::process::exit(0),
-    }
-}
-
 /// Resolves the API token from CLI flag, environment, or config file.
 ///
 /// # Overview
 ///
 /// Priority order: `--token` flag > `TWC_TOKEN` env var >
 /// config file (`~/.config/twc-rs/config.toml`).
-/// If none found, prompts interactively.
+///
+/// # Errors
+///
+/// Returns [`TwcError::TokenMissing`] when no token is found.
 fn resolve_token(cli_token: Option<&str>) -> Result<String, TwcError> {
     if let Some(token) = cli_token {
         return Ok(token.to_string());
@@ -88,7 +40,100 @@ fn resolve_token(cli_token: Option<&str>) -> Result<String, TwcError> {
         return Ok(token);
     }
 
-    Ok(prompt_token())
+    Err(TwcError::TokenMissing)
+}
+
+/// Resolves the API token, falling back to interactive prompt.
+///
+/// # Overview
+///
+/// Calls [`resolve_token`] first. If no token is found, shows an
+/// interactive menu to get one. Saves the token to config so the
+/// user is never prompted again.
+///
+/// # Errors
+///
+/// Only returns error if config file operations fail catastrophically.
+fn ensure_token(cli_token: Option<&str>) -> Result<String, TwcError> {
+    resolve_token(cli_token).or_else(|_| prompt_and_save_token())
+}
+
+/// Shows an interactive prompt to get a token, then saves it.
+fn prompt_and_save_token() -> Result<String, TwcError> {
+    use colored::Colorize as _;
+    use dialoguer::Select;
+
+    println!("\n  {}\n", "No API token configured.".yellow().bold());
+
+    #[cfg(feature = "auth")]
+    let options = vec!["Paste token from clipboard", "Open browser to create token"];
+    #[cfg(not(feature = "auth"))]
+    let options = vec!["Paste token from clipboard"];
+
+    let selection = Select::new()
+        .with_prompt("How to authenticate?")
+        .items(&options)
+        .default(0)
+        .interact()
+        .map_err(|e| TwcError::Io(e.to_string()))?;
+
+    let token = match selection {
+        0 => prompt_paste_token()?,
+        #[cfg(feature = "auth")]
+        1 => prompt_browser_flow()?,
+        _ => std::process::exit(0)
+    };
+
+    save_token_to_config(&token)?;
+    Ok(token)
+}
+
+/// Prompts user to paste a token from clipboard.
+fn prompt_paste_token() -> Result<String, TwcError> {
+    let token: String = dialoguer::Input::new()
+        .with_prompt("Paste your API token")
+        .allow_empty(false)
+        .interact()
+        .map_err(|e| TwcError::Io(e.to_string()))?;
+
+    let token = token.trim().to_string();
+    if token.is_empty() {
+        return Err(TwcError::Api("empty token".to_string()));
+    }
+    Ok(token)
+}
+
+/// Opens browser for Timeweb token page and receives the token.
+#[cfg(feature = "auth")]
+fn prompt_browser_flow() -> Result<String, TwcError> {
+    let config_path =
+        AppConfig::path().unwrap_or_else(|_| std::path::PathBuf::from("config.toml"));
+    auth::run_auth_flow(&config_path).map_err(|e| TwcError::Api(e.to_string()))?;
+    auth::load_token(&config_path).map_err(|e| TwcError::Api(e.to_string()))
+}
+
+/// Saves the token to config file (and keyring if auth feature is on).
+fn save_token_to_config(token: &str) -> Result<(), TwcError> {
+    use colored::Colorize as _;
+
+    #[cfg(feature = "auth")]
+    {
+        let config_path =
+            AppConfig::path().unwrap_or_else(|_| std::path::PathBuf::from("config.toml"));
+        if let Err(e) = auth::store::save_token(token, &config_path) {
+            eprintln!("  Warning: could not save to keyring: {e}");
+        }
+    }
+
+    let mut cfg = AppConfig::load()?;
+    cfg.token = Some(token.to_string());
+    cfg.save()?;
+
+    println!(
+        "\n  {}\n",
+        "Token saved. You won't be prompted again.".green().bold()
+    );
+    Ok(())
 }
 
 #[tokio::main]
@@ -128,7 +173,7 @@ async fn run() -> Result<(), TwcError> {
             }
         },
         Commands::Server(cmd) => {
-            let token = resolve_token(cli.token.as_deref())?;
+            let token = ensure_token(cli.token.as_deref())?;
             let config = authenticated(token);
             match cmd {
                 ServerCommands::List {
@@ -147,7 +192,7 @@ async fn run() -> Result<(), TwcError> {
             }
         }
         Commands::Ssh(cmd) => {
-            let token = resolve_token(cli.token.as_deref())?;
+            let token = ensure_token(cli.token.as_deref())?;
             let config = authenticated(token);
             match cmd {
                 SshCommands::List => commands::ssh_keys::list(&config, format).await,
@@ -162,7 +207,7 @@ async fn run() -> Result<(), TwcError> {
             }
         }
         Commands::Project(cmd) => {
-            let token = resolve_token(cli.token.as_deref())?;
+            let token = ensure_token(cli.token.as_deref())?;
             let config = authenticated(token);
             match cmd {
                 ProjectCommands::List => commands::projects::list(&config, format).await,
@@ -203,8 +248,10 @@ async fn run() -> Result<(), TwcError> {
             std::process::exit(1);
         }
         #[cfg(feature = "tui")]
-        Commands::Monitor { interval } => {
-            let token = resolve_token(cli.token.as_deref())?;
+        Commands::Monitor {
+            interval
+        } => {
+            let token = ensure_token(cli.token.as_deref())?;
             run_tui(token, interval).await
         }
         #[cfg(not(feature = "tui"))]
@@ -246,7 +293,6 @@ async fn run_tui(token: String, interval: u64) -> Result<(), TwcError> {
         tui::event::run_event_loop(event_tx).await;
     });
 
-    // Initial server fetch
     let config = authenticated(token.clone());
     if let Ok(resp) = timeweb_rs::apis::servers_api::get_servers(&config, None, None).await {
         let summaries: Vec<tui::app::ServerSummary> = resp
