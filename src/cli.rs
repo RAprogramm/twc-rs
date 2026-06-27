@@ -52,9 +52,8 @@ pub enum Commands {
     #[command(subcommand)]
     Auth(AuthCommands),
 
-    /// Open the interactive monitoring dashboard.
-    #[command(name = "monitor")]
-    Monitor {
+    /// Open the interactive dashboard.
+    Dashboard {
         /// Refresh interval in seconds.
         #[arg(short, long, default_value_t = 5)]
         interval: u64

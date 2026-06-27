@@ -274,14 +274,14 @@ async fn run() -> Result<(), TwcError> {
             std::process::exit(1);
         }
         #[cfg(feature = "tui")]
-        Commands::Monitor {
+        Commands::Dashboard {
             interval
         } => {
             let token = ensure_token(cli.token.as_deref())?;
-            run_tui(token, interval).await
+            run_dashboard(token, interval).await
         }
         #[cfg(not(feature = "tui"))]
-        Commands::Monitor {
+        Commands::Dashboard {
             ..
         } => {
             eprintln!(
@@ -294,7 +294,7 @@ async fn run() -> Result<(), TwcError> {
 }
 
 #[cfg(feature = "tui")]
-async fn run_tui(token: String, interval: u64) -> Result<(), TwcError> {
+async fn run_dashboard(token: String, interval: u64) -> Result<(), TwcError> {
     use crossterm::{
         execute,
         terminal::{
