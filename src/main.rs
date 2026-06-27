@@ -90,13 +90,17 @@ fn prompt_and_save_token() -> Result<String, TwcError> {
 
 /// Prompts user to paste a token from clipboard.
 fn prompt_paste_token() -> Result<String, TwcError> {
-    let token: String = dialoguer::Input::new()
-        .with_prompt("Paste your API token")
-        .allow_empty(false)
-        .interact()
+    use std::io::BufRead;
+
+    eprint!("Paste your API token: ");
+    let stdin = std::io::stdin();
+    let mut line = String::new();
+    stdin
+        .lock()
+        .read_line(&mut line)
         .map_err(|e| TwcError::Io(e.to_string()))?;
 
-    let token = token.trim().to_string();
+    let token = line.trim().to_string();
     if token.is_empty() {
         return Err(TwcError::Api("empty token".to_string()));
     }
