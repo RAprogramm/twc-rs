@@ -330,14 +330,14 @@ async fn run_dashboard(
     });
 
     loop {
-        terminal
-            .draw(|f| tui::ui::draw(f, &app))
-            .map_err(|e| TwcError::Io(e.to_string()))?;
-
         if let Some(event) = rx.recv().await {
             if !tui::event::handle_event(&mut app, event) {
                 break;
             }
+
+            terminal
+                .draw(|f| tui::ui::draw(f, &app))
+                .map_err(|e| TwcError::Io(e.to_string()))?;
 
             if app.needs_refresh() {
                 let config = authenticated(token.clone());
