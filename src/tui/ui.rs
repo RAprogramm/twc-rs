@@ -113,6 +113,16 @@ fn render_tabs(frame: &mut Frame, area: Rect, app: &App, palette: &super::themes
 }
 
 fn render_content(frame: &mut Frame, area: Rect, app: &App, palette: &super::themes::Palette) {
+    if app.is_loading {
+        let spinner = super::widgets::spinner::current_frame();
+        let text = Line::from(vec![spinner, Span::raw(" Loading resources...")]);
+        let paragraph = Paragraph::new(text)
+            .block(Block::default().borders(Borders::ALL).title(" Loading "))
+            .alignment(ratatui::layout::Alignment::Center);
+        frame.render_widget(paragraph, area);
+        return;
+    }
+
     let content_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([

@@ -320,7 +320,9 @@ async fn run_dashboard(
     // Show loading screen while fetching initial data
     let config = authenticated(token.clone());
     draw_splash(&mut terminal).await;
+    app.is_loading = true;
     refresh_all(&config, &mut app).await;
+    app.is_loading = false;
 
     let (tx, mut rx) = mpsc::unbounded_channel();
     let event_tx = tx.clone();
