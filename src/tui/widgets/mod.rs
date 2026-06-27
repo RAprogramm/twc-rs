@@ -4,7 +4,4 @@
 //! Composable widget renderers for the TUI dashboard.
 
 pub mod details;
-pub mod gauges;
 pub mod resource_list;
-pub mod server_list;
-pub mod sparkline;
