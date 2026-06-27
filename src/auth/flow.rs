@@ -9,7 +9,7 @@ use timeweb_rs::{apis::account_api, authenticated};
 
 use super::{server::serve_once, store};
 
-const TOKEN_PAGE_URL: &str = "https://timeweb.cloud/user/tokens";
+const TOKEN_PAGE_URL: &str = "https://timeweb.cloud/my/api-keys/create";
 const TIMEOUT_SECS: u64 = 300;
 
 /// Runs the full interactive browser auth sequence.
