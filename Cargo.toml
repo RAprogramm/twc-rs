@@ -16,7 +16,7 @@ name = "twc-rs"
 path = "src/main.rs"
 
 [features]
-default = []
+default = ["auth"]
 auth = ["dep:open", "dep:tiny_http", "dep:keyring"]
 tui = ["dep:ratatui", "dep:crossterm", "dep:tokio-stream"]
 
