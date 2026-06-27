@@ -10,7 +10,7 @@
 
 mod flow;
 mod server;
-mod store;
+pub(crate) mod store;
 
 use std::fmt;
 

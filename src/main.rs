@@ -20,16 +20,64 @@ use error::TwcError;
 use output::OutputFormat;
 use timeweb_rs::authenticated;
 
+/// Prompts the user interactively to provide an API token.
+fn prompt_token() -> String {
+    use dialoguer::Select;
+
+    println!("\n  No API token configured.\n");
+
+    #[cfg(feature = "auth")]
+    let options = vec![
+        "Paste token from clipboard",
+        "Open browser to create token",
+    ];
+    #[cfg(not(feature = "auth"))]
+    let options = vec!["Paste token from clipboard"];
+
+    let selection = Select::new()
+        .with_prompt("How to authenticate?")
+        .items(&options)
+        .default(0)
+        .interact()
+        .unwrap_or(0);
+
+    match selection {
+        0 => {
+            let token: String = dialoguer::Input::new()
+                .with_prompt("Paste your API token")
+                .interact()
+                .expect("failed to read token");
+            let token = token.trim().to_string();
+            if token.is_empty() {
+                eprintln!("Error: empty token");
+                std::process::exit(1);
+            }
+            token
+        }
+        #[cfg(feature = "auth")]
+        1 => {
+            let config_path = AppConfig::path()
+                .unwrap_or_else(|_| std::path::PathBuf::from("config.toml"));
+            if let Err(e) = crate::auth::run_auth_flow(&config_path) {
+                eprintln!("Auth failed: {e}");
+                std::process::exit(1);
+            }
+            crate::auth::load_token(&config_path).unwrap_or_else(|_| {
+                eprintln!("Error: token not found after auth");
+                std::process::exit(1);
+            })
+        }
+        _ => std::process::exit(0),
+    }
+}
+
 /// Resolves the API token from CLI flag, environment, or config file.
 ///
 /// # Overview
 ///
 /// Priority order: `--token` flag > `TWC_TOKEN` env var >
 /// config file (`~/.config/twc-rs/config.toml`).
-///
-/// # Errors
-///
-/// Returns [`TwcError::TokenMissing`] when no token is found.
+/// If none found, prompts interactively.
 fn resolve_token(cli_token: Option<&str>) -> Result<String, TwcError> {
     if let Some(token) = cli_token {
         return Ok(token.to_string());
@@ -40,7 +88,7 @@ fn resolve_token(cli_token: Option<&str>) -> Result<String, TwcError> {
         return Ok(token);
     }
 
-    Err(TwcError::TokenMissing)
+    Ok(prompt_token())
 }
 
 #[tokio::main]
@@ -155,9 +203,7 @@ async fn run() -> Result<(), TwcError> {
             std::process::exit(1);
         }
         #[cfg(feature = "tui")]
-        Commands::Monitor {
-            interval
-        } => {
+        Commands::Monitor { interval } => {
             let token = resolve_token(cli.token.as_deref())?;
             run_tui(token, interval).await
         }
