@@ -7,19 +7,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::TwcError;
 
-/// Visual theme for the CLI.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
-pub enum Theme {
-    /// Dark theme (default).
-    #[default]
-    Dark,
-    /// Light theme.
-    Light,
-    /// No colors.
-    Mono
-}
-
 /// Output format preference.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
@@ -40,9 +27,9 @@ pub struct AppConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub token: Option<String>,
 
-    /// Visual theme.
+    /// TUI color theme.
     #[serde(default)]
-    pub theme: Theme,
+    pub theme: crate::tui::themes::Theme,
 
     /// Default output format.
     #[serde(default, alias = "output")]
@@ -65,7 +52,7 @@ impl Default for AppConfig {
     fn default() -> Self {
         Self {
             token:            None,
-            theme:            Theme::Dark,
+            theme:            crate::tui::themes::Theme::default(),
             output:           OutputPreference::Table,
             default_region:   None,
             refresh_interval: 5

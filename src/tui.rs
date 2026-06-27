@@ -5,5 +5,6 @@
 
 pub mod app;
 pub mod event;
+pub mod themes;
 pub mod ui;
 pub mod widgets;
