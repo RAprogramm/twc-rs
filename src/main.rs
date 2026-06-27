@@ -123,3 +123,33 @@ async fn run() -> Result<(), TwcError> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn resolve_token_cli_flag_takes_priority() {
+        let result = resolve_token(Some("my-token"));
+        assert_eq!(result.unwrap(), "my-token");
+    }
+
+    #[test]
+    fn resolve_token_missing_without_config() {
+        let dir = tempfile::tempdir().unwrap();
+        let orig = std::env::var("XDG_CONFIG_HOME").ok();
+        unsafe {
+            std::env::set_var("XDG_CONFIG_HOME", dir.path());
+        }
+        let result = resolve_token(None);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.to_string().contains("no API token configured"));
+        unsafe {
+            match orig {
+                Some(v) => std::env::set_var("XDG_CONFIG_HOME", v),
+                None => std::env::remove_var("XDG_CONFIG_HOME"),
+            }
+        }
+    }
+}

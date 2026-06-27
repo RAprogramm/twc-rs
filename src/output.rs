@@ -47,3 +47,6 @@ impl fmt::Display for OutputFormat {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

@@ -78,3 +78,6 @@ impl AppConfig {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests;

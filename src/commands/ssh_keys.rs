@@ -166,3 +166,6 @@ pub async fn delete(config: &Configuration, id: i32) -> Result<(), TwcError> {
     println!("SSH key {id} deleted.");
     Ok(())
 }
+
+#[cfg(test)]
+mod tests;

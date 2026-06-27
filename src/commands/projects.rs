@@ -127,3 +127,6 @@ pub async fn delete(config: &Configuration, id: i32) -> Result<(), TwcError> {
     println!("Project {id} deleted.");
     Ok(())
 }
+
+#[cfg(test)]
+mod tests;

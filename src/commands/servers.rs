@@ -178,3 +178,6 @@ pub async fn reboot(config: &Configuration, id: i32) -> Result<(), TwcError> {
     println!("Server {id} rebooting.");
     Ok(())
 }
+
+#[cfg(test)]
+mod tests;

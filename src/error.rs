@@ -80,3 +80,6 @@ impl From<toml::ser::Error> for TwcError {
         Self::ConfigWrite(err.to_string())
     }
 }
+
+#[cfg(test)]
+mod tests;

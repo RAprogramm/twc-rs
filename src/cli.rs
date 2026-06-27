@@ -144,3 +144,6 @@ pub enum ConfigCommands {
         token: String
     }
 }
+
+#[cfg(test)]
+mod tests;
