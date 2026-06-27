@@ -63,10 +63,16 @@ fn prompt_and_save_token() -> Result<String, TwcError> {
     use colored::Colorize as _;
     use dialoguer::Select;
 
-    println!("\n  {}\n", "No API token configured.".yellow().bold());
+    println!(
+        "\n  {}\n",
+        "No API token configured.".yellow().bold()
+    );
 
     #[cfg(feature = "auth")]
-    let options = vec!["Paste token from clipboard", "Open browser to create token"];
+    let options = vec![
+        "Create new API key (opens browser)",
+        "I have a key — paste it",
+    ];
     #[cfg(not(feature = "auth"))]
     let options = vec!["Paste token from clipboard"];
 
@@ -78,25 +84,29 @@ fn prompt_and_save_token() -> Result<String, TwcError> {
         .map_err(|e| TwcError::Io(e.to_string()))?;
 
     let token = match selection {
-        0 => prompt_paste_token()?,
+        0 => {
+            #[cfg(feature = "auth")]
+            {
+                prompt_browser_flow()?
+            }
+            #[cfg(not(feature = "auth"))]
+            prompt_paste_token()?
+        }
         #[cfg(feature = "auth")]
-        1 => prompt_browser_flow()?,
-        _ => std::process::exit(0)
+        1 => prompt_paste_token()?,
+        _ => std::process::exit(0),
     };
 
     save_token_to_config(&token)?;
     Ok(token)
 }
 
-/// Prompts user to paste a token from clipboard.
+/// Prompts user to paste a token securely (hidden input).
 fn prompt_paste_token() -> Result<String, TwcError> {
-    use std::io::Write;
-
-    eprint!("Paste your API token: ");
-    std::io::stderr().flush().ok();
-
-    let mut token = String::new();
-    std::io::stdin().read_line(&mut token)
+    let token: String = dialoguer::Password::new()
+        .with_prompt("Paste your API token")
+        .allow_empty_password(false)
+        .interact()
         .map_err(|e| TwcError::Io(e.to_string()))?;
 
     let token = token.trim().to_string();

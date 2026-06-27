@@ -110,7 +110,8 @@ fn save_and_load_roundtrip() {
     let dir = tempfile::tempdir().unwrap();
     let _guard = XdgGuard::set(dir.path());
     let cfg = AppConfig {
-        token: Some("roundtrip-token".to_string())
+        token: Some("roundtrip-token".to_string()),
+        ..AppConfig::default()
     };
     cfg.save().expect("save should succeed");
     let loaded = AppConfig::load().expect("load should succeed");
@@ -125,7 +126,8 @@ fn save_creates_parent_directories() {
     let dir = tempfile::tempdir().unwrap();
     let _guard = XdgGuard::set(dir.path());
     let cfg = AppConfig {
-        token: Some("test".to_string())
+        token: Some("test".to_string()),
+        ..AppConfig::default()
     };
     cfg.save().expect("save should succeed");
     let path = AppConfig::path().unwrap();
@@ -150,11 +152,13 @@ fn save_overwrites_existing_config() {
     let dir = tempfile::tempdir().unwrap();
     let _guard = XdgGuard::set(dir.path());
     let cfg1 = AppConfig {
-        token: Some("first".to_string())
+        token: Some("first".to_string()),
+        ..AppConfig::default()
     };
     cfg1.save().unwrap();
     let cfg2 = AppConfig {
-        token: Some("second".to_string())
+        token: Some("second".to_string()),
+        ..AppConfig::default()
     };
     cfg2.save().unwrap();
     let loaded = AppConfig::load().unwrap();
@@ -164,7 +168,8 @@ fn save_overwrites_existing_config() {
 #[test]
 fn serialization_roundtrip_via_string() {
     let cfg = AppConfig {
-        token: Some("my-secret-token".to_string())
+        token: Some("my-secret-token".to_string()),
+        ..AppConfig::default()
     };
     let toml_str = toml::to_string(&cfg).unwrap();
     let loaded: AppConfig = toml::from_str(&toml_str).unwrap();
@@ -200,7 +205,8 @@ fn deserialize_invalid_toml() {
 #[test]
 fn serialize_produces_valid_toml() {
     let cfg = AppConfig {
-        token: Some("tok".to_string())
+        token: Some("tok".to_string()),
+        ..AppConfig::default()
     };
     let toml_str = toml::to_string(&cfg).unwrap();
     assert!(toml_str.contains("token"));
@@ -219,7 +225,8 @@ fn save_and_load_roundtrip_filesystem() {
     let dir = tempfile::tempdir().unwrap();
     let file_path = dir.path().join("config.toml");
     let cfg = AppConfig {
-        token: Some("roundtrip-token".to_string())
+        token: Some("roundtrip-token".to_string()),
+        ..AppConfig::default()
     };
     let content = toml::to_string(&cfg).unwrap();
     fs::write(&file_path, content).unwrap();
@@ -235,7 +242,8 @@ fn save_creates_parent_directories_filesystem() {
     fs::create_dir_all(&config_dir).unwrap();
     let file_path = config_dir.join("config.toml");
     let cfg = AppConfig {
-        token: Some("test".to_string())
+        token: Some("test".to_string()),
+        ..AppConfig::default()
     };
     let content = toml::to_string(&cfg).unwrap();
     fs::write(&file_path, content).unwrap();
@@ -262,7 +270,8 @@ fn deserialize_with_extra_fields_ignored() {
 #[test]
 fn clone_config() {
     let cfg = AppConfig {
-        token: Some("cloned".to_string())
+        token: Some("cloned".to_string()),
+        ..AppConfig::default()
     };
     let cloned = cfg.clone();
     assert_eq!(cloned.token.as_deref(), Some("cloned"));
@@ -271,7 +280,8 @@ fn clone_config() {
 #[test]
 fn debug_format() {
     let cfg = AppConfig {
-        token: Some("debug".to_string())
+        token: Some("debug".to_string()),
+        ..AppConfig::default()
     };
     let debug_str = format!("{cfg:?}");
     assert!(debug_str.contains("AppConfig"));

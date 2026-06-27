@@ -22,8 +22,8 @@ const TOKEN_PAGE: &str = r#"<!doctype html>
 <body>
   <h2>twc-rs — paste your API token</h2>
   <p>Get it from
-      <a href="https://timeweb.cloud/my/api-keys/create" target="_blank">
-        timeweb.cloud/my/api-keys/create
+      <a href="https://timeweb.cloud/my/api-keys" target="_blank">
+        timeweb.cloud/my/api-keys
     </a>
   </p>
   <textarea id="t" placeholder="eyJ..."></textarea><br>
