@@ -126,7 +126,8 @@ pub struct App {
     pub running:          bool,
     pub show_help:        bool,
     pub status_message:   Option<String>,
-    pub error_message:    Option<String>
+    pub error_message:    Option<String>,
+    pub is_loading:       bool
 }
 
 impl App {
@@ -156,7 +157,8 @@ impl App {
             running: true,
             show_help: false,
             status_message: None,
-            error_message: None
+            error_message: None,
+            is_loading: false
         }
     }
 
