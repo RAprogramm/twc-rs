@@ -367,6 +367,7 @@ async fn refresh_all(
     use tui::app::*;
 
     let c = config.clone();
+    let mut has_error = false;
 
     let (account_res, servers_res, dbs_res, s3_res, k8s_res, projects_res) = tokio::join!(
         timeweb_rs::apis::account_api::get_account_status(&c),
@@ -382,10 +383,16 @@ async fn refresh_all(
 
     if let Ok(resp) = account_res {
         account_id = resp.status.company_info.id;
+    } else {
+        has_error = true;
+        app.error_message = Some("Failed to load account".to_string());
     }
     if let Ok(resp) = timeweb_rs::apis::payments_api::get_finances(&c).await {
         let f = resp.finances;
         balance = format!("{:.2} {}", f.balance, f.currency);
+    } else {
+        has_error = true;
+        app.error_message = Some("Failed to load balance".to_string());
     }
     app.update_account(AccountInfo {
         account_id,
@@ -409,6 +416,9 @@ async fn refresh_all(
             })
             .collect();
         app.update_servers(summaries);
+    } else {
+        has_error = true;
+        app.error_message = Some("Failed to load servers".to_string());
     }
 
     if let Ok(resp) = dbs_res {
@@ -424,6 +434,8 @@ async fn refresh_all(
             })
             .collect();
         app.update_databases(summaries);
+    } else if !has_error {
+        app.status_message = Some("No databases available".to_string());
     }
 
     if let Ok(resp) = s3_res {
@@ -439,6 +451,8 @@ async fn refresh_all(
             })
             .collect();
         app.update_s3(summaries);
+    } else if !has_error {
+        app.status_message = Some("No S3 storages available".to_string());
     }
 
     if let Ok(resp) = k8s_res {
@@ -454,6 +468,8 @@ async fn refresh_all(
             })
             .collect();
         app.update_k8s(summaries);
+    } else if !has_error {
+        app.status_message = Some("No Kubernetes clusters available".to_string());
     }
 
     if let Ok(resp) = projects_res {
@@ -467,6 +483,12 @@ async fn refresh_all(
             })
             .collect();
         app.update_projects(summaries);
+    } else if !has_error {
+        app.status_message = Some("No projects available".to_string());
+    }
+
+    if !has_error {
+        app.status_message = Some("Resources loaded successfully".to_string());
     }
 }
 

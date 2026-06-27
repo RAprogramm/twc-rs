@@ -127,14 +127,20 @@ fn render_content(frame: &mut Frame, area: Rect, app: &App, palette: &super::the
 
 fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, palette: &super::themes::Palette) {
     let left = "k/j ↑↓  h/l ←→  Tab tabs  g first  $ last  r refresh  ? help  q quit";
-    let right = match &app.status_message {
-        Some(msg) => msg.clone(),
-        None => String::new()
+    let right = match (&app.error_message, &app.status_message) {
+        (Some(err), _) => err.clone(),
+        (_, Some(msg)) => msg.clone(),
+        _ => String::new()
+    };
+    let color = if app.error_message.is_some() {
+        palette.error
+    } else {
+        palette.success
     };
     let line = Line::from(vec![
         Span::styled(left, Style::default().fg(palette.dim)),
         Span::raw("  "),
-        Span::styled(right, Style::default().fg(palette.success)),
+        Span::styled(right, Style::default().fg(color)),
     ]);
     let paragraph = Paragraph::new(line).block(
         Block::default()
