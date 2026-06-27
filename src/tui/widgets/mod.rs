@@ -5,3 +5,4 @@
 
 pub mod details;
 pub mod resource_list;
+pub mod spinner;
