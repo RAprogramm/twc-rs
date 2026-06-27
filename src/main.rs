@@ -90,17 +90,16 @@ fn prompt_and_save_token() -> Result<String, TwcError> {
 
 /// Prompts user to paste a token from clipboard.
 fn prompt_paste_token() -> Result<String, TwcError> {
-    use std::io::BufRead;
+    use std::io::Write;
 
     eprint!("Paste your API token: ");
-    let stdin = std::io::stdin();
-    let mut line = String::new();
-    stdin
-        .lock()
-        .read_line(&mut line)
+    std::io::stderr().flush().ok();
+
+    let mut token = String::new();
+    std::io::stdin().read_line(&mut token)
         .map_err(|e| TwcError::Io(e.to_string()))?;
 
-    let token = line.trim().to_string();
+    let token = token.trim().to_string();
     if token.is_empty() {
         return Err(TwcError::Api("empty token".to_string()));
     }
