@@ -277,8 +277,9 @@ async fn run() -> Result<(), TwcError> {
         Commands::Dashboard {
             interval
         } => {
+            let config = AppConfig::load()?;
             let token = ensure_token(cli.token.as_deref())?;
-            run_dashboard(token, interval).await
+            run_dashboard(token, interval, config.theme).await
         }
         #[cfg(not(feature = "tui"))]
         Commands::Dashboard {
@@ -294,7 +295,11 @@ async fn run() -> Result<(), TwcError> {
 }
 
 #[cfg(feature = "tui")]
-async fn run_dashboard(token: String, interval: u64) -> Result<(), TwcError> {
+async fn run_dashboard(
+    token: String,
+    interval: u64,
+    theme: crate::tui::themes::Theme
+) -> Result<(), TwcError> {
     use crossterm::{
         execute,
         terminal::{
@@ -310,7 +315,7 @@ async fn run_dashboard(token: String, interval: u64) -> Result<(), TwcError> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend).map_err(|e| TwcError::Io(e.to_string()))?;
 
-    let mut app = tui::app::App::new(interval);
+    let mut app = tui::app::App::new_with_theme(interval, theme);
 
     // Show loading screen while fetching initial data
     let config = authenticated(token.clone());

@@ -132,26 +132,31 @@ pub struct App {
 impl App {
     /// Creates a new `App` with default state.
     pub fn new(refresh_secs: u64) -> Self {
+        Self::new_with_theme(refresh_secs, super::themes::Theme::default())
+    }
+
+    /// Creates a new `App` with a specific theme.
+    pub fn new_with_theme(refresh_secs: u64, theme: super::themes::Theme) -> Self {
         Self {
-            account:          AccountInfo::default(),
-            servers:          Vec::new(),
-            databases:        Vec::new(),
-            s3_storages:      Vec::new(),
-            k8s_clusters:     Vec::new(),
-            projects:         Vec::new(),
-            selected:         0,
-            active_tab:       ResourceTab::Servers,
-            theme:            super::themes::Theme::default(),
-            cpu_history:      VecDeque::with_capacity(60),
-            ram_history:      VecDeque::with_capacity(60),
-            net_in_history:   VecDeque::with_capacity(60),
-            net_out_history:  VecDeque::with_capacity(60),
-            last_refresh:     Instant::now(),
+            account: AccountInfo::default(),
+            servers: Vec::new(),
+            databases: Vec::new(),
+            s3_storages: Vec::new(),
+            k8s_clusters: Vec::new(),
+            projects: Vec::new(),
+            selected: 0,
+            active_tab: ResourceTab::Servers,
+            theme,
+            cpu_history: VecDeque::with_capacity(60),
+            ram_history: VecDeque::with_capacity(60),
+            net_in_history: VecDeque::with_capacity(60),
+            net_out_history: VecDeque::with_capacity(60),
+            last_refresh: Instant::now(),
             refresh_interval: Duration::from_secs(refresh_secs),
-            running:          true,
-            show_help:        false,
-            status_message:   None,
-            error_message:    None
+            running: true,
+            show_help: false,
+            status_message: None,
+            error_message: None
         }
     }
 
