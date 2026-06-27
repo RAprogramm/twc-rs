@@ -301,3 +301,115 @@ fn handle_key_tab() {
     assert!(keep_going);
     assert_eq!(app.active_tab, ResourceTab::Databases);
 }
+
+#[test]
+fn handle_key_vim_k() {
+    let mut app = App::new(5);
+    app.servers = vec![
+        make_server(1, "s1", "running"),
+        make_server(2, "s2", "running"),
+    ];
+    app.selected = 1;
+    let event = AppEvent::Key(crossterm::event::KeyEvent {
+        code:      KeyCode::Char('k'),
+        modifiers: crossterm::event::KeyModifiers::NONE,
+        kind:      crossterm::event::KeyEventKind::Press,
+        state:     crossterm::event::KeyEventState::NONE
+    });
+    let keep_going = crate::tui::event::handle_event(&mut app, event);
+    assert!(keep_going);
+    assert_eq!(app.selected, 0);
+}
+
+#[test]
+fn handle_key_vim_j() {
+    let mut app = App::new(5);
+    app.servers = vec![
+        make_server(1, "s1", "running"),
+        make_server(2, "s2", "running"),
+    ];
+    let event = AppEvent::Key(crossterm::event::KeyEvent {
+        code:      KeyCode::Char('j'),
+        modifiers: crossterm::event::KeyModifiers::NONE,
+        kind:      crossterm::event::KeyEventKind::Press,
+        state:     crossterm::event::KeyEventState::NONE
+    });
+    let keep_going = crate::tui::event::handle_event(&mut app, event);
+    assert!(keep_going);
+    assert_eq!(app.selected, 1);
+}
+
+#[test]
+fn handle_key_vim_h() {
+    let mut app = App::new(5);
+    app.servers = vec![
+        make_server(1, "s1", "running"),
+        make_server(2, "s2", "running"),
+    ];
+    app.selected = 1;
+    let event = AppEvent::Key(crossterm::event::KeyEvent {
+        code:      KeyCode::Char('h'),
+        modifiers: crossterm::event::KeyModifiers::NONE,
+        kind:      crossterm::event::KeyEventKind::Press,
+        state:     crossterm::event::KeyEventState::NONE
+    });
+    let keep_going = crate::tui::event::handle_event(&mut app, event);
+    assert!(keep_going);
+    assert_eq!(app.selected, 0);
+}
+
+#[test]
+fn handle_key_vim_l() {
+    let mut app = App::new(5);
+    app.servers = vec![
+        make_server(1, "s1", "running"),
+        make_server(2, "s2", "running"),
+    ];
+    let event = AppEvent::Key(crossterm::event::KeyEvent {
+        code:      KeyCode::Char('l'),
+        modifiers: crossterm::event::KeyModifiers::NONE,
+        kind:      crossterm::event::KeyEventKind::Press,
+        state:     crossterm::event::KeyEventState::NONE
+    });
+    let keep_going = crate::tui::event::handle_event(&mut app, event);
+    assert!(keep_going);
+    assert_eq!(app.selected, 1);
+}
+
+#[test]
+fn handle_key_g() {
+    let mut app = App::new(5);
+    app.servers = vec![
+        make_server(1, "s1", "running"),
+        make_server(2, "s2", "running"),
+    ];
+    app.selected = 1;
+    let event = AppEvent::Key(crossterm::event::KeyEvent {
+        code:      KeyCode::Char('g'),
+        modifiers: crossterm::event::KeyModifiers::NONE,
+        kind:      crossterm::event::KeyEventKind::Press,
+        state:     crossterm::event::KeyEventState::NONE
+    });
+    let keep_going = crate::tui::event::handle_event(&mut app, event);
+    assert!(keep_going);
+    assert_eq!(app.selected, 0);
+}
+
+#[test]
+fn handle_key_dollar() {
+    let mut app = App::new(5);
+    app.servers = vec![
+        make_server(1, "s1", "running"),
+        make_server(2, "s2", "running"),
+    ];
+    app.selected = 0;
+    let event = AppEvent::Key(crossterm::event::KeyEvent {
+        code:      KeyCode::Char('$'),
+        modifiers: crossterm::event::KeyModifiers::NONE,
+        kind:      crossterm::event::KeyEventKind::Press,
+        state:     crossterm::event::KeyEventState::NONE
+    });
+    let keep_going = crate::tui::event::handle_event(&mut app, event);
+    assert!(keep_going);
+    assert_eq!(app.selected, 1);
+}
