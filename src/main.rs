@@ -63,10 +63,7 @@ fn prompt_and_save_token() -> Result<String, TwcError> {
     use colored::Colorize as _;
     use dialoguer::Select;
 
-    println!(
-        "\n  {}\n",
-        "No API token configured.".yellow().bold()
-    );
+    println!("\n  {}\n", "No API token configured.".yellow().bold());
 
     #[cfg(feature = "auth")]
     let options = vec![
@@ -94,27 +91,41 @@ fn prompt_and_save_token() -> Result<String, TwcError> {
         }
         #[cfg(feature = "auth")]
         1 => prompt_paste_token()?,
-        _ => std::process::exit(0),
+        _ => std::process::exit(0)
     };
 
     save_token_to_config(&token)?;
     Ok(token)
 }
 
-/// Prompts user to paste a token (hidden, shows char count).
+/// Prompts user to paste a token (reads full stdin, shows masked preview).
 fn prompt_paste_token() -> Result<String, TwcError> {
-    let token: String = dialoguer::Password::new()
-        .with_prompt("Paste your API token")
-        .allow_empty_password(false)
-        .interact()
+    use std::io::Read;
+
+    eprint!("Paste your API token and press Ctrl+D: ");
+    let mut buf = String::new();
+    std::io::stdin()
+        .read_to_string(&mut buf)
         .map_err(|e| TwcError::Io(e.to_string()))?;
 
-    let token = token.trim().to_string();
+    let token = buf.trim().to_string();
     if token.is_empty() {
         return Err(TwcError::Api("empty token".to_string()));
     }
-    println!("  ✓ {} characters received.", token.len());
+    let masked = mask_token(&token);
+    println!("  ✓ Token received: {masked}");
     Ok(token)
+}
+
+/// Masks a token for safe display: first 4 + *** + last 4.
+fn mask_token(token: &str) -> String {
+    let len = token.len();
+    if len <= 8 {
+        return "*".repeat(len);
+    }
+    let first = &token[..4];
+    let last = &token[len - 4..];
+    format!("{first}***{last}")
 }
 
 /// Opens browser and runs full local HTTP server auth flow.
@@ -122,10 +133,8 @@ fn prompt_paste_token() -> Result<String, TwcError> {
 fn prompt_browser_flow() -> Result<String, TwcError> {
     let config_path =
         AppConfig::path().unwrap_or_else(|_| std::path::PathBuf::from("config.toml"));
-    auth::run_auth_flow(&config_path)
-        .map_err(|e| TwcError::Api(e.to_string()))?;
-    auth::load_token(&config_path)
-        .map_err(|e| TwcError::Api(e.to_string()))
+    auth::run_auth_flow(&config_path).map_err(|e| TwcError::Api(e.to_string()))?;
+    auth::load_token(&config_path).map_err(|e| TwcError::Api(e.to_string()))
 }
 
 /// Saves the token to config file (and keyring if auth feature is on).
@@ -145,8 +154,9 @@ fn save_token_to_config(token: &str) -> Result<(), TwcError> {
     cfg.token = Some(token.to_string());
     cfg.save()?;
 
+    let masked = mask_token(token);
     println!(
-        "\n  {}\n",
+        "\n  {} ({masked})\n",
         "Token saved. You won't be prompted again.".green().bold()
     );
     Ok(())
@@ -302,29 +312,17 @@ async fn run_tui(token: String, interval: u64) -> Result<(), TwcError> {
 
     let mut app = tui::app::App::new(interval);
 
+    // Show loading screen while fetching initial data
+    let config = authenticated(token.clone());
+    draw_splash(&mut terminal).await;
+    refresh_all(&config, &mut app).await;
+
     let (tx, mut rx) = mpsc::unbounded_channel();
     let event_tx = tx.clone();
 
     tokio::spawn(async move {
         tui::event::run_event_loop(event_tx).await;
     });
-
-    let config = authenticated(token.clone());
-    if let Ok(resp) = timeweb_rs::apis::servers_api::get_servers(&config, None, None).await {
-        let summaries: Vec<tui::app::ServerSummary> = resp
-            .servers
-            .iter()
-            .map(|s| tui::app::ServerSummary {
-                id:        s.id as i32,
-                name:      s.name.clone(),
-                status:    format!("{:?}", s.status),
-                cpu_count: s.cpu as i32,
-                ram_mb:    s.ram as i32,
-                disk_gb:   0
-            })
-            .collect();
-        app.update_servers(summaries);
-    }
 
     loop {
         terminal
@@ -338,29 +336,14 @@ async fn run_tui(token: String, interval: u64) -> Result<(), TwcError> {
 
             if app.needs_refresh() {
                 let config = authenticated(token.clone());
-                match timeweb_rs::apis::servers_api::get_servers(&config, None, None).await {
-                    Ok(resp) => {
-                        let summaries: Vec<tui::app::ServerSummary> = resp
-                            .servers
-                            .iter()
-                            .map(|s| tui::app::ServerSummary {
-                                id:        s.id as i32,
-                                name:      s.name.clone(),
-                                status:    format!("{:?}", s.status),
-                                cpu_count: s.cpu as i32,
-                                ram_mb:    s.ram as i32,
-                                disk_gb:   0
-                            })
-                            .collect();
-                        app.update_servers(summaries);
-                    }
-                    Err(e) => {
-                        app.error_message = Some(format!("API error: {e}"));
-                    }
-                }
+                refresh_all(&config, &mut app).await;
             }
+        } else {
+            break;
         }
     }
+
+    drop(tx);
 
     disable_raw_mode().map_err(|e| TwcError::Io(e.to_string()))?;
     execute!(terminal.backend_mut(), LeaveAlternateScreen)
@@ -369,6 +352,204 @@ async fn run_tui(token: String, interval: u64) -> Result<(), TwcError> {
         .show_cursor()
         .map_err(|e| TwcError::Io(e.to_string()))?;
     Ok(())
+}
+
+#[cfg(feature = "tui")]
+async fn refresh_all(
+    config: &timeweb_rs::apis::configuration::Configuration,
+    app: &mut tui::app::App
+) {
+    use tui::app::*;
+
+    let c = config.clone();
+
+    let (account_res, servers_res, dbs_res, s3_res, k8s_res, projects_res) = tokio::join!(
+        timeweb_rs::apis::account_api::get_account_status(&c),
+        timeweb_rs::apis::servers_api::get_servers(&c, None, None),
+        timeweb_rs::apis::databases_api::get_databases(&c, None, None),
+        timeweb_rs::apis::s3_api::get_storages(&c),
+        timeweb_rs::apis::kubernetes_api::get_clusters(&c, None, None),
+        timeweb_rs::apis::projects_api::get_projects(&c)
+    );
+
+    let mut account_id = 0.0;
+    let mut balance = String::new();
+
+    if let Ok(resp) = account_res {
+        account_id = resp.status.company_info.id;
+    }
+    if let Ok(resp) = timeweb_rs::apis::payments_api::get_finances(&c).await {
+        let f = resp.finances;
+        balance = format!("{:.2} {}", f.balance, f.currency);
+    }
+    app.update_account(AccountInfo {
+        account_id,
+        balance,
+        status: String::from("active")
+    });
+
+    if let Ok(resp) = servers_res {
+        let summaries: Vec<ServerSummary> = resp
+            .servers
+            .iter()
+            .map(|s| ServerSummary {
+                id:       s.id as i32,
+                name:     s.name.clone(),
+                status:   format!("{:?}", s.status),
+                cpu:      s.cpu as i32,
+                ram_mb:   s.ram as i32,
+                disk_gb:  0,
+                ip:       String::new(),
+                location: format!("{:?}", s.location)
+            })
+            .collect();
+        app.update_servers(summaries);
+    }
+
+    if let Ok(resp) = dbs_res {
+        let summaries: Vec<DatabaseSummary> = resp
+            .dbs
+            .iter()
+            .map(|d| DatabaseSummary {
+                id:      d.id as i32,
+                name:    d.name.clone(),
+                status:  format!("{:?}", d.status),
+                engine:  format!("{:?}", d.r#type),
+                size_mb: 0
+            })
+            .collect();
+        app.update_databases(summaries);
+    }
+
+    if let Ok(resp) = s3_res {
+        let summaries: Vec<S3Summary> = resp
+            .buckets
+            .iter()
+            .map(|b| S3Summary {
+                id:           b.id as i32,
+                name:         b.name.clone(),
+                region:       b.location.clone(),
+                size_bytes:   b.disk_stats.size as i64,
+                bucket_count: 0
+            })
+            .collect();
+        app.update_s3(summaries);
+    }
+
+    if let Ok(resp) = k8s_res {
+        let summaries: Vec<K8sSummary> = resp
+            .clusters
+            .iter()
+            .map(|c| K8sSummary {
+                id:         c.id,
+                name:       c.name.clone(),
+                status:     c.status.clone(),
+                version:    c.k8s_version.clone(),
+                node_count: c.cpu.unwrap_or(0)
+            })
+            .collect();
+        app.update_k8s(summaries);
+    }
+
+    if let Ok(resp) = projects_res {
+        let summaries: Vec<ProjectSummary> = resp
+            .projects
+            .iter()
+            .map(|p| ProjectSummary {
+                id:           p.id as i32,
+                name:         p.name.clone(),
+                server_count: 0
+            })
+            .collect();
+        app.update_projects(summaries);
+    }
+}
+
+#[cfg(feature = "tui")]
+async fn draw_splash(
+    terminal: &mut ratatui::Terminal<ratatui::backend::CrosstermBackend<std::io::Stdout>>
+) {
+    use ratatui::{
+        layout::{Constraint, Direction, Layout},
+        style::{Color, Modifier, Style},
+        text::{Line, Span},
+        widgets::{Block, Borders, Paragraph}
+    };
+
+    let _ = terminal.draw(|f| {
+        let size = f.area();
+
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Length(3),
+                Constraint::Min(10),
+                Constraint::Length(3)
+            ])
+            .split(size);
+
+        // Header
+        let header = Line::from(vec![
+            Span::styled(
+                "twc-rs",
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD)
+            ),
+            Span::raw(" v"),
+            Span::raw(env!("CARGO_PKG_VERSION")),
+        ]);
+        let header_widget = Paragraph::new(header).block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Color::DarkGray))
+        );
+        f.render_widget(header_widget, chunks[0]);
+
+        // ASCII art + loading
+        let ascii_art = vec![
+            Line::from(""),
+            Line::from(Span::styled(
+                "    ╔══════════════════════════════════╗",
+                Style::default().fg(Color::Cyan)
+            )),
+            Line::from(Span::styled(
+                "    ║        Timeweb Cloud CLI          ║",
+                Style::default().fg(Color::Cyan)
+            )),
+            Line::from(Span::styled(
+                "    ╚══════════════════════════════════╝",
+                Style::default().fg(Color::Cyan)
+            )),
+            Line::from(""),
+            Line::from(Span::styled(
+                "    Loading resources...",
+                Style::default().fg(Color::Yellow)
+            )),
+            Line::from(Span::styled(
+                "    (this may take a moment on first run)",
+                Style::default().fg(Color::DarkGray)
+            )),
+        ];
+        let art_widget = Paragraph::new(ascii_art).block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Color::DarkGray))
+        );
+        f.render_widget(art_widget, chunks[1]);
+
+        // Status bar
+        let status = Line::from(Span::styled(
+            "Fetching account, servers, databases, S3, k8s, projects...",
+            Style::default().fg(Color::DarkGray)
+        ));
+        let status_widget = Paragraph::new(status).block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Color::DarkGray))
+        );
+        f.render_widget(status_widget, chunks[2]);
+    });
 }
 
 #[cfg(test)]

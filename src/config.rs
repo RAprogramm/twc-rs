@@ -17,7 +17,7 @@ pub enum Theme {
     /// Light theme.
     Light,
     /// No colors.
-    Mono,
+    Mono
 }
 
 /// Output format preference.
@@ -30,7 +30,7 @@ pub enum OutputPreference {
     /// Machine-readable JSON.
     Json,
     /// Minimal output.
-    Quiet,
+    Quiet
 }
 
 /// File-based configuration stored at `~/.config/twc-rs/config.toml`.
@@ -54,7 +54,7 @@ pub struct AppConfig {
 
     /// Auto-refresh interval in seconds for TUI monitor.
     #[serde(default = "default_refresh_interval")]
-    pub refresh_interval: u64,
+    pub refresh_interval: u64
 }
 
 fn default_refresh_interval() -> u64 {
@@ -64,11 +64,11 @@ fn default_refresh_interval() -> u64 {
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
-            token: None,
-            theme: Theme::Dark,
-            output: OutputPreference::Table,
-            default_region: None,
-            refresh_interval: 5,
+            token:            None,
+            theme:            Theme::Dark,
+            output:           OutputPreference::Table,
+            default_region:   None,
+            refresh_interval: 5
         }
     }
 }
@@ -86,9 +86,7 @@ impl AppConfig {
     /// cannot be determined by the OS.
     pub fn path() -> Result<PathBuf, TwcError> {
         let dir = dirs::config_dir().ok_or_else(|| {
-            TwcError::ConfigNotFound(
-                "unable to determine config directory".to_string(),
-            )
+            TwcError::ConfigNotFound("unable to determine config directory".to_string())
         })?;
         Ok(dir.join("twc-rs").join("config.toml"))
     }
@@ -112,12 +110,8 @@ impl AppConfig {
             cfg.save()?;
             return Ok(cfg);
         }
-        let content = fs::read_to_string(&path).map_err(|e| {
-            TwcError::ConfigNotFound(format!(
-                "{}: {e}",
-                path.display()
-            ))
-        })?;
+        let content = fs::read_to_string(&path)
+            .map_err(|e| TwcError::ConfigNotFound(format!("{}: {e}", path.display())))?;
         let config: Self = toml::from_str(&content)?;
         Ok(config)
     }
@@ -135,18 +129,12 @@ impl AppConfig {
         let path = Self::path()?;
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent).map_err(|e| {
-                TwcError::ConfigWrite(format!(
-                    "failed to create dir {}: {e}",
-                    parent.display()
-                ))
+                TwcError::ConfigWrite(format!("failed to create dir {}: {e}", parent.display()))
             })?;
         }
         let content = toml::to_string_pretty(self)?;
         fs::write(&path, content).map_err(|e| {
-            TwcError::ConfigWrite(format!(
-                "failed to write {}: {e}",
-                path.display()
-            ))
+            TwcError::ConfigWrite(format!("failed to write {}: {e}", path.display()))
         })?;
         Ok(())
     }

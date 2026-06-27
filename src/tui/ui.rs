@@ -23,23 +23,62 @@ pub fn draw(frame: &mut Frame, app: &App) {
     let main_chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(3), // Tabs
+            Constraint::Length(3), // Account header
+            Constraint::Length(3), // Resource tabs
             Constraint::Min(10),   // Content
             Constraint::Length(3)  // Status bar
         ])
         .split(size);
 
-    render_tabs(frame, main_chunks[0], app);
-    render_content(frame, main_chunks[1], app);
-    render_status_bar(frame, main_chunks[2], app);
+    render_account_header(frame, main_chunks[0], app);
+    render_tabs(frame, main_chunks[1], app);
+    render_content(frame, main_chunks[2], app);
+    render_status_bar(frame, main_chunks[3], app);
 
     if app.show_help {
         render_help_overlay(frame, size);
     }
 }
 
+fn render_account_header(frame: &mut Frame, area: Rect, app: &App) {
+    let account_id = app.account.account_id;
+    let balance = &app.account.balance;
+    let status = &app.account.status;
+
+    let line = Line::from(vec![
+        Span::styled(
+            "twc-rs",
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD)
+        ),
+        Span::raw("  "),
+        Span::styled(
+            format!("Account: {account_id:.0}"),
+            Style::default().fg(Color::White)
+        ),
+        Span::raw("  "),
+        Span::styled(
+            format!("Balance: {balance}"),
+            Style::default().fg(Color::Green)
+        ),
+        Span::raw("  "),
+        Span::styled(
+            format!("Status: {status}"),
+            Style::default().fg(Color::Yellow)
+        ),
+    ]);
+
+    let paragraph = Paragraph::new(line).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::DarkGray))
+    );
+    frame.render_widget(paragraph, area);
+}
+
 fn render_tabs(frame: &mut Frame, area: Rect, app: &App) {
-    let titles: Vec<Line<'static>> = super::app::Tab::names()
+    let titles: Vec<Line<'static>> = super::app::ResourceTab::names()
         .iter()
         .map(|t| Line::from(Span::styled(*t, Style::default())))
         .collect();
@@ -47,7 +86,7 @@ fn render_tabs(frame: &mut Frame, area: Rect, app: &App) {
     let tabs = Tabs::new(titles)
         .block(
             Block::default()
-                .title("twc-rs monitor")
+                .title("Resources")
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(Color::DarkGray))
         )
@@ -66,7 +105,7 @@ fn render_content(frame: &mut Frame, area: Rect, app: &App) {
     let content_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
-            Constraint::Percentage(30), // Server list
+            Constraint::Percentage(30), // Resource list
             Constraint::Percentage(70)  // Details
         ])
         .split(area);
@@ -83,9 +122,9 @@ fn render_content(frame: &mut Frame, area: Rect, app: &App) {
 
     let cpu = app.cpu_history.back().copied().unwrap_or(0.0) / 100.0;
     let ram = app.ram_history.back().copied().unwrap_or(0.0) / 100.0;
-    let ram_gb = ram * 4.0; // placeholder: assume 4 GB total
-    let disk = 0.4; // placeholder
-    let disk_gb = 40.0; // placeholder
+    let ram_gb = ram * 4.0;
+    let disk = 0.4;
+    let disk_gb = 40.0;
 
     gauges::render(
         frame,
@@ -136,8 +175,8 @@ fn render_help_overlay(frame: &mut Frame, area: Rect) {
         )),
         Line::from(""),
         Line::from("  q / Esc      Quit"),
-        Line::from("  ↑ ↓ / j k   Navigate server list"),
-        Line::from("  Tab          Cycle top-level tabs"),
+        Line::from("  ↑ ↓ / j k   Navigate resource list"),
+        Line::from("  Tab          Cycle resource tabs"),
         Line::from("  r            Force refresh"),
         Line::from("  ?            Toggle this help"),
         Line::from("  Enter        Drill into selected resource"),

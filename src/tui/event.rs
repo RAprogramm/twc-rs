@@ -84,6 +84,8 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
 }
 
 /// Runs the async event loop, sending [`AppEvent`]s through the channel.
+///
+/// Stops when the receiver is dropped (sender returns `Err`).
 pub async fn run_event_loop(tx: mpsc::UnboundedSender<AppEvent>) {
     let tick_rate = Duration::from_millis(100);
 
@@ -97,13 +99,19 @@ pub async fn run_event_loop(tx: mpsc::UnboundedSender<AppEvent>) {
 
         match evt {
             Ok(Some(Event::Key(key))) => {
-                let _ = tx.send(AppEvent::Key(key));
+                if tx.send(AppEvent::Key(key)).is_err() {
+                    break;
+                }
             }
             Ok(Some(Event::Resize(w, h))) => {
-                let _ = tx.send(AppEvent::Resize(w, h));
+                if tx.send(AppEvent::Resize(w, h)).is_err() {
+                    break;
+                }
             }
             _ => {}
         }
-        let _ = tx.send(AppEvent::Tick);
+        if tx.send(AppEvent::Tick).is_err() {
+            break;
+        }
     }
 }

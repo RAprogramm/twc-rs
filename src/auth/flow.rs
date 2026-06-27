@@ -48,7 +48,7 @@ pub fn run_auth_flow(config_path: &Path) -> Result<(), super::AuthError> {
 
     println!("  Verifying token...");
 
-    verify_token(&token)?;
+    verify_token_sync(&token)?;
 
     store::save_token(&token, config_path)?;
 
@@ -63,7 +63,7 @@ pub fn run_auth_flow(config_path: &Path) -> Result<(), super::AuthError> {
 ///
 /// Returns [`super::AuthError`] when verification or storage fails.
 pub fn accept_token_direct(token: &str, config_path: &Path) -> Result<(), super::AuthError> {
-    verify_token(token)?;
+    verify_token_sync(token)?;
     store::save_token(token, config_path)?;
     println!("  ✓ Token verified and saved.");
     Ok(())
@@ -76,8 +76,9 @@ pub fn accept_token_direct(token: &str, config_path: &Path) -> Result<(), super:
 /// Returns [`super::AuthError`] when no valid token is found.
 pub fn show_status(config_path: &Path) -> Result<(), super::AuthError> {
     let token = store::load_token(config_path)?;
-    verify_token(&token)?;
-    println!("  ✓ Authenticated.");
+    verify_token_sync(&token)?;
+    let masked = mask_token(&token);
+    println!("  ✓ Authenticated. Token: {masked}");
     Ok(())
 }
 
@@ -92,21 +93,52 @@ pub fn logout(config_path: &Path) -> Result<(), super::AuthError> {
     Ok(())
 }
 
-fn verify_token(token: &str) -> Result<(), super::AuthError> {
+async fn verify_token(token: &str) -> Result<(), super::AuthError> {
     let config = authenticated(token.to_string());
-    let rt =
-        tokio::runtime::Runtime::new().map_err(|e| super::AuthError::Network(e.to_string()))?;
-    rt.block_on(async {
-        account_api::get_account_status(&config)
-            .await
-            .map_err(|e| match e {
-                timeweb_rs::apis::Error::ResponseError(content) if content.status == 401 => {
-                    super::AuthError::InvalidToken
-                }
-                _ => super::AuthError::Network(e.to_string())
-            })?;
-        Ok(())
+    account_api::get_account_status(&config)
+        .await
+        .map_err(|e| match e {
+            timeweb_rs::apis::Error::ResponseError(content) if content.status == 401 => {
+                super::AuthError::InvalidToken
+            }
+            _ => super::AuthError::Network(e.to_string())
+        })?;
+    Ok(())
+}
+
+fn verify_token_sync(token: &str) -> Result<(), super::AuthError> {
+    let config = authenticated(token.to_string());
+    // Run in a separate thread to avoid nested tokio runtime issues
+    std::thread::spawn(move || {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .map_err(|e| super::AuthError::Network(e.to_string()))?;
+        rt.block_on(async {
+            account_api::get_account_status(&config)
+                .await
+                .map_err(|e| match e {
+                    timeweb_rs::apis::Error::ResponseError(content) if content.status == 401 => {
+                        super::AuthError::InvalidToken
+                    }
+                    _ => super::AuthError::Network(e.to_string())
+                })
+        })
     })
+    .join()
+    .map_err(|e| super::AuthError::Network(format!("{e:?}")))?
+    .map_err(|e| super::AuthError::Network(e.to_string()))?;
+    Ok(())
+}
+
+fn mask_token(token: &str) -> String {
+    let len = token.len();
+    if len <= 8 {
+        return "*".repeat(len);
+    }
+    let first = &token[..4];
+    let last = &token[len - 4..];
+    format!("{first}***{last}")
 }
 
 pub fn find_free_port() -> Result<u16, super::AuthError> {
