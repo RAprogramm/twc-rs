@@ -10,10 +10,7 @@ fn twc() -> Command {
 
 #[test]
 fn help_exits_zero() {
-    twc()
-        .arg("--help")
-        .assert()
-        .success();
+    twc().arg("--help").assert().success();
 }
 
 #[test]
@@ -36,10 +33,7 @@ fn help_contains_subcommands() {
 
 #[test]
 fn version_exits_zero() {
-    twc()
-        .arg("--version")
-        .assert()
-        .success();
+    twc().arg("--version").assert().success();
 }
 
 #[test]
@@ -168,10 +162,7 @@ fn project_list_without_token_errors() {
 
 #[test]
 fn invalid_subcommand_exits_nonzero() {
-    twc()
-        .args(["nonexistent"])
-        .assert()
-        .failure();
+    twc().args(["nonexistent"]).assert().failure();
 }
 
 #[test]
@@ -266,32 +257,20 @@ fn project_delete_without_token_errors() {
 
 #[test]
 fn config_show_no_subcommand_errors() {
-    twc()
-        .args(["config"])
-        .assert()
-        .failure();
+    twc().args(["config"]).assert().failure();
 }
 
 #[test]
 fn server_no_subcommand_errors() {
-    twc()
-        .args(["server"])
-        .assert()
-        .failure();
+    twc().args(["server"]).assert().failure();
 }
 
 #[test]
 fn ssh_no_subcommand_errors() {
-    twc()
-        .args(["ssh"])
-        .assert()
-        .failure();
+    twc().args(["ssh"]).assert().failure();
 }
 
 #[test]
 fn project_no_subcommand_errors() {
-    twc()
-        .args(["project"])
-        .assert()
-        .failure();
+    twc().args(["project"]).assert().failure();
 }

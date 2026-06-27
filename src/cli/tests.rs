@@ -3,10 +3,8 @@ use clap::Parser;
 use super::*;
 
 fn parse(args: &[&str]) -> Cli {
-    Cli::try_parse_from(
-        std::iter::once("twc-rs").chain(args.iter().copied()),
-    )
-    .expect("should parse successfully")
+    Cli::try_parse_from(std::iter::once("twc-rs").chain(args.iter().copied()))
+        .expect("should parse successfully")
 }
 
 #[test]
@@ -70,11 +68,14 @@ fn server_list_subcommand() {
 fn server_list_with_limit_offset() {
     let cli = parse(&["server", "list", "-l", "10", "-o", "5"]);
     match &cli.command {
-        Commands::Server(ServerCommands::List { limit, offset }) => {
+        Commands::Server(ServerCommands::List {
+            limit,
+            offset
+        }) => {
             assert_eq!(*limit, Some(10));
             assert_eq!(*offset, Some(5));
         }
-        _ => panic!("expected ServerCommands::List"),
+        _ => panic!("expected ServerCommands::List")
     }
 }
 
@@ -82,11 +83,14 @@ fn server_list_with_limit_offset() {
 fn server_list_with_only_limit() {
     let cli = parse(&["server", "list", "-l", "20"]);
     match &cli.command {
-        Commands::Server(ServerCommands::List { limit, offset }) => {
+        Commands::Server(ServerCommands::List {
+            limit,
+            offset
+        }) => {
             assert_eq!(*limit, Some(20));
             assert_eq!(*offset, None);
         }
-        _ => panic!("expected ServerCommands::List"),
+        _ => panic!("expected ServerCommands::List")
     }
 }
 
@@ -94,11 +98,14 @@ fn server_list_with_only_limit() {
 fn server_list_with_only_offset() {
     let cli = parse(&["server", "list", "-o", "10"]);
     match &cli.command {
-        Commands::Server(ServerCommands::List { limit, offset }) => {
+        Commands::Server(ServerCommands::List {
+            limit,
+            offset
+        }) => {
             assert_eq!(*limit, None);
             assert_eq!(*offset, Some(10));
         }
-        _ => panic!("expected ServerCommands::List"),
+        _ => panic!("expected ServerCommands::List")
     }
 }
 
@@ -106,10 +113,12 @@ fn server_list_with_only_offset() {
 fn server_info_subcommand() {
     let cli = parse(&["server", "info", "--id", "42"]);
     match &cli.command {
-        Commands::Server(ServerCommands::Info { id }) => {
+        Commands::Server(ServerCommands::Info {
+            id
+        }) => {
             assert_eq!(*id, 42);
         }
-        _ => panic!("expected ServerCommands::Info"),
+        _ => panic!("expected ServerCommands::Info")
     }
 }
 
@@ -117,10 +126,12 @@ fn server_info_subcommand() {
 fn server_info_short_id() {
     let cli = parse(&["server", "info", "-i", "99"]);
     match &cli.command {
-        Commands::Server(ServerCommands::Info { id }) => {
+        Commands::Server(ServerCommands::Info {
+            id
+        }) => {
             assert_eq!(*id, 99);
         }
-        _ => panic!("expected ServerCommands::Info"),
+        _ => panic!("expected ServerCommands::Info")
     }
 }
 
@@ -128,10 +139,12 @@ fn server_info_short_id() {
 fn server_delete_subcommand() {
     let cli = parse(&["server", "delete", "--id", "7"]);
     match &cli.command {
-        Commands::Server(ServerCommands::Delete { id }) => {
+        Commands::Server(ServerCommands::Delete {
+            id
+        }) => {
             assert_eq!(*id, 7);
         }
-        _ => panic!("expected ServerCommands::Delete"),
+        _ => panic!("expected ServerCommands::Delete")
     }
 }
 
@@ -139,10 +152,12 @@ fn server_delete_subcommand() {
 fn server_reboot_subcommand() {
     let cli = parse(&["server", "reboot", "-i", "3"]);
     match &cli.command {
-        Commands::Server(ServerCommands::Reboot { id }) => {
+        Commands::Server(ServerCommands::Reboot {
+            id
+        }) => {
             assert_eq!(*id, 3);
         }
-        _ => panic!("expected ServerCommands::Reboot"),
+        _ => panic!("expected ServerCommands::Reboot")
     }
 }
 
@@ -156,10 +171,12 @@ fn ssh_list_subcommand() {
 fn ssh_delete_subcommand() {
     let cli = parse(&["ssh", "delete", "--id", "99"]);
     match &cli.command {
-        Commands::Ssh(SshCommands::Delete { id }) => {
+        Commands::Ssh(SshCommands::Delete {
+            id
+        }) => {
             assert_eq!(*id, 99);
         }
-        _ => panic!("expected SshCommands::Delete"),
+        _ => panic!("expected SshCommands::Delete")
     }
 }
 
@@ -176,25 +193,29 @@ fn project_list_subcommand() {
 fn project_create_subcommand() {
     let cli = parse(&["project", "create", "--name", "my-project"]);
     match &cli.command {
-        Commands::Project(ProjectCommands::Create { name, description }) => {
+        Commands::Project(ProjectCommands::Create {
+            name,
+            description
+        }) => {
             assert_eq!(name, "my-project");
             assert!(description.is_none());
         }
-        _ => panic!("expected ProjectCommands::Create"),
+        _ => panic!("expected ProjectCommands::Create")
     }
 }
 
 #[test]
 fn project_create_with_description() {
-    let cli = parse(&[
-        "project", "create", "-n", "web", "-d", "Production web app",
-    ]);
+    let cli = parse(&["project", "create", "-n", "web", "-d", "Production web app"]);
     match &cli.command {
-        Commands::Project(ProjectCommands::Create { name, description }) => {
+        Commands::Project(ProjectCommands::Create {
+            name,
+            description
+        }) => {
             assert_eq!(name, "web");
             assert_eq!(description.as_deref(), Some("Production web app"));
         }
-        _ => panic!("expected ProjectCommands::Create"),
+        _ => panic!("expected ProjectCommands::Create")
     }
 }
 
@@ -202,10 +223,12 @@ fn project_create_with_description() {
 fn project_delete_subcommand() {
     let cli = parse(&["project", "delete", "--id", "5"]);
     match &cli.command {
-        Commands::Project(ProjectCommands::Delete { id }) => {
+        Commands::Project(ProjectCommands::Delete {
+            id
+        }) => {
             assert_eq!(*id, 5);
         }
-        _ => panic!("expected ProjectCommands::Delete"),
+        _ => panic!("expected ProjectCommands::Delete")
     }
 }
 
@@ -222,10 +245,12 @@ fn config_show_subcommand() {
 fn config_set_token_subcommand() {
     let cli = parse(&["config", "set-token", "--token", "secret"]);
     match &cli.command {
-        Commands::Config(ConfigCommands::SetToken { token }) => {
+        Commands::Config(ConfigCommands::SetToken {
+            token
+        }) => {
             assert_eq!(token, "secret");
         }
-        _ => panic!("expected ConfigCommands::SetToken"),
+        _ => panic!("expected ConfigCommands::SetToken")
     }
 }
 
@@ -233,10 +258,12 @@ fn config_set_token_subcommand() {
 fn config_set_token_short_flag() {
     let cli = parse(&["config", "set-token", "-t", "abc"]);
     match &cli.command {
-        Commands::Config(ConfigCommands::SetToken { token }) => {
+        Commands::Config(ConfigCommands::SetToken {
+            token
+        }) => {
             assert_eq!(token, "abc");
         }
-        _ => panic!("expected ConfigCommands::SetToken"),
+        _ => panic!("expected ConfigCommands::SetToken")
     }
 }
 
@@ -272,22 +299,19 @@ fn config_requires_subcommand() {
 
 #[test]
 fn server_info_requires_id() {
-    let result =
-        Cli::try_parse_from(["twc-rs", "server", "info"]);
+    let result = Cli::try_parse_from(["twc-rs", "server", "info"]);
     assert!(result.is_err());
 }
 
 #[test]
 fn ssh_delete_requires_id() {
-    let result =
-        Cli::try_parse_from(["twc-rs", "ssh", "delete"]);
+    let result = Cli::try_parse_from(["twc-rs", "ssh", "delete"]);
     assert!(result.is_err());
 }
 
 #[test]
 fn project_create_requires_name() {
-    let result =
-        Cli::try_parse_from(["twc-rs", "project", "create"]);
+    let result = Cli::try_parse_from(["twc-rs", "project", "create"]);
     assert!(result.is_err());
 }
 

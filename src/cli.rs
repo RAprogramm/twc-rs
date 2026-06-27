@@ -46,7 +46,19 @@ pub enum Commands {
 
     /// Configure twc-rs settings.
     #[command(subcommand)]
-    Config(ConfigCommands)
+    Config(ConfigCommands),
+
+    /// Authenticate with Timeweb Cloud (guided browser flow).
+    #[command(subcommand)]
+    Auth(AuthCommands),
+
+    /// Open the interactive monitoring dashboard.
+    #[command(name = "monitor")]
+    Monitor {
+        /// Refresh interval in seconds.
+        #[arg(short, long, default_value_t = 5)]
+        interval: u64
+    }
 }
 
 /// Server-related subcommands.
@@ -140,6 +152,23 @@ pub enum ConfigCommands {
     /// Set the API token.
     SetToken {
         /// The Timeweb Cloud API token.
+        #[arg(short, long)]
+        token: String
+    }
+}
+
+/// Authentication subcommands.
+#[derive(Subcommand, Debug)]
+pub enum AuthCommands {
+    /// Run the guided browser authentication flow.
+    Flow,
+    /// Show current authentication status.
+    Status,
+    /// Remove stored token from keyring and config.
+    Logout,
+    /// Accept a token directly (for CI/CD).
+    Token {
+        /// The API token to store.
         #[arg(short, long)]
         token: String
     }

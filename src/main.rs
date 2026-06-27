@@ -1,14 +1,20 @@
 // SPDX-FileCopyrightText: 2026 RAprogramm <andrey.rozanov.vl@gmail.com>
 // SPDX-License-Identifier: MIT
 
+#[cfg(feature = "auth")]
+mod auth;
 mod cli;
 mod commands;
 mod config;
 mod error;
 mod output;
+#[cfg(feature = "tui")]
+mod tui;
 
 use clap::Parser;
-use cli::{Cli, Commands, ConfigCommands, ProjectCommands, ServerCommands, SshCommands};
+use cli::{
+    AuthCommands, Cli, Commands, ConfigCommands, ProjectCommands, ServerCommands, SshCommands
+};
 use config::AppConfig;
 use error::TwcError;
 use output::OutputFormat;
@@ -121,7 +127,140 @@ async fn run() -> Result<(), TwcError> {
                 } => commands::projects::delete(&config, id).await
             }
         }
+        #[cfg(feature = "auth")]
+        Commands::Auth(cmd) => {
+            let config_path = config::AppConfig::path()?;
+            match cmd {
+                AuthCommands::Flow => {
+                    auth::run_auth_flow(&config_path).map_err(|e| TwcError::Api(e.to_string()))
+                }
+                AuthCommands::Status => {
+                    auth::show_status(&config_path).map_err(|e| TwcError::Api(e.to_string()))
+                }
+                AuthCommands::Logout => {
+                    auth::logout(&config_path).map_err(|e| TwcError::Api(e.to_string()))
+                }
+                AuthCommands::Token {
+                    token
+                } => auth::accept_token_direct(&token, &config_path)
+                    .map_err(|e| TwcError::Api(e.to_string()))
+            }
+        }
+        #[cfg(not(feature = "auth"))]
+        Commands::Auth(_) => {
+            eprintln!(
+                "Error: auth feature not enabled. \
+                 Rebuild with --features auth"
+            );
+            std::process::exit(1);
+        }
+        #[cfg(feature = "tui")]
+        Commands::Monitor {
+            interval
+        } => {
+            let token = resolve_token(cli.token.as_deref())?;
+            run_tui(token, interval).await
+        }
+        #[cfg(not(feature = "tui"))]
+        Commands::Monitor {
+            ..
+        } => {
+            eprintln!(
+                "Error: tui feature not enabled. \
+                 Rebuild with --features tui"
+            );
+            std::process::exit(1);
+        }
     }
+}
+
+#[cfg(feature = "tui")]
+async fn run_tui(token: String, interval: u64) -> Result<(), TwcError> {
+    use crossterm::{
+        execute,
+        terminal::{
+            EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode
+        }
+    };
+    use ratatui::{Terminal, backend::CrosstermBackend};
+    use tokio::sync::mpsc;
+
+    enable_raw_mode().map_err(|e| TwcError::Io(e.to_string()))?;
+    let mut stdout = std::io::stdout();
+    execute!(stdout, EnterAlternateScreen).map_err(|e| TwcError::Io(e.to_string()))?;
+    let backend = CrosstermBackend::new(stdout);
+    let mut terminal = Terminal::new(backend).map_err(|e| TwcError::Io(e.to_string()))?;
+
+    let mut app = tui::app::App::new(interval);
+
+    let (tx, mut rx) = mpsc::unbounded_channel();
+    let event_tx = tx.clone();
+
+    tokio::spawn(async move {
+        tui::event::run_event_loop(event_tx).await;
+    });
+
+    // Initial server fetch
+    let config = authenticated(token.clone());
+    if let Ok(resp) = timeweb_rs::apis::servers_api::get_servers(&config, None, None).await {
+        let summaries: Vec<tui::app::ServerSummary> = resp
+            .servers
+            .iter()
+            .map(|s| tui::app::ServerSummary {
+                id:        s.id as i32,
+                name:      s.name.clone(),
+                status:    format!("{:?}", s.status),
+                cpu_count: s.cpu as i32,
+                ram_mb:    s.ram as i32,
+                disk_gb:   0
+            })
+            .collect();
+        app.update_servers(summaries);
+    }
+
+    loop {
+        terminal
+            .draw(|f| tui::ui::draw(f, &app))
+            .map_err(|e| TwcError::Io(e.to_string()))?;
+
+        if let Some(event) = rx.recv().await {
+            if !tui::event::handle_event(&mut app, event) {
+                break;
+            }
+
+            if app.needs_refresh() {
+                let config = authenticated(token.clone());
+                match timeweb_rs::apis::servers_api::get_servers(&config, None, None).await {
+                    Ok(resp) => {
+                        let summaries: Vec<tui::app::ServerSummary> = resp
+                            .servers
+                            .iter()
+                            .map(|s| tui::app::ServerSummary {
+                                id:        s.id as i32,
+                                name:      s.name.clone(),
+                                status:    format!("{:?}", s.status),
+                                cpu_count: s.cpu as i32,
+                                ram_mb:    s.ram as i32,
+                                disk_gb:   0
+                            })
+                            .collect();
+                        app.update_servers(summaries);
+                    }
+                    Err(e) => {
+                        app.error_message = Some(format!("API error: {e}"));
+                    }
+                }
+            }
+        }
+    }
+
+    disable_raw_mode().map_err(|e| TwcError::Io(e.to_string()))?;
+    execute!(terminal.backend_mut(), LeaveAlternateScreen)
+        .map_err(|e| TwcError::Io(e.to_string()))?;
+    terminal
+        .show_cursor()
+        .map_err(|e| TwcError::Io(e.to_string()))?;
+    Ok(())
 }
 
 #[cfg(test)]
@@ -148,7 +287,7 @@ mod tests {
         unsafe {
             match orig {
                 Some(v) => std::env::set_var("XDG_CONFIG_HOME", v),
-                None => std::env::remove_var("XDG_CONFIG_HOME"),
+                None => std::env::remove_var("XDG_CONFIG_HOME")
             }
         }
     }

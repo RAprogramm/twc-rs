@@ -16,7 +16,7 @@ fn server_row_display() {
         cpu:      "2".to_string(),
         ram:      "4096".to_string(),
         os:       "Ubuntu 22.04".to_string(),
-        location: "msk".to_string(),
+        location: "msk".to_string()
     };
     let display = row.to_string();
     assert!(display.contains("1"));

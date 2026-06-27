@@ -51,7 +51,7 @@ fn ssh_key_row_display() {
         id:          "10".to_string(),
         name:        "dev-key".to_string(),
         fingerprint: "aa:bb:cc".to_string(),
-        is_default:  "true".to_string(),
+        is_default:  "true".to_string()
     };
     let display = row.to_string();
     assert!(display.contains("10"));

@@ -8,78 +8,48 @@ fn default_is_table() {
 
 #[test]
 fn parse_table() {
-    assert_eq!(
-        OutputFormat::parse("table").unwrap(),
-        OutputFormat::Table
-    );
+    assert_eq!(OutputFormat::parse("table").unwrap(), OutputFormat::Table);
 }
 
 #[test]
 fn parse_tbl() {
-    assert_eq!(
-        OutputFormat::parse("tbl").unwrap(),
-        OutputFormat::Table
-    );
+    assert_eq!(OutputFormat::parse("tbl").unwrap(), OutputFormat::Table);
 }
 
 #[test]
 fn parse_table_case_insensitive() {
-    assert_eq!(
-        OutputFormat::parse("TABLE").unwrap(),
-        OutputFormat::Table
-    );
-    assert_eq!(
-        OutputFormat::parse("Table").unwrap(),
-        OutputFormat::Table
-    );
+    assert_eq!(OutputFormat::parse("TABLE").unwrap(), OutputFormat::Table);
+    assert_eq!(OutputFormat::parse("Table").unwrap(), OutputFormat::Table);
 }
 
 #[test]
 fn parse_json() {
-    assert_eq!(
-        OutputFormat::parse("json").unwrap(),
-        OutputFormat::Json
-    );
+    assert_eq!(OutputFormat::parse("json").unwrap(), OutputFormat::Json);
 }
 
 #[test]
 fn parse_js() {
-    assert_eq!(
-        OutputFormat::parse("js").unwrap(),
-        OutputFormat::Json
-    );
+    assert_eq!(OutputFormat::parse("js").unwrap(), OutputFormat::Json);
 }
 
 #[test]
 fn parse_json_case_insensitive() {
-    assert_eq!(
-        OutputFormat::parse("JSON").unwrap(),
-        OutputFormat::Json
-    );
+    assert_eq!(OutputFormat::parse("JSON").unwrap(), OutputFormat::Json);
 }
 
 #[test]
 fn parse_quiet() {
-    assert_eq!(
-        OutputFormat::parse("quiet").unwrap(),
-        OutputFormat::Quiet
-    );
+    assert_eq!(OutputFormat::parse("quiet").unwrap(), OutputFormat::Quiet);
 }
 
 #[test]
 fn parse_q() {
-    assert_eq!(
-        OutputFormat::parse("q").unwrap(),
-        OutputFormat::Quiet
-    );
+    assert_eq!(OutputFormat::parse("q").unwrap(), OutputFormat::Quiet);
 }
 
 #[test]
 fn parse_quiet_case_insensitive() {
-    assert_eq!(
-        OutputFormat::parse("QUIET").unwrap(),
-        OutputFormat::Quiet
-    );
+    assert_eq!(OutputFormat::parse("QUIET").unwrap(), OutputFormat::Quiet);
 }
 
 #[test]

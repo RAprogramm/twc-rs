@@ -41,30 +41,21 @@ fn display_io() {
 
 #[test]
 fn from_io_error() {
-    let io_err = std::io::Error::new(
-        std::io::ErrorKind::NotFound,
-        "file missing",
-    );
+    let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "file missing");
     let twc_err: TwcError = io_err.into();
     assert!(twc_err.to_string().contains("file missing"));
 }
 
 #[test]
 fn from_toml_de_error() {
-    let toml_err =
-        toml::from_str::<super::super::config::AppConfig>(
-            "not valid = [",
-        )
-        .unwrap_err();
+    let toml_err = toml::from_str::<super::super::config::AppConfig>("not valid = [").unwrap_err();
     let twc_err: TwcError = toml_err.into();
     assert!(twc_err.to_string().contains("failed to parse config"));
 }
 
 #[test]
 fn from_toml_de_error_invalid_syntax() {
-    let toml_err =
-        toml::from_str::<super::super::config::AppConfig>("= = =")
-            .unwrap_err();
+    let toml_err = toml::from_str::<super::super::config::AppConfig>("= = =").unwrap_err();
     let twc_err: TwcError = toml_err.into();
     assert!(twc_err.to_string().contains("failed to parse config"));
 }
@@ -82,23 +73,16 @@ fn from_toml_ser_error() {
 
 #[test]
 fn from_timeweb_serde_error() {
-    let serde_err =
-        serde_json::from_str::<serde_json::Value>("not json")
-            .unwrap_err();
-    let api_err: timeweb_rs::apis::Error<String> =
-        timeweb_rs::apis::Error::Serde(serde_err);
+    let serde_err = serde_json::from_str::<serde_json::Value>("not json").unwrap_err();
+    let api_err: timeweb_rs::apis::Error<String> = timeweb_rs::apis::Error::Serde(serde_err);
     let twc_err: TwcError = api_err.into();
     assert!(twc_err.to_string().contains("API error"));
 }
 
 #[test]
 fn from_timeweb_io_error() {
-    let io_err = std::io::Error::new(
-        std::io::ErrorKind::Other,
-        "timeweb io",
-    );
-    let api_err: timeweb_rs::apis::Error<String> =
-        timeweb_rs::apis::Error::Io(io_err);
+    let io_err = std::io::Error::new(std::io::ErrorKind::Other, "timeweb io");
+    let api_err: timeweb_rs::apis::Error<String> = timeweb_rs::apis::Error::Io(io_err);
     let twc_err: TwcError = api_err.into();
     assert!(twc_err.to_string().contains("I/O error"));
 }
@@ -109,10 +93,9 @@ fn from_timeweb_response_error_with_entity() {
     let content = ResponseContent::<String> {
         status:  reqwest::StatusCode::UNAUTHORIZED,
         content: String::new(),
-        entity:  Some("unauthorized".to_string()),
+        entity:  Some("unauthorized".to_string())
     };
-    let api_err: timeweb_rs::apis::Error<String> =
-        timeweb_rs::apis::Error::ResponseError(content);
+    let api_err: timeweb_rs::apis::Error<String> = timeweb_rs::apis::Error::ResponseError(content);
     let twc_err: TwcError = api_err.into();
     assert!(twc_err.to_string().contains("API error"));
     assert!(twc_err.to_string().contains("unauthorized"));
@@ -124,10 +107,9 @@ fn from_timeweb_response_error_without_entity() {
     let content = ResponseContent::<String> {
         status:  reqwest::StatusCode::NOT_FOUND,
         content: String::new(),
-        entity:  None,
+        entity:  None
     };
-    let api_err: timeweb_rs::apis::Error<String> =
-        timeweb_rs::apis::Error::ResponseError(content);
+    let api_err: timeweb_rs::apis::Error<String> = timeweb_rs::apis::Error::ResponseError(content);
     let twc_err: TwcError = api_err.into();
     assert!(twc_err.to_string().contains("API error"));
     assert!(twc_err.to_string().contains("404"));
@@ -145,10 +127,9 @@ fn error_source_is_none_for_response_error() {
     let content = ResponseContent::<String> {
         status:  reqwest::StatusCode::BAD_REQUEST,
         content: String::new(),
-        entity:  None,
+        entity:  None
     };
-    let api_err: timeweb_rs::apis::Error<String> =
-        timeweb_rs::apis::Error::ResponseError(content);
+    let api_err: timeweb_rs::apis::Error<String> = timeweb_rs::apis::Error::ResponseError(content);
     let twc_err: TwcError = api_err.into();
     let dyn_err: &dyn std::error::Error = &twc_err;
     assert!(dyn_err.source().is_none());

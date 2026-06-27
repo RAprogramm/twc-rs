@@ -13,7 +13,7 @@ fn project_row_display() {
         id:          "5".to_string(),
         name:        "web-app".to_string(),
         description: "Production".to_string(),
-        is_default:  "false".to_string(),
+        is_default:  "false".to_string()
     };
     let display = row.to_string();
     assert!(display.contains("5"));
