@@ -101,12 +101,16 @@ fn prompt_and_save_token() -> Result<String, TwcError> {
     Ok(token)
 }
 
-/// Prompts user to paste a token securely (hidden input).
+/// Prompts user to paste a token (visible input).
 fn prompt_paste_token() -> Result<String, TwcError> {
-    let token: String = dialoguer::Password::new()
-        .with_prompt("Paste your API token")
-        .allow_empty_password(false)
-        .interact()
+    use std::io::Write;
+
+    eprint!("Paste your API token: ");
+    std::io::stderr().flush().ok();
+
+    let mut token = String::new();
+    std::io::stdin()
+        .read_line(&mut token)
         .map_err(|e| TwcError::Io(e.to_string()))?;
 
     let token = token.trim().to_string();
