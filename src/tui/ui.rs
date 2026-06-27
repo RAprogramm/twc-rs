@@ -13,12 +13,14 @@ use ratatui::{
 
 use super::{
     app::App,
-    widgets::{gauges, server_list, sparkline}
+    themes::Theme,
+    widgets::{details, resource_list}
 };
 
 /// Renders the full dashboard into the given frame area.
 pub fn draw(frame: &mut Frame, app: &App) {
     let size = frame.area();
+    let palette = get_palette(app);
 
     let main_chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -30,17 +32,26 @@ pub fn draw(frame: &mut Frame, app: &App) {
         ])
         .split(size);
 
-    render_account_header(frame, main_chunks[0], app);
-    render_tabs(frame, main_chunks[1], app);
-    render_content(frame, main_chunks[2], app);
-    render_status_bar(frame, main_chunks[3], app);
+    render_account_header(frame, main_chunks[0], app, &palette);
+    render_tabs(frame, main_chunks[1], app, &palette);
+    render_content(frame, main_chunks[2], app, &palette);
+    render_status_bar(frame, main_chunks[3], app, &palette);
 
     if app.show_help {
-        render_help_overlay(frame, size);
+        render_help_overlay(frame, size, &palette);
     }
 }
 
-fn render_account_header(frame: &mut Frame, area: Rect, app: &App) {
+fn get_palette(app: &App) -> super::themes::Palette {
+    app.theme.palette()
+}
+
+fn render_account_header(
+    frame: &mut Frame,
+    area: Rect,
+    app: &App,
+    palette: &super::themes::Palette
+) {
     let account_id = app.account.account_id;
     let balance = &app.account.balance;
     let status = &app.account.status;
@@ -49,35 +60,35 @@ fn render_account_header(frame: &mut Frame, area: Rect, app: &App) {
         Span::styled(
             "twc-rs",
             Style::default()
-                .fg(Color::Cyan)
+                .fg(palette.accent)
                 .add_modifier(Modifier::BOLD)
         ),
         Span::raw("  "),
         Span::styled(
             format!("Account: {account_id:.0}"),
-            Style::default().fg(Color::White)
+            Style::default().fg(palette.header)
         ),
         Span::raw("  "),
         Span::styled(
             format!("Balance: {balance}"),
-            Style::default().fg(Color::Green)
+            Style::default().fg(palette.success)
         ),
         Span::raw("  "),
         Span::styled(
             format!("Status: {status}"),
-            Style::default().fg(Color::Yellow)
+            Style::default().fg(palette.warning)
         ),
     ]);
 
     let paragraph = Paragraph::new(line).block(
         Block::default()
             .borders(Borders::ALL)
-            .border_style(Style::default().fg(Color::DarkGray))
+            .border_style(Style::default().fg(palette.border))
     );
     frame.render_widget(paragraph, area);
 }
 
-fn render_tabs(frame: &mut Frame, area: Rect, app: &App) {
+fn render_tabs(frame: &mut Frame, area: Rect, app: &App, palette: &super::themes::Palette) {
     let titles: Vec<Line<'static>> = super::app::ResourceTab::names()
         .iter()
         .map(|t| Line::from(Span::styled(*t, Style::default())))
@@ -86,91 +97,59 @@ fn render_tabs(frame: &mut Frame, area: Rect, app: &App) {
     let tabs = Tabs::new(titles)
         .block(
             Block::default()
-                .title("Resources")
+                .title(" Resources ")
                 .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::DarkGray))
+                .border_style(Style::default().fg(palette.border))
         )
         .select(app.active_tab.index())
         .style(Style::default())
         .highlight_style(
             Style::default()
-                .fg(Color::Cyan)
+                .fg(palette.tab_active)
                 .add_modifier(Modifier::BOLD)
         );
 
     frame.render_widget(tabs, area);
 }
 
-fn render_content(frame: &mut Frame, area: Rect, app: &App) {
+fn render_content(frame: &mut Frame, area: Rect, app: &App, palette: &super::themes::Palette) {
     let content_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
-            Constraint::Percentage(30), // Resource list
-            Constraint::Percentage(70)  // Details
+            Constraint::Percentage(35), // Resource list
+            Constraint::Percentage(65)  // Details
         ])
         .split(area);
 
-    server_list::render(frame, content_chunks[0], &app.servers, app.selected);
-
-    let detail_chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Percentage(50), // Gauges
-            Constraint::Percentage(50)  // Sparklines
-        ])
-        .split(content_chunks[1]);
-
-    let cpu = app.cpu_history.back().copied().unwrap_or(0.0) / 100.0;
-    let ram = app.ram_history.back().copied().unwrap_or(0.0) / 100.0;
-    let ram_gb = ram * 4.0;
-    let disk = 0.4;
-    let disk_gb = 40.0;
-
-    gauges::render(
-        frame,
-        detail_chunks[0],
-        cpu,
-        ram,
-        ram_gb,
-        4.0,
-        disk,
-        disk_gb,
-        100.0
-    );
-
-    sparkline::render(
-        frame,
-        detail_chunks[1],
-        &app.net_in_history,
-        &app.net_out_history
-    );
+    resource_list::render(frame, content_chunks[0], app);
+    details::render(frame, content_chunks[1], app);
 }
 
-fn render_status_bar(frame: &mut Frame, area: Rect, app: &App) {
+fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, palette: &super::themes::Palette) {
     let left = "↑↓ select  Tab switch  r refresh  ? help  q quit";
     let right = match &app.status_message {
         Some(msg) => msg.clone(),
         None => String::new()
     };
     let line = Line::from(vec![
-        Span::styled(left, Style::default().fg(Color::DarkGray)),
+        Span::styled(left, Style::default().fg(palette.dim)),
         Span::raw("  "),
-        Span::styled(right, Style::default().fg(Color::Green)),
+        Span::styled(right, Style::default().fg(palette.success)),
     ]);
     let paragraph = Paragraph::new(line).block(
         Block::default()
             .borders(Borders::ALL)
-            .border_style(Style::default().fg(Color::DarkGray))
+            .border_style(Style::default().fg(palette.border))
     );
     frame.render_widget(paragraph, area);
 }
 
-fn render_help_overlay(frame: &mut Frame, area: Rect) {
+fn render_help_overlay(frame: &mut Frame, area: Rect, palette: &super::themes::Palette) {
     let help_text = vec![
         Line::from(Span::styled(
-            "twc-rs monitor — Keyboard Shortcuts",
+            "twc-rs dashboard — Keyboard Shortcuts",
             Style::default()
-                .fg(Color::Cyan)
+                .fg(palette.accent)
                 .add_modifier(Modifier::BOLD)
         )),
         Line::from(""),
@@ -179,17 +158,16 @@ fn render_help_overlay(frame: &mut Frame, area: Rect) {
         Line::from("  Tab          Cycle resource tabs"),
         Line::from("  r            Force refresh"),
         Line::from("  ?            Toggle this help"),
-        Line::from("  Enter        Drill into selected resource"),
     ];
 
     let help = Paragraph::new(help_text)
         .block(
             Block::default()
-                .title("Help")
+                .title(" Help ")
                 .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::Cyan))
+                .border_style(Style::default().fg(palette.accent))
         )
-        .style(Style::default().bg(Color::Black));
+        .style(Style::default().bg(palette.bg));
 
     let popup_area = Rect {
         x:      area.width / 4,

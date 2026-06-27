@@ -20,11 +20,11 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
         ResourceTab::Databases => render_database_details(app),
         ResourceTab::S3 => render_s3_details(app),
         ResourceTab::Kubernetes => render_k8s_details(app),
-        ResourceTab::Projects => render_project_details(app),
+        ResourceTab::Projects => render_project_details(app)
     };
 
-    let paragraph = Paragraph::new(text)
-        .block(Block::default().borders(Borders::ALL).title(" Details "));
+    let paragraph =
+        Paragraph::new(text).block(Block::default().borders(Borders::ALL).title(" Details "));
     frame.render_widget(paragraph, area);
 }
 
@@ -53,7 +53,9 @@ fn render_server_details(app: &App) -> Vec<Line<'static>> {
         Line::from(""),
         Line::from(Span::styled(
             "Resources:",
-            Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD)
         )),
         Line::from(Span::styled(
             format!("  CPU: {} cores", server.cpu),
