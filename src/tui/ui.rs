@@ -6,16 +6,12 @@
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
-    style::{Color, Modifier, Style},
+    style::{Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph, Tabs}
 };
 
-use super::{
-    app::App,
-    themes::Theme,
-    widgets::{details, resource_list}
-};
+use super::app::App;
 
 /// Renders the full dashboard into the given frame area.
 pub fn draw(frame: &mut Frame, app: &App) {
@@ -112,7 +108,7 @@ fn render_tabs(frame: &mut Frame, area: Rect, app: &App, palette: &super::themes
     frame.render_widget(tabs, area);
 }
 
-fn render_content(frame: &mut Frame, area: Rect, app: &App, palette: &super::themes::Palette) {
+fn render_content(frame: &mut Frame, area: Rect, app: &App, _palette: &super::themes::Palette) {
     if app.is_loading {
         let spinner = super::widgets::spinner::current_frame();
         let text = Line::from(vec![spinner, Span::raw(" Loading resources...")]);
@@ -123,16 +119,7 @@ fn render_content(frame: &mut Frame, area: Rect, app: &App, palette: &super::the
         return;
     }
 
-    let content_chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Percentage(35), // Resource list
-            Constraint::Percentage(65)  // Details
-        ])
-        .split(area);
-
-    resource_list::render(frame, content_chunks[0], app);
-    details::render(frame, content_chunks[1], app);
+    app.widgets.render_all(frame, area, app);
 }
 
 fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, palette: &super::themes::Palette) {

@@ -363,6 +363,7 @@ async fn run_dashboard(
 }
 
 #[cfg(feature = "tui")]
+#[allow(deprecated)]
 async fn refresh_all(
     config: &timeweb_rs::apis::configuration::Configuration,
     app: &mut tui::app::App

@@ -127,7 +127,8 @@ pub struct App {
     pub show_help:        bool,
     pub status_message:   Option<String>,
     pub error_message:    Option<String>,
-    pub is_loading:       bool
+    pub is_loading:       bool,
+    pub widgets:          super::widgets::WidgetRegistry
 }
 
 impl App {
@@ -158,7 +159,8 @@ impl App {
             show_help: false,
             status_message: None,
             error_message: None,
-            is_loading: false
+            is_loading: false,
+            widgets: super::widgets::WidgetRegistry::new()
         }
     }
 
