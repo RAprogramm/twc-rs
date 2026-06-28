@@ -32,6 +32,8 @@ tabled = "0.16"
 indicatif = "0.17"
 colored = "2"
 dialoguer = "0.11"
+base64 = "0.22"
+chrono = { version = "0.4", features = ["serde"] }
 
 # Auth feature deps
 open = { version = "5", optional = true }
