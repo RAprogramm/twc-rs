@@ -72,9 +72,11 @@ impl WidgetRegistry {
     /// assert_eq!(registry.enabled_widgets().len(), 0);
     /// ```
     pub fn new() -> Self {
-        Self {
+        let mut registry = Self {
             widgets: Vec::new()
-        }
+        };
+        registry.register(Box::new(account::AccountWidget::new(true)));
+        registry
     }
 
     /// Registers a new widget in the registry.
@@ -218,6 +220,7 @@ impl fmt::Debug for WidgetRegistry {
     }
 }
 
+pub mod account;
 pub mod details;
 pub mod resource_list;
 pub mod spinner;
