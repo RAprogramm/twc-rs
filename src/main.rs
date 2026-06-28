@@ -316,7 +316,7 @@ async fn run_dashboard(
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend).map_err(|e| TwcError::Io(e.to_string()))?;
 
-    let mut app = tui::app::App::new_with_theme(interval, theme);
+    let mut app = tui::app::App::new_with_theme(interval, theme, Some(token.clone()));
 
     // Show loading screen while fetching initial data
     let config = authenticated(token.clone());

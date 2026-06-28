@@ -117,6 +117,7 @@ pub struct App {
     pub selected:         usize,
     pub active_tab:       ResourceTab,
     pub theme:            super::themes::Theme,
+    pub token:            Option<String>,
     pub cpu_history:      VecDeque<f64>,
     pub ram_history:      VecDeque<f64>,
     pub net_in_history:   VecDeque<u64>,
@@ -134,11 +135,15 @@ pub struct App {
 impl App {
     /// Creates a new `App` with default state.
     pub fn new(refresh_secs: u64) -> Self {
-        Self::new_with_theme(refresh_secs, super::themes::Theme::default())
+        Self::new_with_theme(refresh_secs, super::themes::Theme::default(), None)
     }
 
-    /// Creates a new `App` with a specific theme.
-    pub fn new_with_theme(refresh_secs: u64, theme: super::themes::Theme) -> Self {
+    /// Creates a new `App` with a specific theme and optional token.
+    pub fn new_with_theme(
+        refresh_secs: u64,
+        theme: super::themes::Theme,
+        token: Option<String>
+    ) -> Self {
         Self {
             account: AccountInfo::default(),
             servers: Vec::new(),
@@ -149,6 +154,7 @@ impl App {
             selected: 0,
             active_tab: ResourceTab::Servers,
             theme,
+            token,
             cpu_history: VecDeque::with_capacity(60),
             ram_history: VecDeque::with_capacity(60),
             net_in_history: VecDeque::with_capacity(60),
