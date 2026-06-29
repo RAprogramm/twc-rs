@@ -69,6 +69,152 @@ pub struct ProjectSummary {
     pub server_count: i32
 }
 
+/// Summary of a single load balancer.
+#[derive(Debug, Clone)]
+// JUSTIFY: Public API type for future API integration.
+#[allow(dead_code)]
+pub struct BalancerSummary {
+    pub id:       i32,
+    pub name:     String,
+    pub status:   String,
+    pub ip:       String,
+    pub location: String
+}
+
+/// Summary of a single container registry.
+#[derive(Debug, Clone)]
+// JUSTIFY: Public API type for future API integration.
+#[allow(dead_code)]
+pub struct RegistrySummary {
+    pub id:               i32,
+    pub name:             String,
+    pub region:           String,
+    pub repository_count: i32
+}
+
+/// Summary of a single domain.
+#[derive(Debug, Clone)]
+// JUSTIFY: Public API type for future API integration.
+#[allow(dead_code)]
+pub struct DomainSummary {
+    pub id:           i32,
+    pub name:         String,
+    pub status:       String,
+    pub auto_prolong: bool
+}
+
+/// Summary of a single firewall.
+#[derive(Debug, Clone)]
+// JUSTIFY: Public API type for future API integration.
+#[allow(dead_code)]
+pub struct FirewallSummary {
+    pub id:             i32,
+    pub name:           String,
+    pub rule_count:     i32,
+    pub resource_count: i32
+}
+
+/// Summary of a single floating IP.
+#[derive(Debug, Clone)]
+// JUSTIFY: Public API type for future API integration.
+#[allow(dead_code)]
+pub struct FloatingIpSummary {
+    pub id:          i32,
+    pub ip:          String,
+    pub status:      String,
+    pub server_name: String
+}
+
+/// Summary of a single image.
+#[derive(Debug, Clone)]
+// JUSTIFY: Public API type for future API integration.
+#[allow(dead_code)]
+pub struct ImageSummary {
+    pub id:      i32,
+    pub name:    String,
+    pub size_mb: i64,
+    pub status:  String
+}
+
+/// Summary of a single network drive.
+#[derive(Debug, Clone)]
+// JUSTIFY: Public API type for future API integration.
+#[allow(dead_code)]
+pub struct NetworkDriveSummary {
+    pub id:      i32,
+    pub name:    String,
+    pub size_gb: i64,
+    pub status:  String
+}
+
+/// Summary of a single VPC.
+#[derive(Debug, Clone)]
+// JUSTIFY: Public API type for future API integration.
+#[allow(dead_code)]
+pub struct VpcSummary {
+    pub id:           i32,
+    pub name:         String,
+    pub subnet_count: i32,
+    pub status:       String
+}
+
+/// Summary of a single dedicated server.
+#[derive(Debug, Clone)]
+// JUSTIFY: Public API type for future API integration.
+#[allow(dead_code)]
+pub struct DedicatedServerSummary {
+    pub id:      i32,
+    pub name:    String,
+    pub status:  String,
+    pub cpu:     i32,
+    pub ram_mb:  i32,
+    pub disk_gb: i64
+}
+
+/// Summary of a single mail service.
+#[derive(Debug, Clone)]
+// JUSTIFY: Public API type for future API integration.
+#[allow(dead_code)]
+pub struct MailSummary {
+    pub id:            i32,
+    pub name:          String,
+    pub mailbox_count: i32,
+    pub status:        String
+}
+
+/// Summary of a single application.
+#[derive(Debug, Clone)]
+// JUSTIFY: Public API type for future API integration.
+#[allow(dead_code)]
+pub struct AppSummary {
+    pub id:           i32,
+    pub name:         String,
+    pub status:       String,
+    pub deploy_count: i32
+}
+
+/// Summary of a single AI agent.
+#[derive(Debug, Clone)]
+// JUSTIFY: Public API type for future API integration.
+#[allow(dead_code)]
+pub struct AiAgentSummary {
+    pub id:     i32,
+    pub name:   String,
+    pub status: String,
+    pub model:  String
+}
+
+/// Summary of a single knowledge base.
+#[derive(Debug, Clone)]
+// JUSTIFY: Public API type for future API integration.
+#[allow(dead_code)]
+pub struct KnowledgeBaseSummary {
+    pub id:             i32,
+    pub name:           String,
+    pub document_count: i32,
+    pub status:         String
+}
+
 /// Resource category in the left panel.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ResourceTab {
@@ -76,63 +222,148 @@ pub enum ResourceTab {
     Databases,
     S3,
     Kubernetes,
-    Projects
+    Projects,
+    Balancers,
+    Registry,
+    Domains,
+    Firewall,
+    FloatingIps,
+    Images,
+    NetworkDrives,
+    Vpc,
+    DedicatedServers,
+    Mail,
+    Apps,
+    AiAgents,
+    KnowledgeBases,
+    SshKeys,
+    Finances
 }
 
 impl ResourceTab {
     /// Returns all tab names.
-    pub fn names() -> &'static [&'static str] {
-        &["Servers", "Databases", "S3", "Kubernetes", "Projects"]
+    // JUSTIFY: Public API method for future UI integration.
+    #[allow(dead_code)]
+    pub const fn names() -> &'static [&'static str] {
+        &[
+            "Servers",
+            "Databases",
+            "S3",
+            "Kubernetes",
+            "Projects",
+            "Balancers",
+            "Registry",
+            "Domains",
+            "Firewall",
+            "FloatingIps",
+            "Images",
+            "NetworkDrives",
+            "Vpc",
+            "DedicatedServers",
+            "Mail",
+            "Apps",
+            "AiAgents",
+            "KnowledgeBases",
+            "SshKeys",
+            "Finances"
+        ]
     }
 
     /// Cycles to the next tab.
-    pub fn next(self) -> Self {
+    pub const fn next(self) -> Self {
         match self {
             Self::Servers => Self::Databases,
             Self::Databases => Self::S3,
             Self::S3 => Self::Kubernetes,
             Self::Kubernetes => Self::Projects,
-            Self::Projects => Self::Servers
+            Self::Projects => Self::Balancers,
+            Self::Balancers => Self::Registry,
+            Self::Registry => Self::Domains,
+            Self::Domains => Self::Firewall,
+            Self::Firewall => Self::FloatingIps,
+            Self::FloatingIps => Self::Images,
+            Self::Images => Self::NetworkDrives,
+            Self::NetworkDrives => Self::Vpc,
+            Self::Vpc => Self::DedicatedServers,
+            Self::DedicatedServers => Self::Mail,
+            Self::Mail => Self::Apps,
+            Self::Apps => Self::AiAgents,
+            Self::AiAgents => Self::KnowledgeBases,
+            Self::KnowledgeBases => Self::SshKeys,
+            Self::SshKeys => Self::Finances,
+            Self::Finances => Self::Servers
         }
     }
 
     /// Returns the index of this tab.
-    pub fn index(self) -> usize {
+    // JUSTIFY: Public API method for future UI integration.
+    #[allow(dead_code)]
+    pub const fn index(self) -> usize {
         match self {
             Self::Servers => 0,
             Self::Databases => 1,
             Self::S3 => 2,
             Self::Kubernetes => 3,
-            Self::Projects => 4
+            Self::Projects => 4,
+            Self::Balancers => 5,
+            Self::Registry => 6,
+            Self::Domains => 7,
+            Self::Firewall => 8,
+            Self::FloatingIps => 9,
+            Self::Images => 10,
+            Self::NetworkDrives => 11,
+            Self::Vpc => 12,
+            Self::DedicatedServers => 13,
+            Self::Mail => 14,
+            Self::Apps => 15,
+            Self::AiAgents => 16,
+            Self::KnowledgeBases => 17,
+            Self::SshKeys => 18,
+            Self::Finances => 19
         }
     }
 }
 
 /// Holds all runtime state for the TUI dashboard.
 pub struct App {
-    pub account:          AccountInfo,
-    pub servers:          Vec<ServerSummary>,
-    pub databases:        Vec<DatabaseSummary>,
-    pub s3_storages:      Vec<S3Summary>,
-    pub k8s_clusters:     Vec<K8sSummary>,
-    pub projects:         Vec<ProjectSummary>,
-    pub selected:         usize,
-    pub active_tab:       ResourceTab,
-    pub theme:            super::themes::Theme,
-    pub token:            Option<String>,
-    pub cpu_history:      VecDeque<f64>,
-    pub ram_history:      VecDeque<f64>,
-    pub net_in_history:   VecDeque<u64>,
-    pub net_out_history:  VecDeque<u64>,
-    pub last_refresh:     Instant,
-    pub refresh_interval: Duration,
-    pub running:          bool,
-    pub show_help:        bool,
-    pub status_message:   Option<String>,
-    pub error_message:    Option<String>,
-    pub is_loading:       bool,
-    pub widgets:          super::widgets::WidgetRegistry,
-    pub project_manager:  ProjectManager
+    pub account:           AccountInfo,
+    pub servers:           Vec<ServerSummary>,
+    pub databases:         Vec<DatabaseSummary>,
+    pub s3_storages:       Vec<S3Summary>,
+    pub k8s_clusters:      Vec<K8sSummary>,
+    pub projects:          Vec<ProjectSummary>,
+    pub balancers:         Vec<BalancerSummary>,
+    pub registries:        Vec<RegistrySummary>,
+    pub domains:           Vec<DomainSummary>,
+    pub firewalls:         Vec<FirewallSummary>,
+    pub floating_ips:      Vec<FloatingIpSummary>,
+    pub images:            Vec<ImageSummary>,
+    pub network_drives:    Vec<NetworkDriveSummary>,
+    pub vpcs:              Vec<VpcSummary>,
+    pub dedicated_servers: Vec<DedicatedServerSummary>,
+    pub mails:             Vec<MailSummary>,
+    pub apps:              Vec<AppSummary>,
+    pub ai_agents:         Vec<AiAgentSummary>,
+    pub knowledge_bases:   Vec<KnowledgeBaseSummary>,
+    pub ssh_keys:          Vec<String>,
+    pub finances:          Vec<String>,
+    pub selected:          usize,
+    pub active_tab:        ResourceTab,
+    pub theme:             super::themes::Theme,
+    pub token:             Option<String>,
+    pub cpu_history:       VecDeque<f64>,
+    pub ram_history:       VecDeque<f64>,
+    pub net_in_history:    VecDeque<u64>,
+    pub net_out_history:   VecDeque<u64>,
+    pub last_refresh:      Instant,
+    pub refresh_interval:  Duration,
+    pub running:           bool,
+    pub show_help:         bool,
+    pub status_message:    Option<String>,
+    pub error_message:     Option<String>,
+    pub is_loading:        bool,
+    pub widgets:           super::widgets::WidgetRegistry,
+    pub project_manager:   ProjectManager
 }
 
 impl App {
@@ -154,6 +385,21 @@ impl App {
             s3_storages: Vec::new(),
             k8s_clusters: Vec::new(),
             projects: Vec::new(),
+            balancers: Vec::new(),
+            registries: Vec::new(),
+            domains: Vec::new(),
+            firewalls: Vec::new(),
+            floating_ips: Vec::new(),
+            images: Vec::new(),
+            network_drives: Vec::new(),
+            vpcs: Vec::new(),
+            dedicated_servers: Vec::new(),
+            mails: Vec::new(),
+            apps: Vec::new(),
+            ai_agents: Vec::new(),
+            knowledge_bases: Vec::new(),
+            ssh_keys: Vec::new(),
+            finances: Vec::new(),
             selected: 0,
             active_tab: ResourceTab::Servers,
             theme,
@@ -175,13 +421,28 @@ impl App {
     }
 
     /// Returns the currently selected resource list length.
-    pub fn current_list_len(&self) -> usize {
+    pub const fn current_list_len(&self) -> usize {
         match self.active_tab {
             ResourceTab::Servers => self.servers.len(),
             ResourceTab::Databases => self.databases.len(),
             ResourceTab::S3 => self.s3_storages.len(),
             ResourceTab::Kubernetes => self.k8s_clusters.len(),
-            ResourceTab::Projects => self.projects.len()
+            ResourceTab::Projects => self.projects.len(),
+            ResourceTab::Balancers => self.balancers.len(),
+            ResourceTab::Registry => self.registries.len(),
+            ResourceTab::Domains => self.domains.len(),
+            ResourceTab::Firewall => self.firewalls.len(),
+            ResourceTab::FloatingIps => self.floating_ips.len(),
+            ResourceTab::Images => self.images.len(),
+            ResourceTab::NetworkDrives => self.network_drives.len(),
+            ResourceTab::Vpc => self.vpcs.len(),
+            ResourceTab::DedicatedServers => self.dedicated_servers.len(),
+            ResourceTab::Mail => self.mails.len(),
+            ResourceTab::Apps => self.apps.len(),
+            ResourceTab::AiAgents => self.ai_agents.len(),
+            ResourceTab::KnowledgeBases => self.knowledge_bases.len(),
+            ResourceTab::SshKeys => self.ssh_keys.len(),
+            ResourceTab::Finances => self.finances.len()
         }
     }
 
@@ -212,7 +473,9 @@ impl App {
 
     /// Marks that a refresh is needed immediately.
     pub fn force_refresh(&mut self) {
-        self.last_refresh = Instant::now() - self.refresh_interval;
+        self.last_refresh = Instant::now()
+            .checked_sub(self.refresh_interval)
+            .unwrap_or_else(Instant::now);
     }
 
     /// Returns true when the refresh interval has elapsed.
@@ -253,6 +516,126 @@ impl App {
     /// Updates project data.
     pub fn update_projects(&mut self, projects: Vec<ProjectSummary>) {
         self.projects = projects;
+        self.clamp_selection();
+    }
+
+    /// Updates balancer data.
+    // JUSTIFY: Public API method for future API integration.
+    #[allow(dead_code)]
+    pub fn update_balancers(&mut self, balancers: Vec<BalancerSummary>) {
+        self.balancers = balancers;
+        self.clamp_selection();
+    }
+
+    /// Updates registry data.
+    // JUSTIFY: Public API method for future API integration.
+    #[allow(dead_code)]
+    pub fn update_registries(&mut self, registries: Vec<RegistrySummary>) {
+        self.registries = registries;
+        self.clamp_selection();
+    }
+
+    /// Updates domain data.
+    // JUSTIFY: Public API method for future API integration.
+    #[allow(dead_code)]
+    pub fn update_domains(&mut self, domains: Vec<DomainSummary>) {
+        self.domains = domains;
+        self.clamp_selection();
+    }
+
+    /// Updates firewall data.
+    // JUSTIFY: Public API method for future API integration.
+    #[allow(dead_code)]
+    pub fn update_firewalls(&mut self, firewalls: Vec<FirewallSummary>) {
+        self.firewalls = firewalls;
+        self.clamp_selection();
+    }
+
+    /// Updates floating IP data.
+    // JUSTIFY: Public API method for future API integration.
+    #[allow(dead_code)]
+    pub fn update_floating_ips(&mut self, ips: Vec<FloatingIpSummary>) {
+        self.floating_ips = ips;
+        self.clamp_selection();
+    }
+
+    /// Updates image data.
+    // JUSTIFY: Public API method for future API integration.
+    #[allow(dead_code)]
+    pub fn update_images(&mut self, images: Vec<ImageSummary>) {
+        self.images = images;
+        self.clamp_selection();
+    }
+
+    /// Updates network drive data.
+    // JUSTIFY: Public API method for future API integration.
+    #[allow(dead_code)]
+    pub fn update_network_drives(&mut self, drives: Vec<NetworkDriveSummary>) {
+        self.network_drives = drives;
+        self.clamp_selection();
+    }
+
+    /// Updates VPC data.
+    // JUSTIFY: Public API method for future API integration.
+    #[allow(dead_code)]
+    pub fn update_vpcs(&mut self, vpcs: Vec<VpcSummary>) {
+        self.vpcs = vpcs;
+        self.clamp_selection();
+    }
+
+    /// Updates dedicated server data.
+    // JUSTIFY: Public API method for future API integration.
+    #[allow(dead_code)]
+    pub fn update_dedicated_servers(&mut self, servers: Vec<DedicatedServerSummary>) {
+        self.dedicated_servers = servers;
+        self.clamp_selection();
+    }
+
+    /// Updates mail data.
+    // JUSTIFY: Public API method for future API integration.
+    #[allow(dead_code)]
+    pub fn update_mails(&mut self, mails: Vec<MailSummary>) {
+        self.mails = mails;
+        self.clamp_selection();
+    }
+
+    /// Updates application data.
+    // JUSTIFY: Public API method for future API integration.
+    #[allow(dead_code)]
+    pub fn update_apps(&mut self, apps: Vec<AppSummary>) {
+        self.apps = apps;
+        self.clamp_selection();
+    }
+
+    /// Updates AI agent data.
+    // JUSTIFY: Public API method for future API integration.
+    #[allow(dead_code)]
+    pub fn update_ai_agents(&mut self, agents: Vec<AiAgentSummary>) {
+        self.ai_agents = agents;
+        self.clamp_selection();
+    }
+
+    /// Updates knowledge base data.
+    // JUSTIFY: Public API method for future API integration.
+    #[allow(dead_code)]
+    pub fn update_knowledge_bases(&mut self, bases: Vec<KnowledgeBaseSummary>) {
+        self.knowledge_bases = bases;
+        self.clamp_selection();
+    }
+
+    /// Updates SSH key data.
+    // JUSTIFY: Public API method for future API integration.
+    #[allow(dead_code)]
+    pub fn update_ssh_keys(&mut self, keys: Vec<String>) {
+        self.ssh_keys = keys;
+        self.clamp_selection();
+    }
+
+    /// Updates finances data.
+    // JUSTIFY: Public API method for future API integration.
+    #[allow(dead_code)]
+    pub fn update_finances(&mut self, data: Vec<String>) {
+        self.finances = data;
         self.clamp_selection();
     }
 

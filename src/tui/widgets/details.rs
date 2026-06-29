@@ -26,7 +26,22 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
         ResourceTab::Databases => render_database_details(app),
         ResourceTab::S3 => render_s3_details(app),
         ResourceTab::Kubernetes => render_k8s_details(app),
-        ResourceTab::Projects => render_project_details(app)
+        ResourceTab::Projects => render_project_details(app),
+        ResourceTab::Balancers => render_generic_details(app, "balancers"),
+        ResourceTab::Registry => render_generic_details(app, "registries"),
+        ResourceTab::Domains => render_generic_details(app, "domains"),
+        ResourceTab::Firewall => render_generic_details(app, "firewalls"),
+        ResourceTab::FloatingIps => render_generic_details(app, "floating_ips"),
+        ResourceTab::Images => render_generic_details(app, "images"),
+        ResourceTab::NetworkDrives => render_generic_details(app, "network_drives"),
+        ResourceTab::Vpc => render_generic_details(app, "vpcs"),
+        ResourceTab::DedicatedServers => render_generic_details(app, "dedicated_servers"),
+        ResourceTab::Mail => render_generic_details(app, "mails"),
+        ResourceTab::Apps => render_generic_details(app, "apps"),
+        ResourceTab::AiAgents => render_generic_details(app, "ai_agents"),
+        ResourceTab::KnowledgeBases => render_generic_details(app, "knowledge_bases"),
+        ResourceTab::SshKeys => render_generic_details(app, "ssh_keys"),
+        ResourceTab::Finances => render_generic_details(app, "finances")
     };
 
     let paragraph =
@@ -205,6 +220,13 @@ fn render_project_details(app: &App) -> Vec<Line<'static>> {
             Style::default().fg(Color::White)
         )),
     ]
+}
+
+fn render_generic_details(_app: &App, resource: &str) -> Vec<Line<'static>> {
+    vec![Line::from(Span::styled(
+        format!("No {resource} data available"),
+        Style::default().fg(Color::DarkGray)
+    ))]
 }
 
 /// Widget wrapper for the details panel.

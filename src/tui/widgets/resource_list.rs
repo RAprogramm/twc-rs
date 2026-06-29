@@ -20,6 +20,8 @@ use crate::tui::app::{App, ResourceTab};
 /// * `frame` - The render frame.
 /// * `area` - The area to render in.
 /// * `app` - The application state.
+// JUSTIFY: Large match expression covering all resource types.
+#[allow(clippy::too_many_lines)]
 pub fn render(frame: &mut Frame, area: Rect, app: &App) {
     let items: Vec<ListItem> = match app.active_tab {
         ResourceTab::Servers => app
@@ -97,6 +99,221 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
                         format!("[{} servers]", p.server_count),
                         Style::default().fg(Color::DarkGray)
                     ),
+                ]);
+                ListItem::new(line)
+            })
+            .collect(),
+        ResourceTab::Balancers => app
+            .balancers
+            .iter()
+            .map(|b| {
+                let line = Line::from(vec![
+                    Span::raw("⚖ "),
+                    Span::styled(&b.name, Style::default().fg(Color::White)),
+                    Span::raw("  "),
+                    Span::styled(&b.ip, Style::default().fg(Color::Yellow)),
+                ]);
+                ListItem::new(line)
+            })
+            .collect(),
+        ResourceTab::Registry => app
+            .registries
+            .iter()
+            .map(|r| {
+                let line = Line::from(vec![
+                    Span::raw("🐳 "),
+                    Span::styled(&r.name, Style::default().fg(Color::White)),
+                    Span::raw("  "),
+                    Span::styled(
+                        format!("[{} repos]", r.repository_count),
+                        Style::default().fg(Color::Cyan)
+                    ),
+                ]);
+                ListItem::new(line)
+            })
+            .collect(),
+        ResourceTab::Domains => app
+            .domains
+            .iter()
+            .map(|d| {
+                let line = Line::from(vec![
+                    Span::raw("🌐 "),
+                    Span::styled(&d.name, Style::default().fg(Color::White)),
+                    Span::raw("  "),
+                    Span::styled(format!("[{}]", d.status), Style::default().fg(Color::Green)),
+                ]);
+                ListItem::new(line)
+            })
+            .collect(),
+        ResourceTab::Firewall => app
+            .firewalls
+            .iter()
+            .map(|f| {
+                let line = Line::from(vec![
+                    Span::raw("🛡 "),
+                    Span::styled(&f.name, Style::default().fg(Color::White)),
+                    Span::raw("  "),
+                    Span::styled(
+                        format!("[{} rules]", f.rule_count),
+                        Style::default().fg(Color::Magenta)
+                    ),
+                ]);
+                ListItem::new(line)
+            })
+            .collect(),
+        ResourceTab::FloatingIps => app
+            .floating_ips
+            .iter()
+            .map(|f| {
+                let line = Line::from(vec![
+                    Span::raw("🔀 "),
+                    Span::styled(&f.ip, Style::default().fg(Color::Yellow)),
+                    Span::raw("  "),
+                    Span::styled(&f.server_name, Style::default().fg(Color::White)),
+                ]);
+                ListItem::new(line)
+            })
+            .collect(),
+        ResourceTab::Images => app
+            .images
+            .iter()
+            .map(|i| {
+                let line = Line::from(vec![
+                    Span::raw("🖼 "),
+                    Span::styled(&i.name, Style::default().fg(Color::White)),
+                    Span::raw("  "),
+                    Span::styled(
+                        format!("[{} MB]", i.size_mb),
+                        Style::default().fg(Color::DarkGray)
+                    ),
+                ]);
+                ListItem::new(line)
+            })
+            .collect(),
+        ResourceTab::NetworkDrives => app
+            .network_drives
+            .iter()
+            .map(|n| {
+                let line = Line::from(vec![
+                    Span::raw("💾 "),
+                    Span::styled(&n.name, Style::default().fg(Color::White)),
+                    Span::raw("  "),
+                    Span::styled(
+                        format!("[{} GB]", n.size_gb),
+                        Style::default().fg(Color::Cyan)
+                    ),
+                ]);
+                ListItem::new(line)
+            })
+            .collect(),
+        ResourceTab::Vpc => app
+            .vpcs
+            .iter()
+            .map(|v| {
+                let line = Line::from(vec![
+                    Span::raw("🔗 "),
+                    Span::styled(&v.name, Style::default().fg(Color::White)),
+                    Span::raw("  "),
+                    Span::styled(
+                        format!("[{} subnets]", v.subnet_count),
+                        Style::default().fg(Color::Yellow)
+                    ),
+                ]);
+                ListItem::new(line)
+            })
+            .collect(),
+        ResourceTab::DedicatedServers => app
+            .dedicated_servers
+            .iter()
+            .map(|d| {
+                let line = Line::from(vec![
+                    Span::raw("🖥 "),
+                    Span::styled(&d.name, Style::default().fg(Color::White)),
+                    Span::raw("  "),
+                    Span::styled(&d.status, Style::default().fg(Color::Green)),
+                ]);
+                ListItem::new(line)
+            })
+            .collect(),
+        ResourceTab::Mail => app
+            .mails
+            .iter()
+            .map(|m| {
+                let line = Line::from(vec![
+                    Span::raw("📧 "),
+                    Span::styled(&m.name, Style::default().fg(Color::White)),
+                    Span::raw("  "),
+                    Span::styled(
+                        format!("[{} mailboxes]", m.mailbox_count),
+                        Style::default().fg(Color::Cyan)
+                    ),
+                ]);
+                ListItem::new(line)
+            })
+            .collect(),
+        ResourceTab::Apps => app
+            .apps
+            .iter()
+            .map(|a| {
+                let line = Line::from(vec![
+                    Span::raw("🚀 "),
+                    Span::styled(&a.name, Style::default().fg(Color::White)),
+                    Span::raw("  "),
+                    Span::styled(
+                        format!("[{} deploys]", a.deploy_count),
+                        Style::default().fg(Color::Magenta)
+                    ),
+                ]);
+                ListItem::new(line)
+            })
+            .collect(),
+        ResourceTab::AiAgents => app
+            .ai_agents
+            .iter()
+            .map(|a| {
+                let line = Line::from(vec![
+                    Span::raw("🤖 "),
+                    Span::styled(&a.name, Style::default().fg(Color::White)),
+                    Span::raw("  "),
+                    Span::styled(&a.model, Style::default().fg(Color::Yellow)),
+                ]);
+                ListItem::new(line)
+            })
+            .collect(),
+        ResourceTab::KnowledgeBases => app
+            .knowledge_bases
+            .iter()
+            .map(|k| {
+                let line = Line::from(vec![
+                    Span::raw("📚 "),
+                    Span::styled(&k.name, Style::default().fg(Color::White)),
+                    Span::raw("  "),
+                    Span::styled(
+                        format!("[{} docs]", k.document_count),
+                        Style::default().fg(Color::DarkGray)
+                    ),
+                ]);
+                ListItem::new(line)
+            })
+            .collect(),
+        ResourceTab::SshKeys => app
+            .ssh_keys
+            .iter()
+            .map(|k| {
+                let line = Line::from(vec![
+                    Span::raw("🔑 "),
+                    Span::styled(k, Style::default().fg(Color::White)),
+                ]);
+                ListItem::new(line)
+            })
+            .collect(),
+        ResourceTab::Finances => app
+            .finances
+            .iter()
+            .map(|f| {
+                let line = Line::from(vec![
+                    Span::raw("💰 "),
+                    Span::styled(f, Style::default().fg(Color::White)),
                 ]);
                 ListItem::new(line)
             })
