@@ -14,7 +14,8 @@ mod tui;
 
 use clap::Parser;
 use cli::{
-    AuthCommands, Cli, Commands, ConfigCommands, ProjectCommands, ServerCommands, SshCommands
+    AuthCommands, Cli, Commands, ConfigCommands, DatabaseCommands, ProjectCommands,
+    ServerCommands, SshCommands
 };
 use config::AppConfig;
 use error::TwcError;
@@ -245,6 +246,58 @@ async fn run() -> Result<(), TwcError> {
                 ProjectCommands::Delete {
                     id
                 } => commands::projects::delete(&config, id).await
+            }
+        }
+        Commands::Database(cmd) => {
+            let token = ensure_token(cli.token.as_deref())?;
+            let config = authenticated(token);
+            match cmd {
+                DatabaseCommands::List {
+                    limit,
+                    offset
+                } => commands::databases::list(&config, limit, offset, format).await,
+                DatabaseCommands::Info {
+                    id
+                } => commands::databases::info(&config, id, format).await,
+                DatabaseCommands::Create {
+                    name,
+                    type_,
+                    preset_id
+                } => commands::databases::create(&config, &name, &type_, preset_id, format).await,
+                DatabaseCommands::Delete {
+                    id
+                } => commands::databases::delete(&config, id).await,
+                DatabaseCommands::Update {
+                    id,
+                    name
+                } => commands::databases::update(&config, id, name.as_deref(), format).await,
+                DatabaseCommands::Restart {
+                    id
+                } => commands::databases::restart(&config, id).await,
+                DatabaseCommands::BackupList {
+                    id
+                } => commands::databases::backup_list(&config, id, format).await,
+                DatabaseCommands::BackupCreate {
+                    id
+                } => commands::databases::backup_create(&config, id).await,
+                DatabaseCommands::UserList {
+                    id
+                } => commands::databases::user_list(&config, id, format).await,
+                DatabaseCommands::UserCreate {
+                    db_id,
+                    login,
+                    password
+                } => {
+                    commands::databases::user_create(&config, db_id, &login, &password, format)
+                        .await
+                }
+                DatabaseCommands::UserDelete {
+                    db_id,
+                    user_name
+                } => commands::databases::user_delete(&config, db_id, &user_name).await,
+                DatabaseCommands::PresetList => {
+                    commands::databases::preset_list(&config, format).await
+                }
             }
         }
         #[cfg(feature = "auth")]

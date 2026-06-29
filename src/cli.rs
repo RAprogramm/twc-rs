@@ -44,6 +44,10 @@ pub enum Commands {
     #[command(subcommand)]
     Project(ProjectCommands),
 
+    /// Manage databases.
+    #[command(subcommand)]
+    Database(DatabaseCommands),
+
     /// Configure twc-rs settings.
     #[command(subcommand)]
     Config(ConfigCommands),
@@ -141,6 +145,108 @@ pub enum ProjectCommands {
         #[arg(short, long)]
         id: i32
     }
+}
+
+/// Database subcommands.
+#[derive(Subcommand, Debug)]
+pub enum DatabaseCommands {
+    /// List all databases.
+    List {
+        /// Maximum number of databases to return.
+        #[arg(short, long)]
+        limit: Option<i32>,
+
+        /// Number of databases to skip.
+        #[arg(short, long)]
+        offset: Option<i32>
+    },
+    /// Show detailed info for a database.
+    Info {
+        /// Database ID.
+        #[arg(short, long)]
+        id: i32
+    },
+    /// Create a new database.
+    Create {
+        /// Database name.
+        #[arg(short, long)]
+        name: String,
+
+        /// Database engine type (mysql, postgres, redis, mongodb, opensearch,
+        /// clickhouse, kafka, rabbitmq).
+        #[arg(short, long)]
+        type_: String,
+
+        /// Preset ID for the database.
+        #[arg(short = 'p', long)]
+        preset_id: i32
+    },
+    /// Delete a database by ID.
+    Delete {
+        /// Database ID.
+        #[arg(short, long)]
+        id: i32
+    },
+    /// Update database settings.
+    Update {
+        /// Database ID.
+        #[arg(short, long)]
+        id: i32,
+
+        /// New database name.
+        #[arg(short, long)]
+        name: Option<String>
+    },
+    /// Restart a database by ID.
+    Restart {
+        /// Database ID.
+        #[arg(short, long)]
+        id: i32
+    },
+    /// List backups for a database.
+    BackupList {
+        /// Database ID.
+        #[arg(short, long)]
+        id: i32
+    },
+    /// Create a backup for a database.
+    BackupCreate {
+        /// Database ID.
+        #[arg(short, long)]
+        id: i32
+    },
+    /// List users for a database.
+    UserList {
+        /// Database ID.
+        #[arg(short, long)]
+        id: i32
+    },
+    /// Create a user for a database.
+    UserCreate {
+        /// Database ID.
+        #[arg(short, long)]
+        db_id: i32,
+
+        /// Database user login name.
+        #[arg(short, long)]
+        login: String,
+
+        /// Database user password.
+        #[arg(short, long)]
+        password: String
+    },
+    /// Delete a user from a database.
+    UserDelete {
+        /// Database ID.
+        #[arg(short, long)]
+        db_id: i32,
+
+        /// Database user login name.
+        #[arg(short, long)]
+        user_name: String
+    },
+    /// List available database presets.
+    PresetList
 }
 
 /// Configuration subcommands.
