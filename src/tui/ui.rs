@@ -15,7 +15,8 @@ use crate::tui::{
     app::App,
     themes::Palette,
     widgets::{
-        Widget, account::AccountWidget, help::HelpWidget, project_manager::ProjectManagerWidget
+        Widget, account::AccountWidget, help::HelpWidget, project_manager::ProjectManagerWidget,
+        resource_tabs::ResourceTabsWidget
     }
 };
 
@@ -24,10 +25,10 @@ use crate::tui::{
 ///
 /// # Overview
 ///
-/// Composes the layout into four sections: header (Account widget), tabs
-/// (`ProjectManager` widget), content (`ResourceList` and `Details` side by
-/// side), and status bar. When help is requested, the Help widget is rendered
-/// as an overlay covering the entire frame.
+/// Composes the layout into five sections: header (Account widget), resource
+/// tabs, project tabs, content (`ResourceList` and `Details` side by side),
+/// and status bar. When help is requested, the Help widget is rendered as an
+/// overlay covering the entire frame.
 ///
 /// # Arguments
 ///
@@ -40,21 +41,25 @@ pub fn draw(frame: &mut Frame, app: &App) {
     let main_chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(3), // Header (Account widget)
-            Constraint::Length(3), // Tabs (ProjectManager widget)
-            Constraint::Min(10),   // Content
-            Constraint::Length(3)  // Status bar
+            Constraint::Length(3),    // Header (Account widget)
+            Constraint::Length(2),    // Resource tabs
+            Constraint::Length(2),    // Project tabs
+            Constraint::Min(10),      // Content
+            Constraint::Length(3)     // Status bar
         ])
         .split(size);
 
     let account_widget = AccountWidget::new(true);
     account_widget.render(frame, main_chunks[0], app);
 
-    let pm_widget = ProjectManagerWidget::new(true);
-    pm_widget.render(frame, main_chunks[1], app);
+    let rt_widget = ResourceTabsWidget::new(true);
+    rt_widget.render(frame, main_chunks[1], app);
 
-    render_content(frame, main_chunks[2], app, &palette);
-    render_status_bar(frame, main_chunks[3], app, &palette);
+    let pm_widget = ProjectManagerWidget::new(true);
+    pm_widget.render(frame, main_chunks[2], app);
+
+    render_content(frame, main_chunks[3], app, &palette);
+    render_status_bar(frame, main_chunks[4], app, &palette);
 
     if app.show_help {
         let help_widget = HelpWidget::new();
@@ -99,7 +104,7 @@ fn render_content(frame: &mut Frame, area: Rect, app: &App, _palette: &Palette) 
 /// * `app` - The application state.
 /// * `palette` - The theme color palette.
 fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
-    let left = "k/j up/down  h/l tabs  w widgets  t theme  Tab cycle  g first  $ last  r refresh  ? help  q quit";
+    let left = "k/j up/down  h/l tabs  w widgets  t theme  Tab cycle  g first  $ last  r refresh  ? help  Q quit";
     let right = match (&app.error_message, &app.status_message) {
         (Some(err), _) => err.clone(),
         (_, Some(msg)) => msg.clone(),

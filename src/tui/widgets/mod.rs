@@ -266,3 +266,4 @@ pub mod resource_list;
 pub mod spinner;
 pub mod stats;
 pub mod token_info;
+pub mod resource_tabs;
