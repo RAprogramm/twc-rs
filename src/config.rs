@@ -28,6 +28,7 @@ pub struct AppConfig {
     pub token: Option<String>,
 
     /// TUI color theme.
+    #[cfg(feature = "tui")]
     #[serde(default)]
     pub theme: crate::tui::themes::Theme,
 
@@ -52,6 +53,7 @@ impl Default for AppConfig {
     fn default() -> Self {
         Self {
             token:            None,
+            #[cfg(feature = "tui")]
             theme:            crate::tui::themes::Theme::default(),
             output:           OutputPreference::Table,
             default_region:   None,
