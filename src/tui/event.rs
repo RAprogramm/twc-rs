@@ -95,12 +95,11 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
         _ => {}
     }
 
-    if matches!(key.code, KeyCode::Enter)
-        && app.focus == Focus::ResourceList
-        && app.selected_server().is_some()
-    {
+    if matches!(key.code, KeyCode::Enter) && app.focus == Focus::ResourceList {
         app.open_action_menu();
-        return true;
+        if app.action_menu_open() {
+            return true;
+        }
     }
 
     match app.nav_level {

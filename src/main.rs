@@ -724,34 +724,69 @@ async fn run_dashboard(
 }
 
 #[cfg(feature = "tui")]
+#[allow(deprecated)]
 async fn perform_action(
     config: &timeweb_rs::apis::configuration::Configuration,
     app: &mut tui::app::App,
     pending: tui::app::PendingAction
 ) {
-    use tui::app::ServerAction;
+    use timeweb_rs::apis::{
+        balancers_api, container_registry_api, databases_api, kubernetes_api, s3_api,
+        servers_api
+    };
+    use tui::app::{ActionKind, ResourceTab};
 
-    use timeweb_rs::apis::servers_api;
-
-    let id = pending.server_id;
-    let result = match pending.action {
-        ServerAction::Start => {
+    let id = pending.resource_id;
+    let result = match (pending.tab, pending.kind) {
+        (ResourceTab::Servers, ActionKind::Start) => {
             servers_api::start_server(config, id).await.map_err(|e| e.to_string())
         }
-        ServerAction::Shutdown => {
+        (ResourceTab::Servers, ActionKind::Shutdown) => {
             servers_api::shutdown_server(config, id).await.map_err(|e| e.to_string())
         }
-        ServerAction::Reboot => {
+        (ResourceTab::Servers, ActionKind::Reboot) => {
             servers_api::reboot_server(config, id).await.map_err(|e| e.to_string())
         }
-        ServerAction::Clone => servers_api::clone_server(config, id)
+        (ResourceTab::Servers, ActionKind::Clone) => servers_api::clone_server(config, id)
             .await
             .map(|_| ())
             .map_err(|e| e.to_string()),
-        ServerAction::Delete => servers_api::delete_server(config, id, None, None)
-            .await
-            .map(|_| ())
-            .map_err(|e| e.to_string())
+        (ResourceTab::Servers, ActionKind::Delete) => {
+            servers_api::delete_server(config, id, None, None)
+                .await
+                .map(|_| ())
+                .map_err(|e| e.to_string())
+        }
+        (ResourceTab::Databases, ActionKind::Delete) => {
+            databases_api::delete_database(config, id, None, None)
+                .await
+                .map(|_| ())
+                .map_err(|e| e.to_string())
+        }
+        (ResourceTab::S3, ActionKind::Delete) => {
+            s3_api::delete_storage(config, id, None, None)
+                .await
+                .map(|_| ())
+                .map_err(|e| e.to_string())
+        }
+        (ResourceTab::Kubernetes, ActionKind::Delete) => {
+            kubernetes_api::delete_cluster(config, id, None, None)
+                .await
+                .map(|_| ())
+                .map_err(|e| e.to_string())
+        }
+        (ResourceTab::Balancers, ActionKind::Delete) => {
+            balancers_api::delete_balancer(config, id, None, None)
+                .await
+                .map(|_| ())
+                .map_err(|e| e.to_string())
+        }
+        (ResourceTab::Registry, ActionKind::Delete) => {
+            container_registry_api::delete_registry(config, id)
+                .await
+                .map_err(|e| e.to_string())
+        }
+        _ => Err("action not supported for this resource".to_string())
     };
 
     match result {
@@ -759,16 +794,16 @@ async fn perform_action(
             app.error_message = None;
             app.status_message = Some(format!(
                 "{} '{}' (id {}) — ok",
-                pending.action.verb(),
-                pending.server_name,
-                pending.server_id
+                pending.kind.label(),
+                pending.resource_name,
+                pending.resource_id
             ));
         }
         Err(e) => {
             app.error_message = Some(format!(
                 "{} '{}' failed: {e}",
-                pending.action.verb(),
-                pending.server_name
+                pending.kind.label(),
+                pending.resource_name
             ));
         }
     }

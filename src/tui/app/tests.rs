@@ -441,9 +441,9 @@ fn open_action_menu_on_servers_tab() {
     app.selected = 0;
     app.open_action_menu();
     let menu = app.action_menu().expect("menu should open");
-    assert_eq!(menu.server_id, 7);
-    assert_eq!(menu.server_name, "web");
-    assert_eq!(menu.actions, ServerAction::ALL.to_vec());
+    assert_eq!(menu.resource_id, 7);
+    assert_eq!(menu.resource_name, "web");
+    assert_eq!(menu.actions, ResourceTab::Servers.actions().to_vec());
     assert_eq!(menu.selected, 0);
 }
 
@@ -462,7 +462,7 @@ fn menu_navigation_wraps() {
     app.servers = vec![make_server(7, "web", "On")];
     app.open_action_menu();
     app.menu_previous();
-    assert_eq!(app.action_menu().unwrap().selected, ServerAction::ALL.len() - 1);
+    assert_eq!(app.action_menu().unwrap().selected, ResourceTab::Servers.actions().len() - 1);
     app.menu_next();
     assert_eq!(app.action_menu().unwrap().selected, 0);
 }
@@ -476,8 +476,8 @@ fn menu_select_non_destructive_dispatches_directly() {
     assert!(!app.action_menu_open());
     assert!(!app.awaiting_confirm());
     let dispatched = app.take_dispatch().expect("non-destructive dispatches");
-    assert_eq!(dispatched.action, ServerAction::Start);
-    assert_eq!(dispatched.server_id, 7);
+    assert_eq!(dispatched.kind, ActionKind::Start);
+    assert_eq!(dispatched.resource_id, 7);
 }
 
 #[test]
@@ -485,14 +485,14 @@ fn menu_select_destructive_requires_confirm() {
     let mut app = App::new(5);
     app.servers = vec![make_server(7, "web", "On")];
     app.open_action_menu();
-    for _ in 0..ServerAction::ALL.len() - 1 {
+    for _ in 0..ResourceTab::Servers.actions().len() - 1 {
         app.menu_next();
     }
     let current = {
         let menu = app.action_menu().unwrap();
         menu.actions[menu.selected]
     };
-    assert_eq!(current, ServerAction::Delete);
+    assert_eq!(current, ActionKind::Delete);
     app.menu_select();
     assert!(!app.action_menu_open());
     assert!(app.awaiting_confirm());
@@ -500,7 +500,7 @@ fn menu_select_destructive_requires_confirm() {
 
     app.confirm_action();
     let dispatched = app.take_dispatch().expect("confirm dispatches");
-    assert_eq!(dispatched.action, ServerAction::Delete);
+    assert_eq!(dispatched.kind, ActionKind::Delete);
 }
 
 #[test]
@@ -517,7 +517,7 @@ fn enter_opens_menu_then_runs_action() {
     crate::tui::event::handle_event(&mut app, key(KeyCode::Enter));
     assert!(!app.action_menu_open());
     let dispatched = app.take_dispatch().expect("action dispatched");
-    assert_eq!(dispatched.action, ServerAction::Shutdown);
+    assert_eq!(dispatched.kind, ActionKind::Shutdown);
 }
 
 #[test]
@@ -528,4 +528,43 @@ fn menu_esc_closes_without_dispatch() {
     crate::tui::event::handle_event(&mut app, key(KeyCode::Esc));
     assert!(!app.action_menu_open());
     assert!(app.take_dispatch().is_none());
+}
+
+#[test]
+fn per_tab_action_sets() {
+    assert_eq!(ResourceTab::Servers.actions().len(), 5);
+    assert_eq!(ResourceTab::Databases.actions(), &[ActionKind::Delete]);
+    assert_eq!(ResourceTab::Kubernetes.actions(), &[ActionKind::Delete]);
+    assert!(ResourceTab::Projects.actions().is_empty());
+    assert!(ResourceTab::Finances.actions().is_empty());
+}
+
+#[test]
+fn action_menu_works_for_databases() {
+    let mut app = App::new(5);
+    app.active_tab = ResourceTab::Databases;
+    app.databases = vec![make_database(42, "pg-prod", "postgres")];
+    app.open_action_menu();
+    let menu = app.action_menu().expect("menu opens for databases");
+    assert_eq!(menu.tab, ResourceTab::Databases);
+    assert_eq!(menu.resource_id, 42);
+    assert_eq!(menu.resource_name, "pg-prod");
+    assert_eq!(menu.actions, vec![ActionKind::Delete]);
+
+    app.menu_select();
+    assert!(app.awaiting_confirm());
+    app.confirm_action();
+    let dispatched = app.take_dispatch().expect("delete dispatched");
+    assert_eq!(dispatched.tab, ResourceTab::Databases);
+    assert_eq!(dispatched.kind, ActionKind::Delete);
+    assert_eq!(dispatched.resource_id, 42);
+}
+
+#[test]
+fn no_menu_on_action_less_tab() {
+    let mut app = App::new(5);
+    app.active_tab = ResourceTab::Projects;
+    app.projects = vec![make_project(1, "proj")];
+    app.open_action_menu();
+    assert!(!app.action_menu_open());
 }

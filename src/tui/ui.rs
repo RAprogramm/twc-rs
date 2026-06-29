@@ -12,7 +12,7 @@ use ratatui::{
 };
 
 use crate::tui::{
-    app::{App, Focus, NavLevel},
+    app::{App, Focus, NavLevel, ResourceTab},
     themes::Palette,
     widgets::{
         Widget, account::AccountWidget, help::HelpWidget, resource_tabs::ResourceTabsWidget
@@ -95,7 +95,7 @@ fn render_action_menu(frame: &mut Frame, area: Rect, app: &App, palette: &Palett
             }
             let mut spans = vec![
                 Span::styled(marker, Style::default().fg(palette.accent)),
-                Span::styled(format!("{:<10}", action.verb()), style),
+                Span::styled(format!("{:<10}", action.label()), style),
             ];
             if action.is_destructive() {
                 spans.push(Span::styled(
@@ -107,9 +107,13 @@ fn render_action_menu(frame: &mut Frame, area: Rect, app: &App, palette: &Palett
         })
         .collect();
 
+    let kind = ResourceTab::names()
+        .get(menu.tab.index())
+        .copied()
+        .unwrap_or("resource");
     let title = format!(
-        " Actions: server '{}' (id {}) ",
-        menu.server_name, menu.server_id
+        " Actions: {kind} '{}' (id {}) ",
+        menu.resource_name, menu.resource_id
     );
     let width = u16::try_from(title.len() + 4)
         .unwrap_or(40)
@@ -150,7 +154,7 @@ fn render_confirm(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
         return;
     };
 
-    let accent = if pending.action.is_destructive() {
+    let accent = if pending.kind.is_destructive() {
         palette.error
     } else {
         palette.warning
@@ -159,10 +163,10 @@ fn render_confirm(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
     let mut lines = vec![
         Line::from(Span::styled(
             format!(
-                " {} server '{}' (id {})?",
-                pending.action.verb(),
-                pending.server_name,
-                pending.server_id
+                " {} '{}' (id {})?",
+                pending.kind.label(),
+                pending.resource_name,
+                pending.resource_id
             ),
             Style::default()
                 .fg(palette.fg)
@@ -170,7 +174,7 @@ fn render_confirm(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
         )),
         Line::from(""),
     ];
-    if pending.action.is_destructive() {
+    if pending.kind.is_destructive() {
         lines.push(Line::from(Span::styled(
             " This action cannot be undone.",
             Style::default().fg(palette.error)

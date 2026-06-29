@@ -225,34 +225,29 @@ pub enum NavLevel {
     Inner
 }
 
-/// An action that can be triggered against a server from the dashboard.
+/// A kind of action that can be performed on a resource.
+///
+/// Each [`ResourceTab`] declares which kinds apply to it via
+/// [`ResourceTab::actions`]; the dashboard loop maps a chosen
+/// `(tab, kind)` pair to the matching Timeweb API call.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ServerAction {
-    /// Power the server on.
+pub enum ActionKind {
+    /// Power the resource on.
     Start,
-    /// Gracefully power the server off.
+    /// Gracefully power the resource off.
     Shutdown,
-    /// Reboot the server.
+    /// Reboot the resource.
     Reboot,
-    /// Create a clone of the server.
+    /// Create a clone of the resource.
     Clone,
-    /// Permanently delete the server.
+    /// Permanently delete the resource.
     Delete
 }
 
-impl ServerAction {
-    /// The actions offered for a server, in menu order.
-    pub const ALL: [Self; 5] = [
-        Self::Start,
-        Self::Shutdown,
-        Self::Reboot,
-        Self::Clone,
-        Self::Delete
-    ];
-
+impl ActionKind {
     /// Returns the label shown in the action menu and confirmation prompt.
     #[must_use]
-    pub const fn verb(self) -> &'static str {
+    pub const fn label(self) -> &'static str {
         match self {
             Self::Start => "Start",
             Self::Shutdown => "Shutdown",
@@ -271,28 +266,32 @@ impl ServerAction {
     }
 }
 
-/// A server action awaiting confirmation, or ready to be dispatched.
+/// A resource action awaiting confirmation, or ready to be dispatched.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PendingAction {
+    /// The resource category the action targets.
+    pub tab:           ResourceTab,
     /// The action to perform.
-    pub action:      ServerAction,
-    /// Target server id.
-    pub server_id:   i32,
-    /// Target server name, for display.
-    pub server_name: String
+    pub kind:          ActionKind,
+    /// Target resource id.
+    pub resource_id:   i32,
+    /// Target resource name, for display.
+    pub resource_name: String
 }
 
 /// A context action menu opened over the selected resource.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ActionMenu {
-    /// Target server id.
-    pub server_id:   i32,
-    /// Target server name, for display.
-    pub server_name: String,
+    /// The resource category the menu targets.
+    pub tab:           ResourceTab,
+    /// Target resource id.
+    pub resource_id:   i32,
+    /// Target resource name, for display.
+    pub resource_name: String,
     /// Available actions, in display order.
-    pub actions:     Vec<ServerAction>,
+    pub actions:       Vec<ActionKind>,
     /// Index of the highlighted action.
-    pub selected:    usize
+    pub selected:      usize
 }
 
 /// Resource category in the left panel.
@@ -430,6 +429,25 @@ impl ResourceTab {
             Self::KnowledgeBases => 17,
             Self::SshKeys => 18,
             Self::Finances => 19
+        }
+    }
+
+    /// Returns the context actions available for this resource type,
+    /// in menu display order.
+    ///
+    /// Tabs without wired actions return an empty slice, so the action
+    /// menu does not open for them.
+    #[must_use]
+    pub const fn actions(self) -> &'static [ActionKind] {
+        use ActionKind::{Clone, Delete, Reboot, Shutdown, Start};
+        match self {
+            Self::Servers => &[Start, Shutdown, Reboot, Clone, Delete],
+            Self::Databases
+            | Self::S3
+            | Self::Kubernetes
+            | Self::Balancers
+            | Self::Registry => &[Delete],
+            _ => &[]
         }
     }
 }
@@ -855,26 +873,48 @@ impl App {
         self.net_out_history.push_back(value);
     }
 
-    /// Returns the selected server, but only on the Servers tab.
+    /// Returns the `(id, name)` of the selected item on the active tab,
+    /// for tabs whose resources are addressable by a numeric id.
     #[must_use]
-    pub fn selected_server(&self) -> Option<&ServerSummary> {
-        if matches!(self.active_tab, ResourceTab::Servers) {
-            self.servers.get(self.selected)
-        } else {
-            None
+    pub fn selected_resource(&self) -> Option<(i32, String)> {
+        match self.active_tab {
+            ResourceTab::Servers => {
+                self.servers.get(self.selected).map(|s| (s.id, s.name.clone()))
+            }
+            ResourceTab::Databases => {
+                self.databases.get(self.selected).map(|d| (d.id, d.name.clone()))
+            }
+            ResourceTab::S3 => {
+                self.s3_storages.get(self.selected).map(|s| (s.id, s.name.clone()))
+            }
+            ResourceTab::Kubernetes => {
+                self.k8s_clusters.get(self.selected).map(|c| (c.id, c.name.clone()))
+            }
+            ResourceTab::Balancers => {
+                self.balancers.get(self.selected).map(|b| (b.id, b.name.clone()))
+            }
+            ResourceTab::Registry => {
+                self.registries.get(self.selected).map(|r| (r.id, r.name.clone()))
+            }
+            _ => None
         }
     }
 
-    /// Opens the context action menu for the selected server.
+    /// Opens the context action menu for the selected resource.
     ///
-    /// No-op unless the Servers tab is active and a server is selected.
+    /// No-op when the active tab declares no actions or nothing is selected.
     pub fn open_action_menu(&mut self) {
-        if let Some(server) = self.selected_server() {
+        let actions = self.active_tab.actions();
+        if actions.is_empty() {
+            return;
+        }
+        if let Some((id, name)) = self.selected_resource() {
             self.action_menu = Some(ActionMenu {
-                server_id:   server.id,
-                server_name: server.name.clone(),
-                actions:     ServerAction::ALL.to_vec(),
-                selected:    0
+                tab:           self.active_tab,
+                resource_id:   id,
+                resource_name: name,
+                actions:       actions.to_vec(),
+                selected:      0
             });
         }
     }
@@ -925,9 +965,10 @@ impl App {
             return;
         };
         let pending = PendingAction {
-            action,
-            server_id: menu.server_id,
-            server_name: menu.server_name
+            tab: menu.tab,
+            kind: action,
+            resource_id: menu.resource_id,
+            resource_name: menu.resource_name
         };
         if action.is_destructive() {
             self.confirm = Some(pending);
