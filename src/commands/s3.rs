@@ -5,9 +5,7 @@ use std::fmt;
 
 use tabled::{Table, Tabled};
 use timeweb_rs::{
-    apis::s3_api,
-    models as s3_models,
-    models::create_storage_request::Type as StorageType
+    apis::s3_api, models as s3_models, models::create_storage_request::Type as StorageType
 };
 
 use crate::{error::TwcError, output::OutputFormat};
@@ -16,8 +14,6 @@ use crate::{error::TwcError, output::OutputFormat};
 fn fmt_id(v: f64) -> String {
     format!("{v:.0}")
 }
-
-
 
 /// Compact row for the S3 storage list table.
 #[derive(Tabled)]
@@ -403,7 +399,8 @@ pub async fn user_update(
         config,
         user_id,
         s3_models::UpdateStorageUserRequest::new(secret_key)
-    ).await?;
+    )
+    .await?;
     let user = &resp.user;
 
     match format {

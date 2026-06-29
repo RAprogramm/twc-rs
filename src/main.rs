@@ -14,8 +14,8 @@ mod tui;
 
 use clap::Parser;
 use cli::{
-    AuthCommands, Cli, Commands, ConfigCommands, DatabaseCommands, ProjectCommands, S3Commands,
-    ServerCommands, SshCommands
+    AuthCommands, Cli, Commands, ConfigCommands, DatabaseCommands, KubernetesCommands,
+    ProjectCommands, S3Commands, ServerCommands, SshCommands
 };
 use config::AppConfig;
 use error::TwcError;
@@ -343,6 +343,67 @@ async fn run() -> Result<(), TwcError> {
                     subdomain
                 } => commands::s3::subdomain_delete(&config, id, &subdomain).await,
                 S3Commands::PresetList => commands::s3::preset_list(&config, format).await
+            }
+        }
+        Commands::Kubernetes(cmd) => {
+            let token = ensure_token(cli.token.as_deref())?;
+            let config = authenticated(token);
+            match cmd {
+                KubernetesCommands::List {
+                    limit,
+                    offset
+                } => commands::kubernetes::list(&config, limit, offset, format).await,
+                KubernetesCommands::Info {
+                    id
+                } => commands::kubernetes::info(&config, id, format).await,
+                KubernetesCommands::Create {
+                    name,
+                    type_
+                } => commands::kubernetes::create(&config, &name, &type_, format).await,
+                KubernetesCommands::Delete {
+                    id
+                } => commands::kubernetes::delete(&config, id).await,
+                KubernetesCommands::Update {
+                    id,
+                    name
+                } => commands::kubernetes::update(&config, id, name.as_deref(), format).await,
+                KubernetesCommands::NodegroupList {
+                    id
+                } => commands::kubernetes::nodegroup_list(&config, id, format).await,
+                KubernetesCommands::NodegroupCreate {
+                    id,
+                    name
+                } => commands::kubernetes::nodegroup_create(&config, id, &name, format).await,
+                KubernetesCommands::NodegroupDelete {
+                    id,
+                    group_id
+                } => commands::kubernetes::nodegroup_delete(&config, id, group_id).await,
+                KubernetesCommands::NodeList {
+                    id
+                } => commands::kubernetes::node_list(&config, id, format).await,
+                KubernetesCommands::AddonList {
+                    id
+                } => commands::kubernetes::addon_list(&config, id, format).await,
+                KubernetesCommands::AddonInstall {
+                    id,
+                    addon_name
+                } => commands::kubernetes::addon_install(&config, id, &addon_name).await,
+                KubernetesCommands::AddonDelete {
+                    id,
+                    addon_name
+                } => commands::kubernetes::addon_delete(&config, id, &addon_name).await,
+                KubernetesCommands::PresetList => {
+                    commands::kubernetes::preset_list(&config, format).await
+                }
+                KubernetesCommands::VersionList => {
+                    commands::kubernetes::version_list(&config, format).await
+                }
+                KubernetesCommands::Kubeconfig {
+                    id
+                } => commands::kubernetes::kubeconfig(&config, id).await,
+                KubernetesCommands::Resources {
+                    id
+                } => commands::kubernetes::resources(&config, id, format).await
             }
         }
         #[cfg(feature = "auth")]

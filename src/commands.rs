@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 pub mod databases;
+pub mod kubernetes;
 pub mod projects;
 pub mod s3;
 pub mod servers;
