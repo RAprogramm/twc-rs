@@ -5,126 +5,101 @@
 
 use ratatui::{
     Frame,
-    layout::{Constraint, Direction, Layout, Rect},
-    style::{Modifier, Style},
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
+    style::Style,
     text::{Line, Span},
-    widgets::{Block, Borders, Paragraph, Tabs}
+    widgets::{Block, Borders, Paragraph}
 };
 
-use super::{app::App, widgets::Widget};
+use crate::tui::{
+    app::App,
+    themes::Palette,
+    widgets::{
+        Widget, account::AccountWidget, help::HelpWidget, project_manager::ProjectManagerWidget
+    }
+};
 
-/// Renders the full dashboard into the given frame area.
+/// Renders the full dashboard into the given frame area using the widget
+/// system.
+///
+/// # Overview
+///
+/// Composes the layout into four sections: header (Account widget), tabs
+/// (`ProjectManager` widget), content (`ResourceList` and `Details` side by
+/// side), and status bar. When help is requested, the Help widget is rendered
+/// as an overlay covering the entire frame.
+///
+/// # Arguments
+///
+/// * `frame` - The render frame.
+/// * `app` - The application state.
 pub fn draw(frame: &mut Frame, app: &App) {
     let size = frame.area();
-    let palette = get_palette(app);
+    let palette = app.theme.palette();
 
     let main_chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(3), // Account header
-            Constraint::Length(3), // Resource tabs
+            Constraint::Length(3), // Header (Account widget)
+            Constraint::Length(3), // Tabs (ProjectManager widget)
             Constraint::Min(10),   // Content
             Constraint::Length(3)  // Status bar
         ])
         .split(size);
 
-    render_account_header(frame, main_chunks[0], app, &palette);
-    render_tabs(frame, main_chunks[1], app, &palette);
+    let account_widget = AccountWidget::new(true);
+    account_widget.render(frame, main_chunks[0], app);
+
+    let pm_widget = ProjectManagerWidget::new(true);
+    pm_widget.render(frame, main_chunks[1], app);
+
     render_content(frame, main_chunks[2], app, &palette);
     render_status_bar(frame, main_chunks[3], app, &palette);
 
     if app.show_help {
-        let help_widget = super::widgets::help::HelpWidget::new();
+        let help_widget = HelpWidget::new();
         help_widget.render(frame, size, app);
     }
 }
 
-fn get_palette(app: &App) -> super::themes::Palette {
-    app.theme.palette()
-}
-
-fn render_account_header(
-    frame: &mut Frame,
-    area: Rect,
-    app: &App,
-    palette: &super::themes::Palette
-) {
-    let account_id = app.account.account_id;
-    let balance = &app.account.balance;
-    let status = &app.account.status;
-
-    let line = Line::from(vec![
-        Span::styled(
-            "twc-rs",
-            Style::default()
-                .fg(palette.accent)
-                .add_modifier(Modifier::BOLD)
-        ),
-        Span::raw("  "),
-        Span::styled(
-            format!("Account: {account_id:.0}"),
-            Style::default().fg(palette.header)
-        ),
-        Span::raw("  "),
-        Span::styled(
-            format!("Balance: {balance}"),
-            Style::default().fg(palette.success)
-        ),
-        Span::raw("  "),
-        Span::styled(
-            format!("Status: {status}"),
-            Style::default().fg(palette.warning)
-        ),
-    ]);
-
-    let paragraph = Paragraph::new(line).block(
-        Block::default()
-            .borders(Borders::ALL)
-            .border_style(Style::default().fg(palette.border))
-    );
-    frame.render_widget(paragraph, area);
-}
-
-fn render_tabs(frame: &mut Frame, area: Rect, app: &App, palette: &super::themes::Palette) {
-    let titles: Vec<Line<'static>> = super::app::ResourceTab::names()
-        .iter()
-        .map(|t| Line::from(Span::styled(*t, Style::default())))
-        .collect();
-
-    let tabs = Tabs::new(titles)
-        .block(
-            Block::default()
-                .title(" Resources ")
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(palette.border))
-        )
-        .select(app.active_tab.index())
-        .style(Style::default())
-        .highlight_style(
-            Style::default()
-                .fg(palette.tab_active)
-                .add_modifier(Modifier::BOLD)
-        );
-
-    frame.render_widget(tabs, area);
-}
-
-fn render_content(frame: &mut Frame, area: Rect, app: &App, _palette: &super::themes::Palette) {
+/// Renders the content area with resource list and details side by side.
+///
+/// # Arguments
+///
+/// * `frame` - The render frame.
+/// * `area` - The content area rectangle.
+/// * `app` - The application state.
+/// * `_palette` - The theme palette (reserved for future use).
+fn render_content(frame: &mut Frame, area: Rect, app: &App, _palette: &Palette) {
     if app.is_loading {
-        let spinner = super::widgets::spinner::current_frame();
+        let spinner = crate::tui::widgets::spinner::current_frame();
         let text = Line::from(vec![spinner, Span::raw(" Loading resources...")]);
         let paragraph = Paragraph::new(text)
             .block(Block::default().borders(Borders::ALL).title(" Loading "))
-            .alignment(ratatui::layout::Alignment::Center);
+            .alignment(Alignment::Center);
         frame.render_widget(paragraph, area);
         return;
     }
 
-    app.widgets.render_all(frame, area, app);
+    let chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .split(area);
+
+    app.widgets
+        .render_side_by_side(frame, chunks[0], chunks[1], app);
 }
 
-fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, palette: &super::themes::Palette) {
-    let left = "k/j ↑↓  h/l ←→  Tab tabs  g first  $ last  r refresh  ? help  q quit";
+/// Renders the status bar with keyboard shortcuts and status messages.
+///
+/// # Arguments
+///
+/// * `frame` - The render frame.
+/// * `area` - The status bar area rectangle.
+/// * `app` - The application state.
+/// * `palette` - The theme color palette.
+fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
+    let left = "k/j up/down  h/l tabs  w widgets  t theme  Tab cycle  g first  $ last  r refresh  ? help  q quit";
     let right = match (&app.error_message, &app.status_message) {
         (Some(err), _) => err.clone(),
         (_, Some(msg)) => msg.clone(),

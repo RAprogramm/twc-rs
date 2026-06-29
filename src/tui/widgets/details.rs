@@ -14,6 +14,12 @@ use ratatui::{
 use crate::tui::app::{App, ResourceTab};
 
 /// Renders the details panel for the selected resource.
+///
+/// # Arguments
+///
+/// * `frame` - The render frame.
+/// * `area` - The area to render in.
+/// * `app` - The application state.
 pub fn render(frame: &mut Frame, area: Rect, app: &App) {
     let text = match app.active_tab {
         ResourceTab::Servers => render_server_details(app),
@@ -199,4 +205,44 @@ fn render_project_details(app: &App) -> Vec<Line<'static>> {
             Style::default().fg(Color::White)
         )),
     ]
+}
+
+/// Widget wrapper for the details panel.
+pub struct DetailsWidget {
+    enabled: bool
+}
+
+impl DetailsWidget {
+    /// Creates a new details widget with enabled state.
+    ///
+    /// # Arguments
+    ///
+    /// * `enabled` - Whether the widget is initially visible.
+    pub const fn new(enabled: bool) -> Self {
+        Self {
+            enabled
+        }
+    }
+}
+
+impl crate::tui::widgets::Widget for DetailsWidget {
+    fn id(&self) -> &'static str {
+        "details"
+    }
+
+    fn name(&self) -> &'static str {
+        "Details"
+    }
+
+    fn enabled(&self) -> bool {
+        self.enabled
+    }
+
+    fn toggle(&mut self) {
+        self.enabled = !self.enabled;
+    }
+
+    fn render(&self, frame: &mut Frame, area: Rect, app: &App) {
+        render(frame, area, app);
+    }
 }

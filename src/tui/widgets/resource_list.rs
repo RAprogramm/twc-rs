@@ -14,6 +14,12 @@ use ratatui::{
 use crate::tui::app::{App, ResourceTab};
 
 /// Renders the resource list panel.
+///
+/// # Arguments
+///
+/// * `frame` - The render frame.
+/// * `area` - The area to render in.
+/// * `app` - The application state.
 pub fn render(frame: &mut Frame, area: Rect, app: &App) {
     let items: Vec<ListItem> = match app.active_tab {
         ResourceTab::Servers => app
@@ -109,4 +115,44 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
     let mut state = ListState::default();
     state.select(Some(app.selected));
     frame.render_stateful_widget(list, area, &mut state);
+}
+
+/// Widget wrapper for the resource list panel.
+pub struct ResourceListWidget {
+    enabled: bool
+}
+
+impl ResourceListWidget {
+    /// Creates a new resource list widget with enabled state.
+    ///
+    /// # Arguments
+    ///
+    /// * `enabled` - Whether the widget is initially visible.
+    pub const fn new(enabled: bool) -> Self {
+        Self {
+            enabled
+        }
+    }
+}
+
+impl crate::tui::widgets::Widget for ResourceListWidget {
+    fn id(&self) -> &'static str {
+        "resource_list"
+    }
+
+    fn name(&self) -> &'static str {
+        "Resource List"
+    }
+
+    fn enabled(&self) -> bool {
+        self.enabled
+    }
+
+    fn toggle(&mut self) {
+        self.enabled = !self.enabled;
+    }
+
+    fn render(&self, frame: &mut Frame, area: Rect, app: &App) {
+        render(frame, area, app);
+    }
 }

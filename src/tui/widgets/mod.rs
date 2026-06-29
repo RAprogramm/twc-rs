@@ -77,6 +77,8 @@ impl WidgetRegistry {
         };
         registry.register(Box::new(account::AccountWidget::new(true)));
         registry.register(Box::new(project_manager::ProjectManagerWidget::new(true)));
+        registry.register(Box::new(resource_list::ResourceListWidget::new(true)));
+        registry.register(Box::new(details::DetailsWidget::new(true)));
         registry.register(Box::new(stats::StatsWidget::new(true)));
         registry.register(Box::new(token_info::TokenInfoWidget::new(true)));
         registry.register(Box::new(help::HelpWidget::new()));
@@ -207,6 +209,35 @@ impl WidgetRegistry {
                 idx += 1;
             }
         }
+    }
+
+    /// Renders two widgets side by side within the given areas.
+    ///
+    /// # Arguments
+    ///
+    /// * `frame` - The render frame.
+    /// * `left_area` - The area for the left widget.
+    /// * `right_area` - The area for the right widget.
+    /// * `app` - The application state.
+    pub fn render_side_by_side(
+        &self,
+        frame: &mut Frame,
+        left_area: Rect,
+        right_area: Rect,
+        app: &App
+    ) {
+        let left_render = |frame: &mut Frame, area: Rect, app: &App| {
+            if let Some(w) = self.get("resource_list") {
+                w.render(frame, area, app);
+            }
+        };
+        let right_render = |frame: &mut Frame, area: Rect, app: &App| {
+            if let Some(w) = self.get("details") {
+                w.render(frame, area, app);
+            }
+        };
+        left_render(frame, left_area, app);
+        right_render(frame, right_area, app);
     }
 }
 
