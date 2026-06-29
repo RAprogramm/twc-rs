@@ -368,18 +368,60 @@ async fn refresh_all(
     config: &timeweb_rs::apis::configuration::Configuration,
     app: &mut tui::app::App
 ) {
-    use tui::app::*;
+    use tui::app::{
+        AccountInfo, AiAgentSummary, AppSummary, BalancerSummary, DatabaseSummary,
+        DedicatedServerSummary, DomainSummary, FirewallSummary, FloatingIpSummary, ImageSummary,
+        K8sSummary, KnowledgeBaseSummary, MailSummary, NetworkDriveSummary, ProjectSummary,
+        RegistrySummary, S3Summary, ServerSummary, VpcSummary
+    };
 
     let c = config.clone();
     let mut has_error = false;
 
-    let (account_res, servers_res, dbs_res, s3_res, k8s_res, projects_res) = tokio::join!(
+    let (
+        account_res,
+        servers_res,
+        dbs_res,
+        s3_res,
+        k8s_res,
+        projects_res,
+        balancers_res,
+        registries_res,
+        domains_res,
+        firewalls_res,
+        floating_ips_res,
+        images_res,
+        network_drives_res,
+        vpcs_res,
+        dedicated_servers_res,
+        mails_res,
+        apps_res,
+        ai_agents_res,
+        knowledge_bases_res,
+        ssh_keys_res,
+        finances_res
+    ) = tokio::join!(
         timeweb_rs::apis::account_api::get_account_status(&c),
         timeweb_rs::apis::servers_api::get_servers(&c, None, None),
         timeweb_rs::apis::databases_api::get_databases(&c, None, None),
         timeweb_rs::apis::s3_api::get_storages(&c),
         timeweb_rs::apis::kubernetes_api::get_clusters(&c, None, None),
-        timeweb_rs::apis::projects_api::get_projects(&c)
+        timeweb_rs::apis::projects_api::get_projects(&c),
+        timeweb_rs::apis::balancers_api::get_balancers(&c, None, None),
+        timeweb_rs::apis::container_registry_api::get_registries(&c),
+        timeweb_rs::apis::domains_api::get_domains(&c, None, None, None, None, None, None),
+        timeweb_rs::apis::firewall_api::get_groups(&c, None, None),
+        timeweb_rs::apis::floating_ip_api::get_floating_ips(&c),
+        timeweb_rs::apis::images_api::get_images(&c, None, None),
+        timeweb_rs::apis::network_drives_api::get_network_drives(&c),
+        timeweb_rs::apis::vpc_api::get_vpcs(&c),
+        timeweb_rs::apis::dedicated_servers_api::get_dedicated_servers(&c),
+        timeweb_rs::apis::mail_api::get_mailboxes(&c, None, None, None),
+        timeweb_rs::apis::apps_api::get_apps(&c),
+        timeweb_rs::apis::ai_agents_api::get_agents(&c),
+        timeweb_rs::apis::knowledge_bases_api::get_knowledgebases(&c),
+        timeweb_rs::apis::ssh_api::get_keys(&c),
+        timeweb_rs::apis::payments_api::get_finances(&c)
     );
 
     let mut account_id = 0.0;
@@ -391,8 +433,8 @@ async fn refresh_all(
         has_error = true;
         app.error_message = Some("Failed to load account".to_string());
     }
-    if let Ok(resp) = timeweb_rs::apis::payments_api::get_finances(&c).await {
-        let f = resp.finances;
+    if let Ok(ref resp) = finances_res {
+        let f = &resp.finances;
         balance = format!("{:.2} {}", f.balance, f.currency);
     } else {
         has_error = true;
@@ -489,6 +531,236 @@ async fn refresh_all(
         app.update_projects(summaries);
     } else if !has_error {
         app.status_message = Some("No projects available".to_string());
+    }
+
+    if let Ok(resp) = balancers_res {
+        let summaries: Vec<BalancerSummary> = resp
+            .balancers
+            .iter()
+            .map(|b| BalancerSummary {
+                id:       b.id as i32,
+                name:     b.name.clone(),
+                status:   format!("{:?}", b.status),
+                ip:       b.ips.first().cloned().unwrap_or_default(),
+                location: format!("{:?}", b.location)
+            })
+            .collect();
+        app.update_balancers(summaries);
+    } else if !has_error {
+        app.status_message = Some("No balancers available".to_string());
+    }
+
+    if let Ok(resp) = registries_res {
+        if let Some(registries) = resp.container_registry_list {
+            let summaries: Vec<RegistrySummary> = registries
+                .iter()
+                .map(|r| RegistrySummary {
+                    id:               r.id,
+                    name:             r.name.clone(),
+                    region:           String::new(),
+                    repository_count: 0
+                })
+                .collect();
+            app.update_registries(summaries);
+        } else if !has_error {
+            app.status_message = Some("No registries available".to_string());
+        }
+    } else {
+        has_error = true;
+        app.error_message = Some("Failed to load registries".to_string());
+    }
+
+    if let Ok(resp) = domains_res {
+        let summaries: Vec<DomainSummary> = resp
+            .domains
+            .iter()
+            .map(|d| DomainSummary {
+                id:           d.id as i32,
+                name:         d.fqdn.clone(),
+                status:       format!("{:?}", d.domain_status),
+                auto_prolong: d.is_autoprolong_enabled.unwrap_or(false)
+            })
+            .collect();
+        app.update_domains(summaries);
+    } else if !has_error {
+        app.status_message = Some("No domains available".to_string());
+    }
+
+    if let Ok(resp) = firewalls_res {
+        let summaries: Vec<FirewallSummary> = resp
+            .groups
+            .iter()
+            .map(|g| FirewallSummary {
+                id:             g.id.parse::<i32>().unwrap_or(0),
+                name:           g.name.clone(),
+                rule_count:     0,
+                resource_count: 0
+            })
+            .collect();
+        app.update_firewalls(summaries);
+    } else if !has_error {
+        app.status_message = Some("No firewalls available".to_string());
+    }
+
+    if let Ok(resp) = floating_ips_res {
+        let summaries: Vec<FloatingIpSummary> = resp
+            .ips
+            .iter()
+            .map(|ip| FloatingIpSummary {
+                id:          ip.id.parse::<i32>().unwrap_or(0),
+                ip:          ip.ip.clone().unwrap_or_default(),
+                status:      String::new(),
+                server_name: String::new()
+            })
+            .collect();
+        app.update_floating_ips(summaries);
+    } else if !has_error {
+        app.status_message = Some("No floating IPs available".to_string());
+    }
+
+    if let Ok(resp) = images_res {
+        let summaries: Vec<ImageSummary> = resp
+            .images
+            .iter()
+            .map(|img| ImageSummary {
+                id:      img.id.parse::<i32>().unwrap_or(0),
+                name:    img.name.clone(),
+                size_mb: img.size as i64,
+                status:  format!("{:?}", img.status)
+            })
+            .collect();
+        app.update_images(summaries);
+    } else if !has_error {
+        app.status_message = Some("No images available".to_string());
+    }
+
+    if let Ok(resp) = network_drives_res {
+        let summaries: Vec<NetworkDriveSummary> = resp
+            .network_drives
+            .iter()
+            .map(|nd| NetworkDriveSummary {
+                id:      nd.id.parse::<i32>().unwrap_or(0),
+                name:    nd.name.clone(),
+                size_gb: nd.size as i64,
+                status:  format!("{:?}", nd.status)
+            })
+            .collect();
+        app.update_network_drives(summaries);
+    } else if !has_error {
+        app.status_message = Some("No network drives available".to_string());
+    }
+
+    if let Ok(resp) = vpcs_res {
+        let summaries: Vec<VpcSummary> = resp
+            .vpcs
+            .iter()
+            .map(|v| VpcSummary {
+                id:           v.id.parse::<i32>().unwrap_or(0),
+                name:         v.name.clone(),
+                subnet_count: v.busy_address.len() as i32,
+                status:       String::new()
+            })
+            .collect();
+        app.update_vpcs(summaries);
+    } else if !has_error {
+        app.status_message = Some("No VPCs available".to_string());
+    }
+
+    if let Ok(resp) = dedicated_servers_res {
+        let summaries: Vec<DedicatedServerSummary> = resp
+            .dedicated_servers
+            .iter()
+            .map(|ds| DedicatedServerSummary {
+                id:      ds.id as i32,
+                name:    ds.name.clone(),
+                status:  format!("{:?}", ds.status),
+                cpu:     0,
+                ram_mb:  0,
+                disk_gb: 0
+            })
+            .collect();
+        app.update_dedicated_servers(summaries);
+    } else if !has_error {
+        app.status_message = Some("No dedicated servers available".to_string());
+    }
+
+    if let Ok(resp) = mails_res {
+        let summaries: Vec<MailSummary> = resp
+            .mailboxes
+            .iter()
+            .map(|m| MailSummary {
+                id:            0,
+                name:          m.fqdn.clone(),
+                mailbox_count: 1,
+                status:        String::new()
+            })
+            .collect();
+        app.update_mails(summaries);
+    } else if !has_error {
+        app.status_message = Some("No mailboxes available".to_string());
+    }
+
+    if let Ok(resp) = apps_res {
+        let summaries: Vec<AppSummary> = resp
+            .apps
+            .iter()
+            .map(|a| AppSummary {
+                id:           a.id as i32,
+                name:         a.name.clone(),
+                status:       format!("{:?}", a.status),
+                deploy_count: 0
+            })
+            .collect();
+        app.update_apps(summaries);
+    } else if !has_error {
+        app.status_message = Some("No apps available".to_string());
+    }
+
+    if let Ok(resp) = ai_agents_res {
+        let summaries: Vec<AiAgentSummary> = resp
+            .agents
+            .iter()
+            .map(|a| AiAgentSummary {
+                id:     a.id as i32,
+                name:   a.name.clone(),
+                status: format!("{:?}", a.status),
+                model:  String::new()
+            })
+            .collect();
+        app.update_ai_agents(summaries);
+    } else if !has_error {
+        app.status_message = Some("No AI agents available".to_string());
+    }
+
+    if let Ok(resp) = knowledge_bases_res {
+        let summaries: Vec<KnowledgeBaseSummary> = resp
+            .knowledgebases
+            .iter()
+            .map(|kb| KnowledgeBaseSummary {
+                id:             kb.id as i32,
+                name:           kb.name.clone(),
+                document_count: kb.documents.len() as i32,
+                status:         format!("{:?}", kb.status)
+            })
+            .collect();
+        app.update_knowledge_bases(summaries);
+    } else if !has_error {
+        app.status_message = Some("No knowledge bases available".to_string());
+    }
+
+    if let Ok(resp) = ssh_keys_res {
+        let keys: Vec<String> = resp.ssh_keys.iter().map(|k| k.name.clone()).collect();
+        app.update_ssh_keys(keys);
+    } else if !has_error {
+        app.status_message = Some("No SSH keys available".to_string());
+    }
+
+    if let Ok(resp) = finances_res {
+        let f = resp.finances;
+        let data = vec![format!("Balance: {:.2} {}", f.balance, f.currency)];
+        app.update_finances(data);
+    } else if !has_error {
+        app.status_message = Some("No finance data available".to_string());
     }
 
     if !has_error {
