@@ -48,6 +48,7 @@ impl ProjectTab {
     /// assert_eq!(tab.icon, '\u{1F525}');
     /// assert_eq!(tab.filter, "production");
     /// ```
+    #[must_use]
     pub fn new(name: &str, icon: char, filter: &str) -> Self {
         Self {
             name: name.to_string(),
@@ -61,6 +62,7 @@ impl ProjectTab {
     /// # Returns
     ///
     /// A string combining the icon and name, e.g. "🔥 production".
+    #[must_use]
     pub fn label(&self) -> String {
         format!("{} {}", self.icon, self.name)
     }
@@ -106,6 +108,7 @@ impl ProjectManager {
     /// assert_eq!(pm.tabs.len(), 4);
     /// assert_eq!(pm.active_tab, 0);
     /// ```
+    #[must_use]
     pub fn new() -> Self {
         Self {
             tabs:       default_tabs(),
@@ -140,6 +143,7 @@ impl ProjectManager {
     ///
     /// The filter string, or `"all"` if no tabs exist.
     #[allow(dead_code)]
+    #[must_use]
     pub fn active_filter(&self) -> &str {
         self.tabs
             .get(self.active_tab)
@@ -158,6 +162,7 @@ impl ProjectManager {
     /// vector containing only projects whose name contains the filter
     /// string (case-insensitive).
     #[allow(dead_code)]
+    #[must_use]
     pub fn filtered_projects(&self, projects: &[ProjectSummary]) -> Vec<ProjectSummary> {
         let filter = self.active_filter();
         if filter == "all" {
@@ -194,6 +199,7 @@ impl ProjectManagerWidget {
     /// # Arguments
     ///
     /// * `enabled` - Whether the widget is initially visible.
+    #[must_use]
     pub const fn new(enabled: bool) -> Self {
         Self {
             enabled

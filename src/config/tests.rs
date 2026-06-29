@@ -273,7 +273,7 @@ fn clone_config() {
         token: Some("cloned".to_string()),
         ..AppConfig::default()
     };
-    let cloned = cfg.clone();
+    let cloned = cfg;
     assert_eq!(cloned.token.as_deref(), Some("cloned"));
 }
 

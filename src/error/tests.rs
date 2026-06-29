@@ -81,7 +81,7 @@ fn from_timeweb_serde_error() {
 
 #[test]
 fn from_timeweb_io_error() {
-    let io_err = std::io::Error::new(std::io::ErrorKind::Other, "timeweb io");
+    let io_err = std::io::Error::other("timeweb io");
     let api_err: timeweb_rs::apis::Error<String> = timeweb_rs::apis::Error::Io(io_err);
     let twc_err: TwcError = api_err.into();
     assert!(twc_err.to_string().contains("I/O error"));
@@ -118,6 +118,7 @@ fn from_timeweb_response_error_without_entity() {
 #[test]
 fn error_trait_is_implemented() {
     let err = TwcError::TokenMissing;
+    #[allow(clippy::no_effect_underscore_binding)]
     let _dyn_err: &dyn std::error::Error = &err;
 }
 

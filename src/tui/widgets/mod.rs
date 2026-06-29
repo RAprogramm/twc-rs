@@ -33,6 +33,7 @@ use super::app::App;
 ///     }
 /// }
 /// ```
+#[allow(dead_code)]
 pub trait Widget: Send {
     /// Returns the unique identifier for this widget.
     fn id(&self) -> &str;
@@ -60,8 +61,10 @@ pub struct WidgetRegistry {
     widgets: Vec<Box<dyn Widget + Send + 'static>>
 }
 
+#[allow(dead_code)]
 impl WidgetRegistry {
-    /// Creates a new empty widget registry.
+    /// Creates a new widget registry pre-populated with the default
+    /// dashboard widgets.
     ///
     /// # Examples
     ///
@@ -69,8 +72,9 @@ impl WidgetRegistry {
     /// use twc_rs::tui::widgets::WidgetRegistry;
     ///
     /// let registry = WidgetRegistry::new();
-    /// assert_eq!(registry.enabled_widgets().len(), 0);
+    /// assert!(!registry.enabled_widgets().is_empty());
     /// ```
+    #[must_use]
     pub fn new() -> Self {
         let mut registry = Self {
             widgets: Vec::new()
@@ -134,7 +138,6 @@ impl WidgetRegistry {
     /// * `id` - The unique identifier of the widget to find.
     ///
     /// # Returns
-    #[expect(dead_code)]
     /// `Some(&mut dyn Widget)` if found, `None` otherwise.
     pub fn get_mut<'a>(&'a mut self, id: &str) -> Option<&'a mut dyn Widget> {
         for w in &mut self.widgets {
@@ -148,7 +151,6 @@ impl WidgetRegistry {
     /// Toggles the enabled state of the widget with the given id.
     ///
     /// # Arguments
-    #[expect(dead_code)]
     ///
     /// * `id` - The unique identifier of the widget to toggle.
     pub fn toggle(&mut self, id: &str) {
@@ -182,7 +184,6 @@ impl WidgetRegistry {
         clippy::cast_sign_loss,
         clippy::cast_precision_loss
     )]
-    #[expect(dead_code)]
     pub fn render_all(&self, frame: &mut Frame, area: Rect, app: &App) {
         let enabled = self.enabled_widgets();
         let count = enabled.len();

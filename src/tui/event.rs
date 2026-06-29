@@ -9,6 +9,7 @@ use tokio::{sync::mpsc, time::Duration};
 use super::app::{App, Focus, NavLevel};
 
 /// Events that the TUI event loop can process.
+#[allow(dead_code)]
 #[derive(Debug)]
 pub enum AppEvent {
     /// A keyboard event from crossterm.
@@ -17,14 +18,12 @@ pub enum AppEvent {
     Tick,
     /// Terminal resize.
     // JUSTIFY: Resize events are sent by the event loop but values are unused.
-    Resize(#[expect(dead_code)] u16, #[expect(dead_code)] u16),
+    Resize(u16, u16),
     /// An error message to display.
     // JUSTIFY: Error events are part of the public event API.
-    #[expect(dead_code)]
     Error(String),
     /// A status message to display.
     // JUSTIFY: Status events are part of the public event API.
-    #[expect(dead_code)]
     Status(String)
 }
 

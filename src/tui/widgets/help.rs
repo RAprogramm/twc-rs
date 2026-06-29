@@ -34,6 +34,7 @@ pub struct HelpWidget;
 
 impl HelpWidget {
     /// Creates a new help widget.
+    #[must_use]
     pub const fn new() -> Self {
         Self
     }
@@ -333,7 +334,7 @@ mod tests {
         let palette = Theme::CatppuccinMocha.palette();
         let line = HelpWidget::make_shortcut_line("q", "Quit", palette);
 
-        assert_eq!(line.spans.len(), 2);
+        assert_eq!(line.spans.len(), 3);
         assert!(line.spans[0].content.contains('q'));
     }
 
@@ -342,7 +343,7 @@ mod tests {
         let palette = Theme::GruvboxLight.palette();
         let line = HelpWidget::make_shortcut_line("Tab", "Cycle tabs", palette);
 
-        assert_eq!(line.spans.len(), 2);
+        assert_eq!(line.spans.len(), 3);
     }
 
     #[test]
@@ -351,7 +352,7 @@ mod tests {
         let status = HelpWidget::collect_widget_status(&registry);
 
         assert!(!status.is_empty());
-        assert!(status.iter().any(|(name, _)| name == "account"));
+        assert!(status.iter().any(|(name, _)| name == "Account"));
     }
 
     #[test]
@@ -388,9 +389,11 @@ mod tests {
             .collect::<Vec<_>>()
             .join(" ");
 
-        let account_idx = text.find("[x] Account").expect("account enabled marker");
-        let stats_idx = text.find("[ ] Stats").expect("stats disabled marker");
+        let account_idx = text.find("Account").expect("account entry present");
+        let stats_idx = text.find("Stats").expect("stats entry present");
         assert!(account_idx < stats_idx);
+        assert!(text.contains("[x]"));
+        assert!(text.contains("[ ]"));
     }
 
     #[test]

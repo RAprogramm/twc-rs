@@ -41,7 +41,7 @@ fn fingerprint_long_key() {
 #[test]
 fn fingerprint_odd_length_base64() {
     let key = "ssh-rsa AABBB user@host";
-    let fp = fingerprint(&key);
+    let fp = fingerprint(key);
     assert!(!fp.is_empty());
 }
 

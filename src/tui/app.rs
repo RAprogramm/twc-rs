@@ -20,6 +20,7 @@ pub struct AccountInfo {
 
 /// Summary of a single server.
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ServerSummary {
     pub id:       i32,
     pub name:     String,
@@ -27,7 +28,6 @@ pub struct ServerSummary {
     pub cpu:      i32,
     pub ram_mb:   i32,
     pub disk_gb:  i32,
-    #[expect(dead_code)]
     pub ip:       String,
     pub location: String
 }
@@ -254,6 +254,7 @@ impl ResourceTab {
     /// Returns all tab names.
     // JUSTIFY: Public API method for future UI integration.
     #[allow(dead_code)]
+    #[must_use]
     pub const fn names() -> &'static [&'static str] {
         &[
             "Servers",
@@ -280,6 +281,7 @@ impl ResourceTab {
     }
 
     /// Cycles to the next tab.
+    #[must_use]
     pub const fn next(self) -> Self {
         match self {
             Self::Servers => Self::Databases,
@@ -306,6 +308,7 @@ impl ResourceTab {
     }
 
     /// Cycles to the previous tab.
+    #[must_use]
     pub const fn previous(self) -> Self {
         match self {
             Self::Servers => Self::Finances,
@@ -334,6 +337,7 @@ impl ResourceTab {
     /// Returns the index of this tab.
     // JUSTIFY: Public API method for future UI integration.
     #[allow(dead_code)]
+    #[must_use]
     pub const fn index(self) -> usize {
         match self {
             Self::Servers => 0,
@@ -373,6 +377,7 @@ pub enum Focus {
 
 impl Focus {
     /// Returns the display label for the focus target.
+    #[must_use]
     pub const fn label(self) -> &'static str {
         match self {
             Self::ResourceTabs => "Tabs",
@@ -382,6 +387,7 @@ impl Focus {
     }
 
     /// Moves focus to the left neighbor.
+    #[must_use]
     pub const fn left(self) -> Self {
         match self {
             Self::Details => Self::ResourceList,
@@ -390,6 +396,7 @@ impl Focus {
     }
 
     /// Moves focus to the right neighbor.
+    #[must_use]
     pub const fn right(self) -> Self {
         match self {
             Self::ResourceTabs => Self::ResourceList,
@@ -446,11 +453,13 @@ impl App {
     /// Creates a new `App` with default state.
     // JUSTIFY: Used in tests and as a convenience constructor.
     #[allow(dead_code)]
+    #[must_use]
     pub fn new(refresh_secs: u64) -> Self {
         Self::new_with_theme(refresh_secs, super::themes::Theme::default(), None)
     }
 
     /// Creates a new `App` with a specific theme and optional token.
+    #[must_use]
     pub fn new_with_theme(
         refresh_secs: u64,
         theme: super::themes::Theme,
@@ -501,6 +510,7 @@ impl App {
     }
 
     /// Returns the currently selected resource list length.
+    #[must_use]
     pub const fn current_list_len(&self) -> usize {
         match self.active_tab {
             ResourceTab::Servers => self.servers.len(),
@@ -559,6 +569,7 @@ impl App {
     }
 
     /// Returns true when the refresh interval has elapsed.
+    #[must_use]
     pub fn needs_refresh(&self) -> bool {
         self.last_refresh.elapsed() >= self.refresh_interval
     }
@@ -741,10 +752,11 @@ impl App {
     /// Appends a RAM sample (rolling 60-point window).
     // JUSTIFY: Part of the public API for future dashboard charts.
     #[allow(dead_code)]
-    pub fn push_ram(&mut self, _value: f64) {
+    pub fn push_ram(&mut self, value: f64) {
         if self.ram_history.len() >= 60 {
             self.ram_history.pop_front();
         }
+        self.ram_history.push_back(value);
     }
 
     /// Appends a network-in sample.

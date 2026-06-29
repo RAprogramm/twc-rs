@@ -19,10 +19,10 @@ fn server_row_display() {
         location: "msk".to_string()
     };
     let display = row.to_string();
-    assert!(display.contains("1"));
+    assert!(display.contains('1'));
     assert!(display.contains("test-server"));
     assert!(display.contains("Active"));
-    assert!(display.contains("2"));
+    assert!(display.contains('2'));
     assert!(display.contains("4096"));
     assert!(display.contains("Ubuntu 22.04"));
     assert!(display.contains("msk"));

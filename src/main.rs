@@ -173,6 +173,7 @@ async fn main() {
     }
 }
 
+#[expect(clippy::too_many_lines)]
 async fn run() -> Result<(), TwcError> {
     let cli = Cli::parse();
     let format = OutputFormat::parse(&cli.format).map_err(TwcError::Api)?;
@@ -637,7 +638,7 @@ async fn run() -> Result<(), TwcError> {
         } => {
             let config = AppConfig::load()?;
             let token = ensure_token(cli.token.as_deref())?;
-            run_dashboard(token, interval, config.theme).await
+            Box::pin(run_dashboard(token, interval, config.theme)).await
         }
         #[cfg(not(feature = "tui"))]
         Commands::Dashboard {
@@ -653,6 +654,7 @@ async fn run() -> Result<(), TwcError> {
 }
 
 #[cfg(feature = "tui")]
+#[expect(clippy::large_futures)]
 async fn run_dashboard(
     token: String,
     interval: u64,
@@ -677,7 +679,7 @@ async fn run_dashboard(
 
     // Show loading screen while fetching initial data
     let config = authenticated(token.clone());
-    draw_splash(&mut terminal).await;
+    draw_splash(&mut terminal);
     app.is_loading = true;
     refresh_all(&config, &mut app).await;
     app.is_loading = false;
@@ -689,22 +691,18 @@ async fn run_dashboard(
         tui::event::run_event_loop(event_tx).await;
     });
 
-    loop {
-        if let Some(event) = rx.recv().await {
-            if !tui::event::handle_event(&mut app, event) {
-                break;
-            }
-
-            terminal
-                .draw(|f| tui::ui::draw(f, &app))
-                .map_err(|e| TwcError::Io(e.to_string()))?;
-
-            if app.needs_refresh() {
-                let config = authenticated(token.clone());
-                refresh_all(&config, &mut app).await;
-            }
-        } else {
+    while let Some(event) = rx.recv().await {
+        if !tui::event::handle_event(&mut app, event) {
             break;
+        }
+
+        terminal
+            .draw(|f| tui::ui::draw(f, &app))
+            .map_err(|e| TwcError::Io(e.to_string()))?;
+
+        if app.needs_refresh() {
+            let config = authenticated(token.clone());
+            refresh_all(&config, &mut app).await;
         }
     }
 
@@ -721,6 +719,8 @@ async fn run_dashboard(
 
 #[cfg(feature = "tui")]
 #[allow(deprecated)]
+#[expect(clippy::too_many_lines)]
+#[expect(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
 async fn refresh_all(
     config: &timeweb_rs::apis::configuration::Configuration,
     app: &mut tui::app::App
@@ -982,7 +982,7 @@ async fn refresh_all(
             .map(|img| ImageSummary {
                 id:      img.id.parse::<i32>().unwrap_or(0),
                 name:    img.name.clone(),
-                size_mb: img.size as i64,
+                size_mb: i64::from(img.size),
                 status:  format!("{:?}", img.status)
             })
             .collect();
@@ -1126,7 +1126,7 @@ async fn refresh_all(
 }
 
 #[cfg(feature = "tui")]
-async fn draw_splash(
+fn draw_splash(
     terminal: &mut ratatui::Terminal<ratatui::backend::CrosstermBackend<std::io::Stdout>>
 ) {
     use ratatui::{

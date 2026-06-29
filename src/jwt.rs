@@ -122,6 +122,7 @@ impl JwtPayload {
     /// let payload = JwtPayload::parse("header.payload.signature");
     /// assert!(payload.days_remaining().is_none());
     /// ```
+    #[must_use]
     pub fn days_remaining(&self) -> Option<i64> {
         let exp = self.exp?;
         let now = now_timestamp();
@@ -149,6 +150,7 @@ impl JwtPayload {
     /// let payload = JwtPayload::parse("header.payload.signature");
     /// assert!(!payload.is_expiring_soon());
     /// ```
+    #[must_use]
     pub fn is_expiring_soon(&self) -> bool {
         let Some(exp) = self.exp else {
             return false;
@@ -178,6 +180,7 @@ impl JwtPayload {
     /// let payload = JwtPayload::parse("header.payload.signature");
     /// assert!(!payload.is_expired());
     /// ```
+    #[must_use]
     pub fn is_expired(&self) -> bool {
         let Some(exp) = self.exp else {
             return false;
@@ -188,7 +191,7 @@ impl JwtPayload {
 }
 
 /// Return an empty [`JwtPayload`] with all fields set to `None`.
-fn empty() -> JwtPayload {
+const fn empty() -> JwtPayload {
     JwtPayload {
         exp:   None,
         iat:   None,
@@ -198,6 +201,11 @@ fn empty() -> JwtPayload {
 }
 
 /// Convert a Unix timestamp (float seconds) to a timezone-aware datetime.
+#[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        clippy::cast_precision_loss
+    )]
 fn timestamp_to_datetime(ts: f64) -> Option<DateTime<FixedOffset>> {
     let secs = ts as i64;
     let nanos = ((ts - secs as f64) * 1_000_000_000.0) as u32;
@@ -209,7 +217,7 @@ fn timestamp_to_datetime(ts: f64) -> Option<DateTime<FixedOffset>> {
 fn now_timestamp() -> i64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map_or(0, |d| d.as_secs() as i64)
+        .map_or(0, |d| d.as_secs().try_into().unwrap_or(0))
 }
 
 #[cfg(test)]
@@ -316,6 +324,7 @@ mod tests {
     }
 
     #[test]
+    #[expect(clippy::cast_precision_loss, clippy::suboptimal_flops)]
     fn is_expired_false_for_future_exp() {
         let now_secs = SystemTime::now()
             .duration_since(UNIX_EPOCH)

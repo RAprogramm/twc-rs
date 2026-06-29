@@ -52,6 +52,7 @@ impl StatsWidget {
     /// # Arguments
     ///
     /// * `enabled` - Whether the widget is initially visible.
+    #[must_use]
     pub const fn new(enabled: bool) -> Self {
         Self {
             enabled

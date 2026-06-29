@@ -71,7 +71,7 @@ fn delete_from_keyring() -> Result<(), String> {
 fn save_to_config(token: &str, config_path: &Path) -> Result<(), super::AuthError> {
     let mut cfg = load_config_file(config_path).unwrap_or_default();
     cfg.token = Some(token.to_string());
-    cfg.save()
+    cfg.save_to(config_path)
         .map_err(|e| super::AuthError::StoreFailed(e.to_string()))
 }
 
@@ -83,9 +83,15 @@ fn load_from_config(config_path: &Path) -> Result<String, super::AuthError> {
 }
 
 fn delete_from_config(config_path: &Path) -> Result<(), super::AuthError> {
-    let mut cfg = load_config_file(config_path).unwrap_or_default();
+    let mut cfg = load_config_file(config_path)
+        .ok_or_else(|| super::AuthError::StoreFailed("failed to read config file".to_string()))?;
+    if cfg.token.is_none() {
+        return Err(super::AuthError::StoreFailed(
+            "no token in config".to_string()
+        ));
+    }
     cfg.token = None;
-    cfg.save()
+    cfg.save_to(config_path)
         .map_err(|e| super::AuthError::StoreFailed(e.to_string()))
 }
 

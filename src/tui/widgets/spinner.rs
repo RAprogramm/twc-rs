@@ -13,6 +13,7 @@ const FRAMES: &[&str] = &["◜", "◠", "◝", "◞", "◡", "◟"];
 static START_TIME: std::sync::LazyLock<Instant> = std::sync::LazyLock::new(Instant::now);
 
 /// Returns the current spinner frame based on elapsed time.
+#[must_use]
 pub fn current_frame() -> Span<'static> {
     let elapsed = Instant::now().duration_since(*START_TIME).as_millis();
     let index = (elapsed / 100) as usize % FRAMES.len();

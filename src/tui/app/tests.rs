@@ -129,6 +129,13 @@ fn next_tab_cycles() {
     app.next_tab();
     assert_eq!(app.active_tab, ResourceTab::Projects);
     app.next_tab();
+    assert_eq!(app.active_tab, ResourceTab::Balancers);
+
+    for _ in 0..14 {
+        app.next_tab();
+    }
+    assert_eq!(app.active_tab, ResourceTab::Finances);
+    app.next_tab();
     assert_eq!(app.active_tab, ResourceTab::Servers);
 }
 
@@ -256,7 +263,8 @@ fn tab_names_and_indices() {
     assert_eq!(ResourceTab::S3.index(), 2);
     assert_eq!(ResourceTab::Kubernetes.index(), 3);
     assert_eq!(ResourceTab::Projects.index(), 4);
-    assert_eq!(ResourceTab::names().len(), 5);
+    assert_eq!(ResourceTab::Finances.index(), 19);
+    assert_eq!(ResourceTab::names().len(), 20);
 }
 
 #[test]
@@ -278,7 +286,7 @@ fn current_list_len_databases() {
 fn handle_key_quit() {
     let mut app = App::new(5);
     let event = AppEvent::Key(crossterm::event::KeyEvent {
-        code:      KeyCode::Char('q'),
+        code:      KeyCode::Char('Q'),
         modifiers: crossterm::event::KeyModifiers::NONE,
         kind:      crossterm::event::KeyEventKind::Press,
         state:     crossterm::event::KeyEventState::NONE
@@ -310,6 +318,8 @@ fn handle_key_vim_k() {
         make_server(2, "s2", "running"),
     ];
     app.selected = 1;
+    app.nav_level = NavLevel::Inner;
+    app.focus = Focus::ResourceList;
     let event = AppEvent::Key(crossterm::event::KeyEvent {
         code:      KeyCode::Char('k'),
         modifiers: crossterm::event::KeyModifiers::NONE,
@@ -328,6 +338,8 @@ fn handle_key_vim_j() {
         make_server(1, "s1", "running"),
         make_server(2, "s2", "running"),
     ];
+    app.nav_level = NavLevel::Inner;
+    app.focus = Focus::ResourceList;
     let event = AppEvent::Key(crossterm::event::KeyEvent {
         code:      KeyCode::Char('j'),
         modifiers: crossterm::event::KeyModifiers::NONE,
@@ -342,11 +354,8 @@ fn handle_key_vim_j() {
 #[test]
 fn handle_key_vim_h() {
     let mut app = App::new(5);
-    app.servers = vec![
-        make_server(1, "s1", "running"),
-        make_server(2, "s2", "running"),
-    ];
-    app.selected = 1;
+    app.focus = Focus::ResourceList;
+    app.nav_level = NavLevel::Overview;
     let event = AppEvent::Key(crossterm::event::KeyEvent {
         code:      KeyCode::Char('h'),
         modifiers: crossterm::event::KeyModifiers::NONE,
@@ -355,16 +364,14 @@ fn handle_key_vim_h() {
     });
     let keep_going = crate::tui::event::handle_event(&mut app, event);
     assert!(keep_going);
-    assert_eq!(app.selected, 0);
+    assert_eq!(app.focus, Focus::ResourceTabs);
 }
 
 #[test]
 fn handle_key_vim_l() {
     let mut app = App::new(5);
-    app.servers = vec![
-        make_server(1, "s1", "running"),
-        make_server(2, "s2", "running"),
-    ];
+    app.focus = Focus::ResourceList;
+    app.nav_level = NavLevel::Overview;
     let event = AppEvent::Key(crossterm::event::KeyEvent {
         code:      KeyCode::Char('l'),
         modifiers: crossterm::event::KeyModifiers::NONE,
@@ -373,7 +380,7 @@ fn handle_key_vim_l() {
     });
     let keep_going = crate::tui::event::handle_event(&mut app, event);
     assert!(keep_going);
-    assert_eq!(app.selected, 1);
+    assert_eq!(app.focus, Focus::Details);
 }
 
 #[test]
@@ -384,6 +391,8 @@ fn handle_key_g() {
         make_server(2, "s2", "running"),
     ];
     app.selected = 1;
+    app.nav_level = NavLevel::Inner;
+    app.focus = Focus::ResourceList;
     let event = AppEvent::Key(crossterm::event::KeyEvent {
         code:      KeyCode::Char('g'),
         modifiers: crossterm::event::KeyModifiers::NONE,
@@ -403,6 +412,8 @@ fn handle_key_dollar() {
         make_server(2, "s2", "running"),
     ];
     app.selected = 0;
+    app.nav_level = NavLevel::Inner;
+    app.focus = Focus::ResourceList;
     let event = AppEvent::Key(crossterm::event::KeyEvent {
         code:      KeyCode::Char('$'),
         modifiers: crossterm::event::KeyModifiers::NONE,

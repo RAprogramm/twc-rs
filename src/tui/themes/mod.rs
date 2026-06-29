@@ -7,30 +7,25 @@ use ratatui::style::Color;
 use serde::{Deserialize, Serialize};
 
 /// Available color themes.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum Theme {
+    #[default]
     GruvboxDark,
     GruvboxLight,
     CatppuccinMocha,
     CatppuccinLatte
 }
 
-impl Default for Theme {
-    fn default() -> Self {
-        Self::GruvboxDark
-    }
-}
-
 /// Color palette for a theme.
 #[derive(Debug, Clone, Copy)]
+#[allow(dead_code)]
 pub struct Palette {
     pub bg:           Color,
     pub fg:           Color,
     pub border:       Color,
     pub title:        Color,
     pub header:       Color,
-    #[expect(dead_code)]
     pub selected:     Color,
     pub accent:       Color,
     pub success:      Color,
@@ -43,7 +38,8 @@ pub struct Palette {
 
 impl Theme {
     /// Returns the palette for this theme.
-    pub fn palette(self) -> Palette {
+    #[must_use]
+    pub const fn palette(self) -> Palette {
         match self {
             Self::GruvboxDark => Palette {
                 bg:           Color::Rgb(40, 40, 40),

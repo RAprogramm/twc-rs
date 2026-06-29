@@ -16,7 +16,7 @@ fn project_row_display() {
         is_default:  "false".to_string()
     };
     let display = row.to_string();
-    assert!(display.contains("5"));
+    assert!(display.contains('5'));
     assert!(display.contains("web-app"));
     assert!(display.contains("Production"));
     assert!(display.contains("false"));

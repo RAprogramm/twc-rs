@@ -1,7 +1,10 @@
 // SPDX-FileCopyrightText: 2026 RAprogramm <andrey.rozanov.vl@gmail.com>
 // SPDX-License-Identifier: MIT
 
-use std::{fs, path::PathBuf};
+use std::{
+    fs,
+    path::{Path, PathBuf}
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -45,7 +48,7 @@ pub struct AppConfig {
     pub refresh_interval: u64
 }
 
-fn default_refresh_interval() -> u64 {
+const fn default_refresh_interval() -> u64 {
     5
 }
 
@@ -115,14 +118,28 @@ impl AppConfig {
     ///
     /// Returns [`TwcError::ConfigWrite`] on serialization or I/O failure.
     pub fn save(&self) -> Result<(), TwcError> {
-        let path = Self::path()?;
+        self.save_to(&Self::path()?)
+    }
+
+    /// Persists the configuration to a specific path.
+    ///
+    /// # Overview
+    ///
+    /// Creates parent directories as needed, then writes the TOML file to
+    /// `path`. Used by callers that manage their own config location (and by
+    /// tests, to avoid touching the real user config).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TwcError::ConfigWrite`] on serialization or I/O failure.
+    pub fn save_to(&self, path: &Path) -> Result<(), TwcError> {
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent).map_err(|e| {
                 TwcError::ConfigWrite(format!("failed to create dir {}: {e}", parent.display()))
             })?;
         }
         let content = toml::to_string_pretty(self)?;
-        fs::write(&path, content).map_err(|e| {
+        fs::write(path, content).map_err(|e| {
             TwcError::ConfigWrite(format!("failed to write {}: {e}", path.display()))
         })?;
         Ok(())
