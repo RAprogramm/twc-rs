@@ -104,7 +104,13 @@ fn render_content(frame: &mut Frame, area: Rect, app: &App, _palette: &Palette) 
 /// * `app` - The application state.
 /// * `palette` - The theme color palette.
 fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
-    let left = "k/j up/down  h/l tabs  w widgets  t theme  Tab cycle  g first  $ last  r refresh  ? help  Q quit";
+    let focus_str = match app.focus {
+        crate::tui::app::Focus::ResourceList => "ResourceList",
+        crate::tui::app::Focus::Details => "Details",
+        crate::tui::app::Focus::ResourceTabs => "ResourceTabs",
+        crate::tui::app::Focus::ProjectTabs => "ProjectTabs"
+    };
+    let left = format!("focus: {}  k/j up/down  h/l switch  Enter detail  Esc close  Q quit", focus_str);
     let right = match (&app.error_message, &app.status_message) {
         (Some(err), _) => err.clone(),
         (_, Some(msg)) => msg.clone(),

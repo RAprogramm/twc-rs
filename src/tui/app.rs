@@ -324,6 +324,25 @@ impl ResourceTab {
         }
     }
 }
+/// Focus target for vim-style navigation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Focus {
+    /// Resource list panel (left side).
+    ResourceList,
+    /// Details panel (right side).
+    Details,
+    /// Resource tabs (top).
+    ResourceTabs,
+    /// Project tabs (top).
+    ProjectTabs
+}
+
+impl Default for Focus {
+    fn default() -> Self {
+        Self::ResourceList
+    }
+}
+
 
 /// Holds all runtime state for the TUI dashboard.
 pub struct App {
@@ -364,7 +383,9 @@ pub struct App {
     pub error_message:     Option<String>,
     pub is_loading:        bool,
     pub widgets:           super::widgets::WidgetRegistry,
-    pub project_manager:   ProjectManager
+    pub project_manager:   ProjectManager,
+    pub focus:             Focus,
+    pub detail_popup:      bool
 }
 
 impl App {
@@ -418,7 +439,9 @@ impl App {
             error_message: None,
             is_loading: false,
             widgets: super::widgets::WidgetRegistry::new(),
-            project_manager: ProjectManager::new()
+            project_manager: ProjectManager::new(),
+            focus:             Focus::ResourceList,
+            detail_popup:      false,
         }
     }
 

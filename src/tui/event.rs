@@ -6,7 +6,7 @@
 use crossterm::event::{self, Event, KeyCode, KeyEvent};
 use tokio::{sync::mpsc, time::Duration};
 
-use super::app::App;
+use super::app::{App, Focus};
 
 /// Events that the TUI event loop can process.
 #[derive(Debug)]
@@ -43,9 +43,10 @@ pub fn handle_event(app: &mut App, event: AppEvent) -> bool {
 }
 
 fn handle_key(app: &mut App, key: KeyEvent) -> bool {
+    // Handle help overlay first
     if app.show_help {
         match key.code {
-            KeyCode::Esc | KeyCode::Char('?' | 'q') => {
+            KeyCode::Esc | KeyCode::Char('?') => {
                 app.show_help = false;
             }
             _ => {}
@@ -53,31 +54,91 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
         return true;
     }
 
+    // Handle detail popup
+    if app.detail_popup {
+        match key.code {
+            KeyCode::Esc | KeyCode::Char('q') => {
+                app.detail_popup = false;
+            }
+            _ => {}
+        }
+        return true;
+    }
+
+    // Main navigation
     match key.code {
-        KeyCode::Char('q') | KeyCode::Esc => {
+        // Quit only with Shift+Q
+        KeyCode::Char('Q') => {
             app.quit();
             false
         }
-        KeyCode::Up | KeyCode::Char('k') => {
-            app.select_previous();
+        // Help
+        KeyCode::Char('?') => {
+            app.toggle_help();
             true
         }
-        KeyCode::Down | KeyCode::Char('j') => {
-            app.select_next();
+        // Refresh
+        KeyCode::Char('r') => {
+            app.force_refresh();
             true
         }
-        KeyCode::Left | KeyCode::Char('h') => {
-            app.select_previous();
+        // Vim navigation between components
+        KeyCode::Char('h') | KeyCode::Left => {
+            // Move focus left/up
+            match app.focus {
+                Focus::Details => app.focus = Focus::ResourceList,
+                Focus::ProjectTabs => app.focus = Focus::ResourceTabs,
+                Focus::ResourceTabs => {} // Stay at top
+                Focus::ResourceList => {} // Stay at left
+            }
             true
         }
-        KeyCode::Right | KeyCode::Char('l') => {
-            app.select_next();
+        KeyCode::Char('l') | KeyCode::Right => {
+            // Move focus right/down
+            match app.focus {
+                Focus::ResourceTabs => app.focus = Focus::ProjectTabs,
+                Focus::ResourceList => app.focus = Focus::Details,
+                Focus::ProjectTabs => {} // Stay at right
+                Focus::Details => {} // Stay at right
+            }
             true
         }
-        KeyCode::Tab => {
-            app.next_tab();
+        KeyCode::Char('k') | KeyCode::Up => {
+            // Move selection up in current focus
+            match app.focus {
+                Focus::ResourceList | Focus::Details => {
+                    app.select_previous();
+                }
+                Focus::ResourceTabs | Focus::ProjectTabs => {
+                    // Cycle tabs up
+                    app.active_tab = match app.active_tab {
+                        crate::tui::app::ResourceTab::Finances => crate::tui::app::ResourceTab::Servers,
+                        _ => app.active_tab.next()
+                    };
+                    app.selected = 0;
+                }
+            }
             true
         }
+        KeyCode::Char('j') | KeyCode::Down => {
+            // Move selection down in current focus
+            match app.focus {
+                Focus::ResourceList | Focus::Details => {
+                    app.select_next();
+                }
+                Focus::ResourceTabs | Focus::ProjectTabs => {
+                    // Cycle tabs down
+                    app.selected = 0;
+                }
+            }
+            true
+        }
+        // Enter to open detail popup
+        KeyCode::Enter => {
+            app.detail_popup = true;
+            true
+        }
+        // Go to first/last
         KeyCode::Char('g') => {
             app.selected = 0;
             true
@@ -88,15 +149,11 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
             }
             true
         }
-        KeyCode::Char('r') => {
-            app.force_refresh();
+        // Tab to cycle between resource tabs
+        KeyCode::Tab => {
+            app.next_tab();
             true
         }
-        KeyCode::Char('?') => {
-            app.toggle_help();
-            true
-        }
-        KeyCode::Enter => true,
         _ => true
     }
 }
