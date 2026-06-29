@@ -12,23 +12,18 @@ use ratatui::{
 };
 
 use crate::tui::{
-    app::App,
+    app::{App, Focus, NavLevel},
     themes::Palette,
     widgets::{
-        Widget, account::AccountWidget, help::HelpWidget, project_manager::ProjectManagerWidget,
-        resource_tabs::ResourceTabsWidget
+        Widget, account::AccountWidget, help::HelpWidget, resource_tabs::ResourceTabsWidget
     }
 };
 
-/// Renders the full dashboard into the given frame area using the widget
-/// system.
+/// Renders the full dashboard into the given frame area.
 ///
-/// # Overview
-///
-/// Composes the layout into five sections: header (Account widget), resource
-/// tabs, project tabs, content (`ResourceList` and `Details` side by side),
-/// and status bar. When help is requested, the Help widget is rendered as an
-/// overlay covering the entire frame.
+/// Composes the layout into four sections: header (Account widget), resource
+/// tabs, content (`ResourceList` and `Details` side by side), and status bar.
+/// When help is requested, the Help widget is rendered as an overlay.
 ///
 /// # Arguments
 ///
@@ -41,11 +36,10 @@ pub fn draw(frame: &mut Frame, app: &App) {
     let main_chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(3),    // Header (Account widget)
-            Constraint::Length(2),    // Resource tabs
-            Constraint::Length(2),    // Project tabs
-            Constraint::Min(10),      // Content
-            Constraint::Length(3)     // Status bar
+            Constraint::Length(3),
+            Constraint::Length(2),
+            Constraint::Min(10),
+            Constraint::Length(3)
         ])
         .split(size);
 
@@ -55,11 +49,8 @@ pub fn draw(frame: &mut Frame, app: &App) {
     let rt_widget = ResourceTabsWidget::new(true);
     rt_widget.render(frame, main_chunks[1], app);
 
-    let pm_widget = ProjectManagerWidget::new(true);
-    pm_widget.render(frame, main_chunks[2], app);
-
-    render_content(frame, main_chunks[3], app, &palette);
-    render_status_bar(frame, main_chunks[4], app, &palette);
+    render_content(frame, main_chunks[2], app, &palette);
+    render_status_bar(frame, main_chunks[3], app, &palette);
 
     if app.show_help {
         let help_widget = HelpWidget::new();
@@ -69,18 +60,25 @@ pub fn draw(frame: &mut Frame, app: &App) {
 
 /// Renders the content area with resource list and details side by side.
 ///
+/// The focused panel receives a highlighted border using `palette.accent`.
+/// Non-focused panels use `palette.border`.
+///
 /// # Arguments
 ///
 /// * `frame` - The render frame.
 /// * `area` - The content area rectangle.
 /// * `app` - The application state.
-/// * `_palette` - The theme palette (reserved for future use).
-fn render_content(frame: &mut Frame, area: Rect, app: &App, _palette: &Palette) {
+/// * `palette` - The theme color palette.
+fn render_content(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
     if app.is_loading {
         let spinner = crate::tui::widgets::spinner::current_frame();
         let text = Line::from(vec![spinner, Span::raw(" Loading resources...")]);
         let paragraph = Paragraph::new(text)
-            .block(Block::default().borders(Borders::ALL).title(Line::from(" Loading ")))
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title(Line::from(" Loading "))
+            )
             .alignment(Alignment::Center);
         frame.render_widget(paragraph, area);
         return;
@@ -88,14 +86,32 @@ fn render_content(frame: &mut Frame, area: Rect, app: &App, _palette: &Palette) 
 
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .constraints([Constraint::Percentage(40), Constraint::Percentage(60)])
         .split(area);
 
-    app.widgets
-        .render_side_by_side(frame, chunks[0], chunks[1], app);
+    let list_border_color = if app.focus == Focus::ResourceList {
+        palette.accent
+    } else {
+        palette.border
+    };
+
+    let detail_border_color = if app.focus == Focus::Details {
+        palette.accent
+    } else {
+        palette.border
+    };
+
+    crate::tui::widgets::WidgetRegistry::render_side_by_side(
+        frame,
+        chunks[0],
+        chunks[1],
+        app,
+        list_border_color,
+        detail_border_color
+    );
 }
 
-/// Renders the status bar with keyboard shortcuts and status messages.
+/// Renders the status bar with mode indicator and available keys.
 ///
 /// # Arguments
 ///
@@ -104,13 +120,25 @@ fn render_content(frame: &mut Frame, area: Rect, app: &App, _palette: &Palette) 
 /// * `app` - The application state.
 /// * `palette` - The theme color palette.
 fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
-    let focus_str = match app.focus {
-        crate::tui::app::Focus::ResourceList => "ResourceList",
-        crate::tui::app::Focus::Details => "Details",
-        crate::tui::app::Focus::ResourceTabs => "ResourceTabs",
-        crate::tui::app::Focus::ProjectTabs => "ProjectTabs"
+    let mode = match app.nav_level {
+        NavLevel::Overview => "overview",
+        NavLevel::Inner => "inner"
     };
-    let left = format!("focus: {}  k/j up/down  h/l switch  Enter detail  Esc close  Q quit", focus_str);
+    let focus = app.focus.label();
+    let keys = match app.nav_level {
+        NavLevel::Overview => match app.focus {
+            Focus::ResourceTabs => "Tab cycle  hjkl navigate  Enter drill in  Q quit",
+            Focus::ResourceList => "hjkl navigate  Enter drill in  ? help  Q quit",
+            Focus::Details => "hjkl navigate  ? help  Q quit"
+        },
+        NavLevel::Inner => match app.focus {
+            Focus::ResourceTabs => "k/j cycle tabs  Esc back",
+            Focus::ResourceList => "k/j select  Enter details  Esc back",
+            Focus::Details => "k/j scroll  Esc back"
+        }
+    };
+
+    let left = format!("{mode}: {focus}  {keys}");
     let right = match (&app.error_message, &app.status_message) {
         (Some(err), _) => err.clone(),
         (_, Some(msg)) => msg.clone(),

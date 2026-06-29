@@ -224,12 +224,14 @@ impl crate::tui::widgets::Widget for StatsWidget {
         let lines = Self::build_lines(app, palette);
 
         let paragraph = Paragraph::new(lines).block(
-            Block::default().borders(Borders::ALL).title(Line::from(Span::styled(
-                " Stats ",
-                Style::default()
-                    .fg(palette.title)
-                    .add_modifier(Modifier::BOLD)
-            )))
+            Block::default()
+                .borders(Borders::ALL)
+                .title(Line::from(Span::styled(
+                    " Stats ",
+                    Style::default()
+                        .fg(palette.title)
+                        .add_modifier(Modifier::BOLD)
+                )))
         );
 
         frame.render_widget(paragraph, area);

@@ -220,15 +220,10 @@ impl crate::tui::widgets::Widget for ProjectManagerWidget {
 
     fn render(&self, frame: &mut Frame, area: Rect, app: &App) {
         let palette = app.theme.palette();
-        let labels = app
-            .project_manager
-            .tabs
-            .iter()
-            .map(|tab| {
-                let label = tab.label();
-                Line::from(label)
-            });
-            
+        let labels = app.project_manager.tabs.iter().map(|tab| {
+            let label = tab.label();
+            Line::from(label)
+        });
 
         let tab_widget = Tabs::new(labels)
             .block(

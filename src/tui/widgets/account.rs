@@ -111,12 +111,14 @@ impl crate::tui::widgets::Widget for AccountWidget {
         let lines = Self::build_lines(&app.account, palette);
 
         let paragraph = Paragraph::new(lines).block(
-            Block::default().borders(Borders::ALL).title(Line::from(Span::styled(
-                " Account ",
-                Style::default()
-                    .fg(palette.title)
-                    .add_modifier(Modifier::BOLD)
-            )))
+            Block::default()
+                .borders(Borders::ALL)
+                .title(Line::from(Span::styled(
+                    " Account ",
+                    Style::default()
+                        .fg(palette.title)
+                        .add_modifier(Modifier::BOLD)
+                )))
         );
 
         frame.render_widget(paragraph, area);

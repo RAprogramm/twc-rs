@@ -13,32 +13,37 @@ use ratatui::{
 
 use crate::tui::app::{App, ResourceTab};
 
-/// Renders the resource list panel.
+/// Renders the resource list panel with a given border color.
 ///
 /// # Arguments
 ///
 /// * `frame` - The render frame.
 /// * `area` - The area to render in.
 /// * `app` - The application state.
+/// * `border_color` - Color for the panel border.
 // JUSTIFY: Large match expression covering all resource types.
 #[allow(clippy::too_many_lines)]
-pub fn render(frame: &mut Frame, area: Rect, app: &App) {
+pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
+    let palette = app.theme.palette();
+
     let items: Vec<ListItem> = match app.active_tab {
         ResourceTab::Servers => app
             .servers
             .iter()
             .map(|s| {
                 let status_color = match s.status.as_str() {
-                    "Running" => Color::Green,
-                    "Stopped" => Color::Red,
-                    _ => Color::Yellow
+                    "Running" => palette.success,
+                    "Stopped" => palette.error,
+                    _ => palette.warning
+                };
+                let icon = if s.status == "Running" {
+                    "\u{25B6}"
+                } else {
+                    "\u{25CB}"
                 };
                 let line = Line::from(vec![
-                    Span::raw(format!(
-                        "{} ",
-                        if s.status == "Running" { "▶" } else { "○" }
-                    )),
-                    Span::styled(&s.name, Style::default().fg(Color::White)),
+                    Span::raw(format!("{icon} ")),
+                    Span::styled(&s.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
                     Span::styled(format!("[{}]", s.status), Style::default().fg(status_color)),
                 ]);
@@ -50,10 +55,13 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
             .iter()
             .map(|d| {
                 let line = Line::from(vec![
-                    Span::raw("● "),
-                    Span::styled(&d.name, Style::default().fg(Color::White)),
+                    Span::raw("\u{25CF} "),
+                    Span::styled(&d.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
-                    Span::styled(format!("[{}]", d.engine), Style::default().fg(Color::Cyan)),
+                    Span::styled(
+                        format!("[{}]", d.engine),
+                        Style::default().fg(palette.accent)
+                    ),
                 ]);
                 ListItem::new(line)
             })
@@ -63,10 +71,10 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
             .iter()
             .map(|s| {
                 let line = Line::from(vec![
-                    Span::raw("📦 "),
-                    Span::styled(&s.name, Style::default().fg(Color::White)),
+                    Span::raw("\u{1F4E6} "),
+                    Span::styled(&s.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
-                    Span::styled(&s.region, Style::default().fg(Color::Yellow)),
+                    Span::styled(&s.region, Style::default().fg(palette.warning)),
                 ]);
                 ListItem::new(line)
             })
@@ -76,12 +84,12 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
             .iter()
             .map(|c| {
                 let line = Line::from(vec![
-                    Span::raw("☸ "),
-                    Span::styled(&c.name, Style::default().fg(Color::White)),
+                    Span::raw("\u{2638} "),
+                    Span::styled(&c.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
                     Span::styled(
                         format!("[v{}]", c.version),
-                        Style::default().fg(Color::Magenta)
+                        Style::default().fg(palette.accent)
                     ),
                 ]);
                 ListItem::new(line)
@@ -92,12 +100,12 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
             .iter()
             .map(|p| {
                 let line = Line::from(vec![
-                    Span::raw("📁 "),
-                    Span::styled(&p.name, Style::default().fg(Color::White)),
+                    Span::raw("\u{1F4C1} "),
+                    Span::styled(&p.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
                     Span::styled(
                         format!("[{} servers]", p.server_count),
-                        Style::default().fg(Color::DarkGray)
+                        Style::default().fg(palette.dim)
                     ),
                 ]);
                 ListItem::new(line)
@@ -108,10 +116,10 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
             .iter()
             .map(|b| {
                 let line = Line::from(vec![
-                    Span::raw("⚖ "),
-                    Span::styled(&b.name, Style::default().fg(Color::White)),
+                    Span::raw("\u{2696} "),
+                    Span::styled(&b.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
-                    Span::styled(&b.ip, Style::default().fg(Color::Yellow)),
+                    Span::styled(&b.ip, Style::default().fg(palette.warning)),
                 ]);
                 ListItem::new(line)
             })
@@ -121,12 +129,12 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
             .iter()
             .map(|r| {
                 let line = Line::from(vec![
-                    Span::raw("🐳 "),
-                    Span::styled(&r.name, Style::default().fg(Color::White)),
+                    Span::raw("\u{1F433} "),
+                    Span::styled(&r.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
                     Span::styled(
                         format!("[{} repos]", r.repository_count),
-                        Style::default().fg(Color::Cyan)
+                        Style::default().fg(palette.accent)
                     ),
                 ]);
                 ListItem::new(line)
@@ -137,10 +145,13 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
             .iter()
             .map(|d| {
                 let line = Line::from(vec![
-                    Span::raw("🌐 "),
-                    Span::styled(&d.name, Style::default().fg(Color::White)),
+                    Span::raw("\u{1F310} "),
+                    Span::styled(&d.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
-                    Span::styled(format!("[{}]", d.status), Style::default().fg(Color::Green)),
+                    Span::styled(
+                        format!("[{}]", d.status),
+                        Style::default().fg(palette.success)
+                    ),
                 ]);
                 ListItem::new(line)
             })
@@ -150,12 +161,12 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
             .iter()
             .map(|f| {
                 let line = Line::from(vec![
-                    Span::raw("🛡 "),
-                    Span::styled(&f.name, Style::default().fg(Color::White)),
+                    Span::raw("\u{1F6E1} "),
+                    Span::styled(&f.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
                     Span::styled(
                         format!("[{} rules]", f.rule_count),
-                        Style::default().fg(Color::Magenta)
+                        Style::default().fg(palette.accent)
                     ),
                 ]);
                 ListItem::new(line)
@@ -166,10 +177,10 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
             .iter()
             .map(|f| {
                 let line = Line::from(vec![
-                    Span::raw("🔀 "),
-                    Span::styled(&f.ip, Style::default().fg(Color::Yellow)),
+                    Span::raw("\u{1F500} "),
+                    Span::styled(&f.ip, Style::default().fg(palette.warning)),
                     Span::raw("  "),
-                    Span::styled(&f.server_name, Style::default().fg(Color::White)),
+                    Span::styled(&f.server_name, Style::default().fg(palette.fg)),
                 ]);
                 ListItem::new(line)
             })
@@ -179,12 +190,12 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
             .iter()
             .map(|i| {
                 let line = Line::from(vec![
-                    Span::raw("🖼 "),
-                    Span::styled(&i.name, Style::default().fg(Color::White)),
+                    Span::raw("\u{1F5BC} "),
+                    Span::styled(&i.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
                     Span::styled(
                         format!("[{} MB]", i.size_mb),
-                        Style::default().fg(Color::DarkGray)
+                        Style::default().fg(palette.dim)
                     ),
                 ]);
                 ListItem::new(line)
@@ -195,12 +206,12 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
             .iter()
             .map(|n| {
                 let line = Line::from(vec![
-                    Span::raw("💾 "),
-                    Span::styled(&n.name, Style::default().fg(Color::White)),
+                    Span::raw("\u{1F4BE} "),
+                    Span::styled(&n.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
                     Span::styled(
                         format!("[{} GB]", n.size_gb),
-                        Style::default().fg(Color::Cyan)
+                        Style::default().fg(palette.accent)
                     ),
                 ]);
                 ListItem::new(line)
@@ -211,12 +222,12 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
             .iter()
             .map(|v| {
                 let line = Line::from(vec![
-                    Span::raw("🔗 "),
-                    Span::styled(&v.name, Style::default().fg(Color::White)),
+                    Span::raw("\u{1F517} "),
+                    Span::styled(&v.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
                     Span::styled(
                         format!("[{} subnets]", v.subnet_count),
-                        Style::default().fg(Color::Yellow)
+                        Style::default().fg(palette.warning)
                     ),
                 ]);
                 ListItem::new(line)
@@ -227,10 +238,10 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
             .iter()
             .map(|d| {
                 let line = Line::from(vec![
-                    Span::raw("🖥 "),
-                    Span::styled(&d.name, Style::default().fg(Color::White)),
+                    Span::raw("\u{1F5A5} "),
+                    Span::styled(&d.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
-                    Span::styled(&d.status, Style::default().fg(Color::Green)),
+                    Span::styled(&d.status, Style::default().fg(palette.success)),
                 ]);
                 ListItem::new(line)
             })
@@ -240,12 +251,12 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
             .iter()
             .map(|m| {
                 let line = Line::from(vec![
-                    Span::raw("📧 "),
-                    Span::styled(&m.name, Style::default().fg(Color::White)),
+                    Span::raw("\u{1F4E7} "),
+                    Span::styled(&m.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
                     Span::styled(
                         format!("[{} mailboxes]", m.mailbox_count),
-                        Style::default().fg(Color::Cyan)
+                        Style::default().fg(palette.accent)
                     ),
                 ]);
                 ListItem::new(line)
@@ -256,12 +267,12 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
             .iter()
             .map(|a| {
                 let line = Line::from(vec![
-                    Span::raw("🚀 "),
-                    Span::styled(&a.name, Style::default().fg(Color::White)),
+                    Span::raw("\u{1F680} "),
+                    Span::styled(&a.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
                     Span::styled(
                         format!("[{} deploys]", a.deploy_count),
-                        Style::default().fg(Color::Magenta)
+                        Style::default().fg(palette.accent)
                     ),
                 ]);
                 ListItem::new(line)
@@ -272,10 +283,10 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
             .iter()
             .map(|a| {
                 let line = Line::from(vec![
-                    Span::raw("🤖 "),
-                    Span::styled(&a.name, Style::default().fg(Color::White)),
+                    Span::raw("\u{1F916} "),
+                    Span::styled(&a.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
-                    Span::styled(&a.model, Style::default().fg(Color::Yellow)),
+                    Span::styled(&a.model, Style::default().fg(palette.warning)),
                 ]);
                 ListItem::new(line)
             })
@@ -285,12 +296,12 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
             .iter()
             .map(|k| {
                 let line = Line::from(vec![
-                    Span::raw("📚 "),
-                    Span::styled(&k.name, Style::default().fg(Color::White)),
+                    Span::raw("\u{1F4DA} "),
+                    Span::styled(&k.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
                     Span::styled(
                         format!("[{} docs]", k.document_count),
-                        Style::default().fg(Color::DarkGray)
+                        Style::default().fg(palette.dim)
                     ),
                 ]);
                 ListItem::new(line)
@@ -301,8 +312,8 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
             .iter()
             .map(|k| {
                 let line = Line::from(vec![
-                    Span::raw("🔑 "),
-                    Span::styled(k, Style::default().fg(Color::White)),
+                    Span::raw("\u{1F511} "),
+                    Span::styled(k, Style::default().fg(palette.fg)),
                 ]);
                 ListItem::new(line)
             })
@@ -312,8 +323,8 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
             .iter()
             .map(|f| {
                 let line = Line::from(vec![
-                    Span::raw("💰 "),
-                    Span::styled(f, Style::default().fg(Color::White)),
+                    Span::raw("\u{1F4B0} "),
+                    Span::styled(f, Style::default().fg(palette.fg)),
                 ]);
                 ListItem::new(line)
             })
@@ -321,13 +332,23 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
     };
 
     let list = List::new(items)
-        .block(Block::default().borders(Borders::ALL).title(Line::from(" Resources ")))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(border_color))
+                .title(Line::from(Span::styled(
+                    " Resources ",
+                    Style::default()
+                        .fg(palette.title)
+                        .add_modifier(Modifier::BOLD)
+                )))
+        )
         .highlight_style(
             Style::default()
-                .fg(Color::Cyan)
+                .fg(palette.accent)
                 .add_modifier(Modifier::BOLD)
         )
-        .highlight_symbol(Line::from(">> "));
+        .highlight_symbol(Line::from("\u{25B6} "));
 
     let mut state = ListState::default();
     state.select(Some(app.selected));
@@ -370,6 +391,11 @@ impl crate::tui::widgets::Widget for ResourceListWidget {
     }
 
     fn render(&self, frame: &mut Frame, area: Rect, app: &App) {
-        render(frame, area, app);
+        let border_color = if app.focus == crate::tui::app::Focus::ResourceList {
+            app.theme.palette().accent
+        } else {
+            app.theme.palette().border
+        };
+        render(frame, area, app, border_color);
     }
 }

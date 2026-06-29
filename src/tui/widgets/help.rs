@@ -68,16 +68,17 @@ impl HelpWidget {
         )));
 
         let shortcuts = [
-            ("k/j", "Move selection up/down"),
-            ("h/l", "Switch tabs left/right"),
+            ("h/l", "Move focus left/right (Overview)"),
+            ("j/k", "Drill in / scroll (Overview)"),
+            ("j/k", "Select up/down (Inner)"),
             ("Tab", "Cycle tabs"),
             ("g", "Go to first item"),
             ("$", "Go to last item"),
             ("r", "Refresh all data"),
-            ("w", "Toggle widget visibility"),
-            ("t", "Cycle theme"),
+            ("Enter", "Drill into panel / switch to Details"),
+            ("Esc", "Go back to Overview"),
             ("?", "Toggle this help"),
-            ("q", "Quit")
+            ("Q", "Quit")
         ];
 
         for (key, desc) in shortcuts {

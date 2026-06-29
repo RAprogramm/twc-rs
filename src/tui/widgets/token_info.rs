@@ -144,12 +144,14 @@ impl crate::tui::widgets::Widget for TokenInfoWidget {
         let lines = Self::build_lines(app.token.as_deref(), palette);
 
         let paragraph = Paragraph::new(lines).block(
-            Block::default().borders(Borders::ALL).title(Line::from(Span::styled(
-                " Token Info ",
-                Style::default()
-                    .fg(palette.title)
-                    .add_modifier(Modifier::BOLD)
-            )))
+            Block::default()
+                .borders(Borders::ALL)
+                .title(Line::from(Span::styled(
+                    " Token Info ",
+                    Style::default()
+                        .fg(palette.title)
+                        .add_modifier(Modifier::BOLD)
+                )))
         );
 
         frame.render_widget(paragraph, area);

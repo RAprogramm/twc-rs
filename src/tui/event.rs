@@ -6,21 +6,25 @@
 use crossterm::event::{self, Event, KeyCode, KeyEvent};
 use tokio::{sync::mpsc, time::Duration};
 
-use super::app::{App, Focus};
+use super::app::{App, Focus, NavLevel};
 
 /// Events that the TUI event loop can process.
 #[derive(Debug)]
-#[allow(dead_code)]
 pub enum AppEvent {
     /// A keyboard event from crossterm.
     Key(KeyEvent),
     /// Timer tick — time to poll API or re-render.
     Tick,
     /// Terminal resize.
-    Resize(u16, u16),
+    // JUSTIFY: Resize events are sent by the event loop but values are unused.
+    Resize(#[expect(dead_code)] u16, #[expect(dead_code)] u16),
     /// An error message to display.
+    // JUSTIFY: Error events are part of the public event API.
+    #[expect(dead_code)]
     Error(String),
     /// A status message to display.
+    // JUSTIFY: Status events are part of the public event API.
+    #[expect(dead_code)]
     Status(String)
 }
 
@@ -43,7 +47,6 @@ pub fn handle_event(app: &mut App, event: AppEvent) -> bool {
 }
 
 fn handle_key(app: &mut App, key: KeyEvent) -> bool {
-    // Handle help overlay first
     if app.show_help {
         match key.code {
             KeyCode::Esc | KeyCode::Char('?') => {
@@ -54,107 +57,92 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
         return true;
     }
 
-    // Handle detail popup
-    if app.detail_popup {
-        match key.code {
-            KeyCode::Esc | KeyCode::Char('q') => {
-                app.detail_popup = false;
-            }
-            _ => {}
-        }
-        return true;
-    }
-
-    // Main navigation
     match key.code {
-        // Quit only with Shift+Q
         KeyCode::Char('Q') => {
             app.quit();
-            false
+            return false;
         }
-        // Help
         KeyCode::Char('?') => {
             app.toggle_help();
-            true
+            return true;
         }
-        // Refresh
         KeyCode::Char('r') => {
             app.force_refresh();
-            true
+            return true;
         }
-        // Vim navigation between components
-        KeyCode::Char('h') | KeyCode::Left => {
-            // Move focus left/up
-            match app.focus {
-                Focus::Details => app.focus = Focus::ResourceList,
-                Focus::ProjectTabs => app.focus = Focus::ResourceTabs,
-                Focus::ResourceTabs => {} // Stay at top
-                Focus::ResourceList => {} // Stay at left
-            }
-            true
-        }
-        KeyCode::Char('l') | KeyCode::Right => {
-            // Move focus right/down
-            match app.focus {
-                Focus::ResourceTabs => app.focus = Focus::ProjectTabs,
-                Focus::ResourceList => app.focus = Focus::Details,
-                Focus::ProjectTabs => {} // Stay at right
-                Focus::Details => {} // Stay at right
-            }
-            true
-        }
-        KeyCode::Char('k') | KeyCode::Up => {
-            // Move selection up in current focus
-            match app.focus {
-                Focus::ResourceList | Focus::Details => {
-                    app.select_previous();
-                }
-                Focus::ResourceTabs | Focus::ProjectTabs => {
-                    // Cycle tabs up
-                    app.active_tab = match app.active_tab {
-                        crate::tui::app::ResourceTab::Finances => crate::tui::app::ResourceTab::Servers,
-                        _ => app.active_tab.next()
-                    };
-                    app.selected = 0;
-                }
-            }
-            true
-        }
-        KeyCode::Char('j') | KeyCode::Down => {
-            // Move selection down in current focus
-            match app.focus {
-                Focus::ResourceList | Focus::Details => {
-                    app.select_next();
-                }
-                Focus::ResourceTabs | Focus::ProjectTabs => {
-                    // Cycle tabs down
-                    app.selected = 0;
-                }
-            }
-            true
-        }
-        // Enter to open detail popup
-        KeyCode::Enter => {
-            app.detail_popup = true;
-            true
-        }
-        // Go to first/last
-        KeyCode::Char('g') => {
-            app.selected = 0;
-            true
-        }
-        KeyCode::Char('$') => {
-            if app.current_list_len() > 0 {
-                app.selected = app.current_list_len() - 1;
-            }
-            true
-        }
-        // Tab to cycle between resource tabs
         KeyCode::Tab => {
             app.next_tab();
-            true
+            return true;
         }
-        _ => true
+        _ => {}
+    }
+
+    match app.nav_level {
+        NavLevel::Overview => handle_overview_key(app, key),
+        NavLevel::Inner => handle_inner_key(app, key)
+    }
+    true
+}
+
+const fn handle_overview_key(app: &mut App, key: KeyEvent) {
+    match key.code {
+        KeyCode::Char('h') | KeyCode::Left => {
+            app.focus = app.focus.left();
+        }
+        KeyCode::Char('l') | KeyCode::Right => {
+            app.focus = app.focus.right();
+        }
+        KeyCode::Char('j' | 'k') | KeyCode::Down | KeyCode::Up | KeyCode::Enter => {
+            app.nav_level = NavLevel::Inner;
+        }
+        _ => {}
+    }
+}
+
+fn handle_inner_key(app: &mut App, key: KeyEvent) {
+    match key.code {
+        KeyCode::Esc => {
+            app.nav_level = NavLevel::Overview;
+        }
+        KeyCode::Char('h') | KeyCode::Left => {
+            app.nav_level = NavLevel::Overview;
+            app.focus = app.focus.left();
+        }
+        KeyCode::Char('l') | KeyCode::Right => {
+            app.nav_level = NavLevel::Overview;
+            app.focus = app.focus.right();
+        }
+        KeyCode::Char('k') | KeyCode::Up => match app.focus {
+            Focus::ResourceTabs => {
+                app.active_tab = app.active_tab.previous();
+                app.selected = 0;
+            }
+            Focus::ResourceList => app.select_previous(),
+            Focus::Details => {}
+        },
+        KeyCode::Char('j') | KeyCode::Down => match app.focus {
+            Focus::ResourceTabs => {
+                app.active_tab = app.active_tab.next();
+                app.selected = 0;
+            }
+            Focus::ResourceList => app.select_next(),
+            Focus::Details => {}
+        },
+        KeyCode::Enter => {
+            if app.focus == Focus::ResourceList {
+                app.focus = Focus::Details;
+            }
+        }
+        KeyCode::Char('g') => {
+            app.selected = 0;
+        }
+        KeyCode::Char('$') => {
+            let len = app.current_list_len();
+            if len > 0 {
+                app.selected = len - 1;
+            }
+        }
+        _ => {}
     }
 }
 
@@ -173,15 +161,11 @@ pub async fn run_event_loop(tx: mpsc::UnboundedSender<AppEvent>) {
         .await;
 
         match evt {
-            Ok(Some(Event::Key(key))) => {
-                if tx.send(AppEvent::Key(key)).is_err() {
-                    break;
-                }
+            Ok(Some(Event::Key(key))) if tx.send(AppEvent::Key(key)).is_err() => {
+                break;
             }
-            Ok(Some(Event::Resize(w, h))) => {
-                if tx.send(AppEvent::Resize(w, h)).is_err() {
-                    break;
-                }
+            Ok(Some(Event::Resize(w, h))) if tx.send(AppEvent::Resize(w, h)).is_err() => {
+                break;
             }
             _ => {}
         }

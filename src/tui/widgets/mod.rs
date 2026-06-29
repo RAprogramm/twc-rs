@@ -118,6 +118,8 @@ impl WidgetRegistry {
     ///     println!("Found widget: {}", w.name());
     /// }
     /// ```
+    // JUSTIFY: Public API method for widget lookup.
+    #[allow(dead_code)]
     pub fn get(&self, id: &str) -> Option<&(dyn Widget + Send)> {
         self.widgets
             .iter()
@@ -132,8 +134,7 @@ impl WidgetRegistry {
     /// * `id` - The unique identifier of the widget to find.
     ///
     /// # Returns
-    ///
-#[expect(dead_code)]
+    #[expect(dead_code)]
     /// `Some(&mut dyn Widget)` if found, `None` otherwise.
     pub fn get_mut<'a>(&'a mut self, id: &str) -> Option<&'a mut dyn Widget> {
         for w in &mut self.widgets {
@@ -147,7 +148,7 @@ impl WidgetRegistry {
     /// Toggles the enabled state of the widget with the given id.
     ///
     /// # Arguments
-#[expect(dead_code)]
+    #[expect(dead_code)]
     ///
     /// * `id` - The unique identifier of the widget to toggle.
     pub fn toggle(&mut self, id: &str) {
@@ -181,7 +182,7 @@ impl WidgetRegistry {
         clippy::cast_sign_loss,
         clippy::cast_precision_loss
     )]
-#[expect(dead_code)]
+    #[expect(dead_code)]
     pub fn render_all(&self, frame: &mut Frame, area: Rect, app: &App) {
         let enabled = self.enabled_widgets();
         let count = enabled.len();
@@ -222,25 +223,18 @@ impl WidgetRegistry {
     /// * `left_area` - The area for the left widget.
     /// * `right_area` - The area for the right widget.
     /// * `app` - The application state.
+    /// * `left_border` - Border color for the left panel.
+    /// * `right_border` - Border color for the right panel.
     pub fn render_side_by_side(
-        &self,
         frame: &mut Frame,
         left_area: Rect,
         right_area: Rect,
-        app: &App
+        app: &App,
+        left_border: ratatui::style::Color,
+        right_border: ratatui::style::Color
     ) {
-        let left_render = |frame: &mut Frame, area: Rect, app: &App| {
-            if let Some(w) = self.get("resource_list") {
-                w.render(frame, area, app);
-            }
-        };
-        let right_render = |frame: &mut Frame, area: Rect, app: &App| {
-            if let Some(w) = self.get("details") {
-                w.render(frame, area, app);
-            }
-        };
-        left_render(frame, left_area, app);
-        right_render(frame, right_area, app);
+        resource_list::render(frame, left_area, app, left_border);
+        details::render(frame, right_area, app, right_border);
     }
 }
 
@@ -263,7 +257,7 @@ pub mod details;
 pub mod help;
 pub mod project_manager;
 pub mod resource_list;
+pub mod resource_tabs;
 pub mod spinner;
 pub mod stats;
 pub mod token_info;
-pub mod resource_tabs;

@@ -27,7 +27,7 @@ pub struct ServerSummary {
     pub cpu:      i32,
     pub ram_mb:   i32,
     pub disk_gb:  i32,
-#[expect(dead_code)]
+    #[expect(dead_code)]
     pub ip:       String,
     pub location: String
 }
@@ -216,6 +216,15 @@ pub struct KnowledgeBaseSummary {
     pub status:         String
 }
 
+/// Navigation depth level for vim-style navigation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NavLevel {
+    /// Moving focus between panels (h/l to switch).
+    Overview,
+    /// Interacting with content inside the focused panel.
+    Inner
+}
+
 /// Resource category in the left panel.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ResourceTab {
@@ -296,6 +305,32 @@ impl ResourceTab {
         }
     }
 
+    /// Cycles to the previous tab.
+    pub const fn previous(self) -> Self {
+        match self {
+            Self::Servers => Self::Finances,
+            Self::Databases => Self::Servers,
+            Self::S3 => Self::Databases,
+            Self::Kubernetes => Self::S3,
+            Self::Projects => Self::Kubernetes,
+            Self::Balancers => Self::Projects,
+            Self::Registry => Self::Balancers,
+            Self::Domains => Self::Registry,
+            Self::Firewall => Self::Domains,
+            Self::FloatingIps => Self::Firewall,
+            Self::Images => Self::FloatingIps,
+            Self::NetworkDrives => Self::Images,
+            Self::Vpc => Self::NetworkDrives,
+            Self::DedicatedServers => Self::Vpc,
+            Self::Mail => Self::DedicatedServers,
+            Self::Apps => Self::Mail,
+            Self::AiAgents => Self::Apps,
+            Self::KnowledgeBases => Self::AiAgents,
+            Self::SshKeys => Self::KnowledgeBases,
+            Self::Finances => Self::SshKeys
+        }
+    }
+
     /// Returns the index of this tab.
     // JUSTIFY: Public API method for future UI integration.
     #[allow(dead_code)]
@@ -324,25 +359,44 @@ impl ResourceTab {
         }
     }
 }
-/// Focus target for vim-style navigation.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Which panel is currently focused.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum Focus {
+    /// Resource tabs bar at the top.
+    ResourceTabs,
     /// Resource list panel (left side).
+    #[default]
     ResourceList,
     /// Details panel (right side).
-    Details,
-    /// Resource tabs (top).
-    ResourceTabs,
-    /// Project tabs (top).
-    ProjectTabs
+    Details
 }
 
-impl Default for Focus {
-    fn default() -> Self {
-        Self::ResourceList
+impl Focus {
+    /// Returns the display label for the focus target.
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::ResourceTabs => "Tabs",
+            Self::ResourceList => "List",
+            Self::Details => "Details"
+        }
+    }
+
+    /// Moves focus to the left neighbor.
+    pub const fn left(self) -> Self {
+        match self {
+            Self::Details => Self::ResourceList,
+            Self::ResourceList | Self::ResourceTabs => Self::ResourceTabs
+        }
+    }
+
+    /// Moves focus to the right neighbor.
+    pub const fn right(self) -> Self {
+        match self {
+            Self::ResourceTabs => Self::ResourceList,
+            Self::ResourceList | Self::Details => Self::Details
+        }
     }
 }
-
 
 /// Holds all runtime state for the TUI dashboard.
 pub struct App {
@@ -385,12 +439,13 @@ pub struct App {
     pub widgets:           super::widgets::WidgetRegistry,
     pub project_manager:   ProjectManager,
     pub focus:             Focus,
-    pub detail_popup:      bool
+    pub nav_level:         NavLevel
 }
 
 impl App {
-#[expect(dead_code)]
     /// Creates a new `App` with default state.
+    // JUSTIFY: Used in tests and as a convenience constructor.
+    #[allow(dead_code)]
     pub fn new(refresh_secs: u64) -> Self {
         Self::new_with_theme(refresh_secs, super::themes::Theme::default(), None)
     }
@@ -440,8 +495,8 @@ impl App {
             is_loading: false,
             widgets: super::widgets::WidgetRegistry::new(),
             project_manager: ProjectManager::new(),
-            focus:             Focus::ResourceList,
-            detail_popup:      false,
+            focus: Focus::ResourceList,
+            nav_level: NavLevel::Overview
         }
     }
 
@@ -472,27 +527,27 @@ impl App {
     }
 
     /// Moves selection up.
-    pub fn select_previous(&mut self) {
+    pub const fn select_previous(&mut self) {
         if self.selected > 0 {
             self.selected -= 1;
         }
     }
 
     /// Moves selection down.
-    pub fn select_next(&mut self) {
+    pub const fn select_next(&mut self) {
         if self.selected + 1 < self.current_list_len() {
             self.selected += 1;
         }
     }
 
     /// Cycles to the next resource tab.
-    pub fn next_tab(&mut self) {
+    pub const fn next_tab(&mut self) {
         self.active_tab = self.active_tab.next();
         self.selected = 0;
     }
 
     /// Toggles the help overlay.
-    pub fn toggle_help(&mut self) {
+    pub const fn toggle_help(&mut self) {
         self.show_help = !self.show_help;
     }
 
@@ -664,7 +719,7 @@ impl App {
         self.clamp_selection();
     }
 
-    fn clamp_selection(&mut self) {
+    const fn clamp_selection(&mut self) {
         let len = self.current_list_len();
         if len == 0 {
             self.selected = 0;
@@ -672,9 +727,10 @@ impl App {
             self.selected = len - 1;
         }
     }
-#[expect(dead_code)]
 
     /// Appends a CPU sample (rolling 60-point window).
+    // JUSTIFY: Part of the public API for future dashboard charts.
+    #[allow(dead_code)]
     pub fn push_cpu(&mut self, value: f64) {
         if self.cpu_history.len() >= 60 {
             self.cpu_history.pop_front();
@@ -683,24 +739,27 @@ impl App {
     }
 
     /// Appends a RAM sample (rolling 60-point window).
-#[expect(dead_code)]
+    // JUSTIFY: Part of the public API for future dashboard charts.
+    #[allow(dead_code)]
     pub fn push_ram(&mut self, _value: f64) {
         if self.ram_history.len() >= 60 {
             self.ram_history.pop_front();
         }
     }
 
-#[expect(dead_code)]
     /// Appends a network-in sample.
+    // JUSTIFY: Part of the public API for future dashboard charts.
+    #[allow(dead_code)]
     pub fn push_net_in(&mut self, value: u64) {
         if self.net_in_history.len() >= 60 {
             self.net_in_history.pop_front();
         }
         self.net_in_history.push_back(value);
     }
-#[expect(dead_code)]
 
     /// Appends a network-out sample.
+    // JUSTIFY: Part of the public API for future dashboard charts.
+    #[allow(dead_code)]
     pub fn push_net_out(&mut self, value: u64) {
         if self.net_out_history.len() >= 60 {
             self.net_out_history.pop_front();
@@ -709,7 +768,7 @@ impl App {
     }
 
     /// Quits the application.
-    pub fn quit(&mut self) {
+    pub const fn quit(&mut self) {
         self.running = false;
     }
 }

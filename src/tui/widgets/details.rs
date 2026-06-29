@@ -20,40 +20,52 @@ use crate::tui::app::{App, ResourceTab};
 /// * `frame` - The render frame.
 /// * `area` - The area to render in.
 /// * `app` - The application state.
-pub fn render(frame: &mut Frame, area: Rect, app: &App) {
+/// * `border_color` - Color for the panel border.
+pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
+    let palette = app.theme.palette();
+
     let text = match app.active_tab {
-        ResourceTab::Servers => render_server_details(app),
-        ResourceTab::Databases => render_database_details(app),
-        ResourceTab::S3 => render_s3_details(app),
-        ResourceTab::Kubernetes => render_k8s_details(app),
-        ResourceTab::Projects => render_project_details(app),
-        ResourceTab::Balancers => render_generic_details(app, "balancers"),
-        ResourceTab::Registry => render_generic_details(app, "registries"),
-        ResourceTab::Domains => render_generic_details(app, "domains"),
-        ResourceTab::Firewall => render_generic_details(app, "firewalls"),
-        ResourceTab::FloatingIps => render_generic_details(app, "floating_ips"),
-        ResourceTab::Images => render_generic_details(app, "images"),
-        ResourceTab::NetworkDrives => render_generic_details(app, "network_drives"),
-        ResourceTab::Vpc => render_generic_details(app, "vpcs"),
-        ResourceTab::DedicatedServers => render_generic_details(app, "dedicated_servers"),
-        ResourceTab::Mail => render_generic_details(app, "mails"),
-        ResourceTab::Apps => render_generic_details(app, "apps"),
-        ResourceTab::AiAgents => render_generic_details(app, "ai_agents"),
-        ResourceTab::KnowledgeBases => render_generic_details(app, "knowledge_bases"),
-        ResourceTab::SshKeys => render_generic_details(app, "ssh_keys"),
-        ResourceTab::Finances => render_generic_details(app, "finances")
+        ResourceTab::Servers => render_server_details(app, palette),
+        ResourceTab::Databases => render_database_details(app, palette),
+        ResourceTab::S3 => render_s3_details(app, palette),
+        ResourceTab::Kubernetes => render_k8s_details(app, palette),
+        ResourceTab::Projects => render_project_details(app, palette),
+        ResourceTab::Balancers => render_generic_details("balancers", palette),
+        ResourceTab::Registry => render_generic_details("registries", palette),
+        ResourceTab::Domains => render_generic_details("domains", palette),
+        ResourceTab::Firewall => render_generic_details("firewalls", palette),
+        ResourceTab::FloatingIps => render_generic_details("floating_ips", palette),
+        ResourceTab::Images => render_generic_details("images", palette),
+        ResourceTab::NetworkDrives => render_generic_details("network_drives", palette),
+        ResourceTab::Vpc => render_generic_details("vpcs", palette),
+        ResourceTab::DedicatedServers => render_generic_details("dedicated_servers", palette),
+        ResourceTab::Mail => render_generic_details("mails", palette),
+        ResourceTab::Apps => render_generic_details("apps", palette),
+        ResourceTab::AiAgents => render_generic_details("ai_agents", palette),
+        ResourceTab::KnowledgeBases => render_generic_details("knowledge_bases", palette),
+        ResourceTab::SshKeys => render_generic_details("ssh_keys", palette),
+        ResourceTab::Finances => render_generic_details("finances", palette)
     };
 
-    let paragraph =
-        Paragraph::new(text).block(Block::default().borders(Borders::ALL).title(Line::from(" Details ")));
+    let paragraph = Paragraph::new(text).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(border_color))
+            .title(Line::from(Span::styled(
+                " Details ",
+                Style::default()
+                    .fg(palette.title)
+                    .add_modifier(Modifier::BOLD)
+            )))
+    );
     frame.render_widget(paragraph, area);
 }
 
-fn render_server_details(app: &App) -> Vec<Line<'static>> {
+fn render_server_details(app: &App, palette: crate::tui::themes::Palette) -> Vec<Line<'static>> {
     if app.servers.is_empty() {
         return vec![Line::from(Span::styled(
             "No servers available",
-            Style::default().fg(Color::DarkGray)
+            Style::default().fg(palette.dim)
         ))];
     }
 
@@ -61,48 +73,48 @@ fn render_server_details(app: &App) -> Vec<Line<'static>> {
     vec![
         Line::from(Span::styled(
             format!("Name: {}", server.name),
-            Style::default().fg(Color::White)
+            Style::default().fg(palette.fg)
         )),
         Line::from(Span::styled(
             format!("ID: {}", server.id),
-            Style::default().fg(Color::White)
+            Style::default().fg(palette.fg)
         )),
         Line::from(Span::styled(
             format!("Status: {}", server.status),
-            Style::default().fg(Color::Green)
+            Style::default().fg(palette.success)
         )),
         Line::from(""),
         Line::from(Span::styled(
             "Resources:",
             Style::default()
-                .fg(Color::Cyan)
+                .fg(palette.accent)
                 .add_modifier(Modifier::BOLD)
         )),
         Line::from(Span::styled(
             format!("  CPU: {} cores", server.cpu),
-            Style::default().fg(Color::White)
+            Style::default().fg(palette.fg)
         )),
         Line::from(Span::styled(
             format!("  RAM: {} MB", server.ram_mb),
-            Style::default().fg(Color::White)
+            Style::default().fg(palette.fg)
         )),
         Line::from(Span::styled(
             format!("  Disk: {} GB", server.disk_gb),
-            Style::default().fg(Color::White)
+            Style::default().fg(palette.fg)
         )),
         Line::from(""),
         Line::from(Span::styled(
             format!("Location: {}", server.location),
-            Style::default().fg(Color::Yellow)
+            Style::default().fg(palette.warning)
         )),
     ]
 }
 
-fn render_database_details(app: &App) -> Vec<Line<'static>> {
+fn render_database_details(app: &App, palette: crate::tui::themes::Palette) -> Vec<Line<'static>> {
     if app.databases.is_empty() {
         return vec![Line::from(Span::styled(
             "No databases available",
-            Style::default().fg(Color::DarkGray)
+            Style::default().fg(palette.dim)
         ))];
     }
 
@@ -110,32 +122,32 @@ fn render_database_details(app: &App) -> Vec<Line<'static>> {
     vec![
         Line::from(Span::styled(
             format!("Name: {}", db.name),
-            Style::default().fg(Color::White)
+            Style::default().fg(palette.fg)
         )),
         Line::from(Span::styled(
             format!("ID: {}", db.id),
-            Style::default().fg(Color::White)
+            Style::default().fg(palette.fg)
         )),
         Line::from(Span::styled(
             format!("Engine: {}", db.engine),
-            Style::default().fg(Color::Cyan)
+            Style::default().fg(palette.accent)
         )),
         Line::from(Span::styled(
             format!("Status: {}", db.status),
-            Style::default().fg(Color::Green)
+            Style::default().fg(palette.success)
         )),
         Line::from(Span::styled(
             format!("Size: {} MB", db.size_mb),
-            Style::default().fg(Color::White)
+            Style::default().fg(palette.fg)
         )),
     ]
 }
 
-fn render_s3_details(app: &App) -> Vec<Line<'static>> {
+fn render_s3_details(app: &App, palette: crate::tui::themes::Palette) -> Vec<Line<'static>> {
     if app.s3_storages.is_empty() {
         return vec![Line::from(Span::styled(
             "No S3 storages available",
-            Style::default().fg(Color::DarkGray)
+            Style::default().fg(palette.dim)
         ))];
     }
 
@@ -143,32 +155,32 @@ fn render_s3_details(app: &App) -> Vec<Line<'static>> {
     vec![
         Line::from(Span::styled(
             format!("Name: {}", storage.name),
-            Style::default().fg(Color::White)
+            Style::default().fg(palette.fg)
         )),
         Line::from(Span::styled(
             format!("ID: {}", storage.id),
-            Style::default().fg(Color::White)
+            Style::default().fg(palette.fg)
         )),
         Line::from(Span::styled(
             format!("Region: {}", storage.region),
-            Style::default().fg(Color::Yellow)
+            Style::default().fg(palette.warning)
         )),
         Line::from(Span::styled(
             format!("Size: {} KB", storage.size_bytes / 1024),
-            Style::default().fg(Color::White)
+            Style::default().fg(palette.fg)
         )),
         Line::from(Span::styled(
             format!("Buckets: {}", storage.bucket_count),
-            Style::default().fg(Color::White)
+            Style::default().fg(palette.fg)
         )),
     ]
 }
 
-fn render_k8s_details(app: &App) -> Vec<Line<'static>> {
+fn render_k8s_details(app: &App, palette: crate::tui::themes::Palette) -> Vec<Line<'static>> {
     if app.k8s_clusters.is_empty() {
         return vec![Line::from(Span::styled(
             "No Kubernetes clusters available",
-            Style::default().fg(Color::DarkGray)
+            Style::default().fg(palette.dim)
         ))];
     }
 
@@ -176,32 +188,32 @@ fn render_k8s_details(app: &App) -> Vec<Line<'static>> {
     vec![
         Line::from(Span::styled(
             format!("Name: {}", cluster.name),
-            Style::default().fg(Color::White)
+            Style::default().fg(palette.fg)
         )),
         Line::from(Span::styled(
             format!("ID: {}", cluster.id),
-            Style::default().fg(Color::White)
+            Style::default().fg(palette.fg)
         )),
         Line::from(Span::styled(
             format!("Version: v{}", cluster.version),
-            Style::default().fg(Color::Magenta)
+            Style::default().fg(palette.accent)
         )),
         Line::from(Span::styled(
             format!("Status: {}", cluster.status),
-            Style::default().fg(Color::Green)
+            Style::default().fg(palette.success)
         )),
         Line::from(Span::styled(
             format!("Nodes: {}", cluster.node_count),
-            Style::default().fg(Color::White)
+            Style::default().fg(palette.fg)
         )),
     ]
 }
 
-fn render_project_details(app: &App) -> Vec<Line<'static>> {
+fn render_project_details(app: &App, palette: crate::tui::themes::Palette) -> Vec<Line<'static>> {
     if app.projects.is_empty() {
         return vec![Line::from(Span::styled(
             "No projects available",
-            Style::default().fg(Color::DarkGray)
+            Style::default().fg(palette.dim)
         ))];
     }
 
@@ -209,23 +221,26 @@ fn render_project_details(app: &App) -> Vec<Line<'static>> {
     vec![
         Line::from(Span::styled(
             format!("Name: {}", project.name),
-            Style::default().fg(Color::White)
+            Style::default().fg(palette.fg)
         )),
         Line::from(Span::styled(
             format!("ID: {}", project.id),
-            Style::default().fg(Color::White)
+            Style::default().fg(palette.fg)
         )),
         Line::from(Span::styled(
             format!("Servers: {}", project.server_count),
-            Style::default().fg(Color::White)
+            Style::default().fg(palette.fg)
         )),
     ]
 }
 
-fn render_generic_details(_app: &App, resource: &str) -> Vec<Line<'static>> {
+fn render_generic_details(
+    resource: &str,
+    palette: crate::tui::themes::Palette
+) -> Vec<Line<'static>> {
     vec![Line::from(Span::styled(
         format!("No {resource} data available"),
-        Style::default().fg(Color::DarkGray)
+        Style::default().fg(palette.dim)
     ))]
 }
 
@@ -265,6 +280,11 @@ impl crate::tui::widgets::Widget for DetailsWidget {
     }
 
     fn render(&self, frame: &mut Frame, area: Rect, app: &App) {
-        render(frame, area, app);
+        let border_color = if app.focus == crate::tui::app::Focus::Details {
+            app.theme.palette().accent
+        } else {
+            app.theme.palette().border
+        };
+        render(frame, area, app, border_color);
     }
 }
