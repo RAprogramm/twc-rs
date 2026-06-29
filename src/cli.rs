@@ -48,6 +48,10 @@ pub enum Commands {
     #[command(subcommand)]
     Database(DatabaseCommands),
 
+    /// Manage S3 storages.
+    #[command(subcommand)]
+    S3(S3Commands),
+
     /// Configure twc-rs settings.
     #[command(subcommand)]
     Config(ConfigCommands),
@@ -277,6 +281,99 @@ pub enum AuthCommands {
         #[arg(short, long)]
         token: String
     }
+}
+
+/// S3 storage subcommands.
+#[derive(Subcommand, Debug)]
+pub enum S3Commands {
+    /// List all S3 storages.
+    List {
+        /// Maximum number of storages to return.
+        #[arg(short, long)]
+        limit: Option<i32>,
+
+        /// Number of storages to skip.
+        #[arg(short, long)]
+        offset: Option<i32>
+    },
+    /// Show detailed info for a storage.
+    Info {
+        /// Storage ID.
+        #[arg(short, long)]
+        id: i32
+    },
+    /// Create a new S3 storage.
+    Create {
+        /// Storage name.
+        #[arg(short, long)]
+        name: String,
+
+        /// Preset ID for the storage.
+        #[arg(short = 'p', long)]
+        preset_id: Option<f64>
+    },
+    /// Delete a storage by ID.
+    Delete {
+        /// Storage ID.
+        #[arg(short, long)]
+        id: i32
+    },
+    /// Update storage settings.
+    Update {
+        /// Storage ID.
+        #[arg(short, long)]
+        id: i32,
+
+        /// New storage description.
+        #[arg(short, long)]
+        description: Option<String>
+    },
+    /// List users for a storage.
+    UserList {
+        /// Storage ID.
+        #[arg(short, long)]
+        id: i32
+    },
+    /// Update a storage user.
+    UserUpdate {
+        /// Storage user ID.
+        #[arg(short, long)]
+        user_id: i32
+    },
+    /// Transfer a storage.
+    Transfer {
+        /// Target storage ID (reserved for future use).
+        #[arg(short, long)]
+        target_id: Option<i32>
+    },
+    /// List subdomains for a storage.
+    SubdomainList {
+        /// Storage ID.
+        #[arg(short, long)]
+        id: i32
+    },
+    /// Add a subdomain to a storage.
+    SubdomainAdd {
+        /// Storage ID.
+        #[arg(short, long)]
+        id: i32,
+
+        /// Subdomain name.
+        #[arg(short, long)]
+        subdomain: String
+    },
+    /// Delete a subdomain from a storage.
+    SubdomainDelete {
+        /// Storage ID.
+        #[arg(short, long)]
+        id: i32,
+
+        /// Subdomain name.
+        #[arg(short, long)]
+        subdomain: String
+    },
+    /// List available storage presets.
+    PresetList
 }
 
 #[cfg(test)]

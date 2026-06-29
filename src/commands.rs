@@ -3,5 +3,6 @@
 
 pub mod databases;
 pub mod projects;
+pub mod s3;
 pub mod servers;
 pub mod ssh_keys;

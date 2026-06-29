@@ -14,7 +14,7 @@ mod tui;
 
 use clap::Parser;
 use cli::{
-    AuthCommands, Cli, Commands, ConfigCommands, DatabaseCommands, ProjectCommands,
+    AuthCommands, Cli, Commands, ConfigCommands, DatabaseCommands, ProjectCommands, S3Commands,
     ServerCommands, SshCommands
 };
 use config::AppConfig;
@@ -298,6 +298,51 @@ async fn run() -> Result<(), TwcError> {
                 DatabaseCommands::PresetList => {
                     commands::databases::preset_list(&config, format).await
                 }
+            }
+        }
+        Commands::S3(cmd) => {
+            let token = ensure_token(cli.token.as_deref())?;
+            let config = authenticated(token);
+            match cmd {
+                S3Commands::List {
+                    limit,
+                    offset
+                } => commands::s3::list(&config, limit, offset, format).await,
+                S3Commands::Info {
+                    id
+                } => commands::s3::info(&config, id, format).await,
+                S3Commands::Create {
+                    name,
+                    preset_id
+                } => commands::s3::create(&config, &name, preset_id, format).await,
+                S3Commands::Delete {
+                    id
+                } => commands::s3::delete(&config, id).await,
+                S3Commands::Update {
+                    id,
+                    description
+                } => commands::s3::update(&config, id, description.as_deref(), format).await,
+                S3Commands::UserList {
+                    id
+                } => commands::s3::user_list(&config, id, format).await,
+                S3Commands::UserUpdate {
+                    user_id
+                } => commands::s3::user_update(&config, user_id, format).await,
+                S3Commands::Transfer {
+                    target_id
+                } => commands::s3::transfer(&config, target_id).await,
+                S3Commands::SubdomainList {
+                    id
+                } => commands::s3::subdomain_list(&config, id, format).await,
+                S3Commands::SubdomainAdd {
+                    id,
+                    subdomain
+                } => commands::s3::subdomain_add(&config, id, &subdomain).await,
+                S3Commands::SubdomainDelete {
+                    id,
+                    subdomain
+                } => commands::s3::subdomain_delete(&config, id, &subdomain).await,
+                S3Commands::PresetList => commands::s3::preset_list(&config, format).await
             }
         }
         #[cfg(feature = "auth")]
