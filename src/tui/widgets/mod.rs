@@ -76,6 +76,7 @@ impl WidgetRegistry {
             widgets: Vec::new()
         };
         registry.register(Box::new(account::AccountWidget::new(true)));
+        registry.register(Box::new(stats::StatsWidget::new(true)));
         registry.register(Box::new(token_info::TokenInfoWidget::new(true)));
         registry
     }
@@ -225,4 +226,5 @@ pub mod account;
 pub mod details;
 pub mod resource_list;
 pub mod spinner;
+pub mod stats;
 pub mod token_info;

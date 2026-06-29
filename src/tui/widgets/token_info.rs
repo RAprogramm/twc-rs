@@ -68,7 +68,12 @@ impl TokenInfoWidget {
 
         let payload = JwtPayload::parse(token_str);
         let expires_line = payload.exp.map_or_else(
-            || Line::from(Span::styled("Expires: unknown", Style::default().fg(palette.dim))),
+            || {
+                Line::from(Span::styled(
+                    "Expires: unknown",
+                    Style::default().fg(palette.dim)
+                ))
+            },
             |exp| {
                 Line::from(Span::styled(
                     format!("Expires: {} UTC", exp.format("%Y-%m-%d %H:%M:%S")),
@@ -78,7 +83,12 @@ impl TokenInfoWidget {
         );
 
         let days_line = payload.days_remaining().map_or_else(
-            || Line::from(Span::styled("Days left: N/A", Style::default().fg(palette.dim))),
+            || {
+                Line::from(Span::styled(
+                    "Days left: N/A",
+                    Style::default().fg(palette.dim)
+                ))
+            },
             |days| {
                 Line::from(Span::styled(
                     format!("Days left: {days}"),
