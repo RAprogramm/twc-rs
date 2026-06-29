@@ -11,7 +11,35 @@ use ratatui::{
     widgets::{Block, Borders, List, ListItem, ListState}
 };
 
-use crate::tui::app::{App, ResourceTab};
+use crate::tui::{
+    app::{App, ResourceTab},
+    themes::Palette
+};
+
+/// Maps a server status (the API enum's debug name) to a display icon,
+/// color, and human-readable label.
+///
+/// The API reports states like `On`, `Off`, `Installing`, `Rebooting` —
+/// not `Running`/`Stopped` — so the dashboard translates them here.
+fn server_status_view(status: &str, palette: &Palette) -> (&'static str, Color, String) {
+    match status {
+        "On" => ("\u{25B6}", palette.success, "running".to_string()),
+        "Off" => ("\u{25CB}", palette.error, "stopped".to_string()),
+        "Removed" | "Blocked" => ("\u{25CB}", palette.error, status.to_lowercase()),
+        "TurningOn" => ("\u{25D0}", palette.warning, "starting".to_string()),
+        "TurningOff" | "HardTurningOff" => {
+            ("\u{25D0}", palette.warning, "stopping".to_string())
+        }
+        "Rebooting" | "HardRebooting" => {
+            ("\u{25D0}", palette.warning, "rebooting".to_string())
+        }
+        "Installing" | "SoftwareInstall" | "Reinstalling" => {
+            ("\u{25D0}", palette.warning, "installing".to_string())
+        }
+        "Removing" => ("\u{25CC}", palette.error, "removing".to_string()),
+        other => ("\u{25D0}", palette.warning, other.to_lowercase())
+    }
+}
 
 /// Renders the resource list panel with a given border color.
 ///
@@ -31,21 +59,12 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
             .servers
             .iter()
             .map(|s| {
-                let status_color = match s.status.as_str() {
-                    "Running" => palette.success,
-                    "Stopped" => palette.error,
-                    _ => palette.warning
-                };
-                let icon = if s.status == "Running" {
-                    "\u{25B6}"
-                } else {
-                    "\u{25CB}"
-                };
+                let (icon, status_color, label) = server_status_view(&s.status, &palette);
                 let line = Line::from(vec![
                     Span::raw(format!("{icon} ")),
                     Span::styled(&s.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
-                    Span::styled(format!("[{}]", s.status), Style::default().fg(status_color)),
+                    Span::styled(format!("[{label}]"), Style::default().fg(status_color)),
                 ]);
                 ListItem::new(line)
             })
@@ -331,13 +350,18 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
             .collect()
     };
 
+    let tab_name = ResourceTab::names()
+        .get(app.active_tab.index())
+        .copied()
+        .unwrap_or("Resources");
+    let title = format!(" {tab_name} ({}) ", items.len());
     let list = List::new(items)
         .block(
             Block::default()
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(border_color))
                 .title(Line::from(Span::styled(
-                    " Resources ",
+                    title,
                     Style::default()
                         .fg(palette.title)
                         .add_modifier(Modifier::BOLD)
@@ -398,5 +422,45 @@ impl crate::tui::widgets::Widget for ResourceListWidget {
             app.theme.palette().border
         };
         render(frame, area, app, border_color);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::tui::themes::Theme;
+
+    #[test]
+    fn server_status_on_is_running() {
+        let palette = Theme::GruvboxDark.palette();
+        let (icon, color, label) = server_status_view("On", &palette);
+        assert_eq!(icon, "\u{25B6}");
+        assert_eq!(color, palette.success);
+        assert_eq!(label, "running");
+    }
+
+    #[test]
+    fn server_status_off_is_stopped() {
+        let palette = Theme::GruvboxDark.palette();
+        let (icon, color, label) = server_status_view("Off", &palette);
+        assert_eq!(icon, "\u{25CB}");
+        assert_eq!(color, palette.error);
+        assert_eq!(label, "stopped");
+    }
+
+    #[test]
+    fn server_status_transitional_is_warning() {
+        let palette = Theme::GruvboxDark.palette();
+        let (_, color, label) = server_status_view("Rebooting", &palette);
+        assert_eq!(color, palette.warning);
+        assert_eq!(label, "rebooting");
+    }
+
+    #[test]
+    fn server_status_unknown_falls_back_to_lowercased() {
+        let palette = Theme::GruvboxDark.palette();
+        let (_, color, label) = server_status_view("SomethingNew", &palette);
+        assert_eq!(color, palette.warning);
+        assert_eq!(label, "somethingnew");
     }
 }
