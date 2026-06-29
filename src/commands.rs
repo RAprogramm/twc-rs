@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 RAprogramm <andrey.rozanov.vl@gmail.com>
 // SPDX-License-Identifier: MIT
 
+pub mod balancers;
 pub mod databases;
 pub mod kubernetes;
 pub mod projects;

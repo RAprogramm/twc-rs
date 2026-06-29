@@ -14,8 +14,8 @@ mod tui;
 
 use clap::Parser;
 use cli::{
-    AuthCommands, Cli, Commands, ConfigCommands, DatabaseCommands, KubernetesCommands,
-    ProjectCommands, S3Commands, ServerCommands, SshCommands
+    AuthCommands, BalancerCommands, Cli, Commands, ConfigCommands, DatabaseCommands,
+    KubernetesCommands, ProjectCommands, S3Commands, ServerCommands, SshCommands
 };
 use config::AppConfig;
 use error::TwcError;
@@ -404,6 +404,53 @@ async fn run() -> Result<(), TwcError> {
                 KubernetesCommands::Resources {
                     id
                 } => commands::kubernetes::resources(&config, id, format).await
+            }
+        }
+        Commands::Balancer(cmd) => {
+            let token = ensure_token(cli.token.as_deref())?;
+            let config = authenticated(token);
+            match cmd {
+                BalancerCommands::List {
+                    limit,
+                    offset
+                } => commands::balancers::list(&config, limit, offset, format).await,
+                BalancerCommands::Info {
+                    id
+                } => commands::balancers::info(&config, id, format).await,
+                BalancerCommands::Create {
+                    name
+                } => commands::balancers::create(&config, &name, format).await,
+                BalancerCommands::Delete {
+                    id
+                } => commands::balancers::delete(&config, id).await,
+                BalancerCommands::Update {
+                    id,
+                    name
+                } => commands::balancers::update(&config, id, name.as_deref(), format).await,
+                BalancerCommands::RuleList {
+                    id
+                } => commands::balancers::rule_list(&config, id, format).await,
+                BalancerCommands::RuleCreate {
+                    id
+                } => commands::balancers::rule_create(&config, id, format).await,
+                BalancerCommands::RuleDelete {
+                    id,
+                    rule_id
+                } => commands::balancers::rule_delete(&config, id, rule_id).await,
+                BalancerCommands::IpList {
+                    id
+                } => commands::balancers::ip_list(&config, id, format).await,
+                BalancerCommands::IpAdd {
+                    id,
+                    ip
+                } => commands::balancers::ip_add(&config, id, &ip).await,
+                BalancerCommands::IpRemove {
+                    id,
+                    ip
+                } => commands::balancers::ip_remove(&config, id, &ip).await,
+                BalancerCommands::PresetList => {
+                    commands::balancers::preset_list(&config, format).await
+                }
             }
         }
         #[cfg(feature = "auth")]

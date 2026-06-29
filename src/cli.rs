@@ -56,6 +56,10 @@ pub enum Commands {
     #[command(subcommand)]
     Kubernetes(KubernetesCommands),
 
+    /// Manage load balancers.
+    #[command(subcommand)]
+    Balancer(BalancerCommands),
+
     /// Configure twc-rs settings.
     #[command(subcommand)]
     Config(ConfigCommands),
@@ -502,6 +506,99 @@ pub enum KubernetesCommands {
         #[arg(short, long)]
         id: i32
     }
+}
+
+/// Balancer subcommands.
+#[derive(Subcommand, Debug)]
+pub enum BalancerCommands {
+    /// List all balancers.
+    List {
+        /// Maximum number of balancers to return.
+        #[arg(short, long)]
+        limit: Option<i32>,
+
+        /// Number of balancers to skip.
+        #[arg(short, long)]
+        offset: Option<i32>
+    },
+    /// Show detailed info for a balancer.
+    Info {
+        /// Balancer ID.
+        #[arg(short, long)]
+        id: i32
+    },
+    /// Create a new balancer.
+    Create {
+        /// Balancer name.
+        #[arg(short, long)]
+        name: String
+    },
+    /// Delete a balancer by ID.
+    Delete {
+        /// Balancer ID.
+        #[arg(short, long)]
+        id: i32
+    },
+    /// Update balancer settings.
+    Update {
+        /// Balancer ID.
+        #[arg(short, long)]
+        id: i32,
+
+        /// New balancer name.
+        #[arg(short, long)]
+        name: Option<String>
+    },
+    /// List rules for a balancer.
+    RuleList {
+        /// Balancer ID.
+        #[arg(short, long)]
+        id: i32
+    },
+    /// Create a rule for a balancer.
+    RuleCreate {
+        /// Balancer ID.
+        #[arg(short, long)]
+        id: i32
+    },
+    /// Delete a rule from a balancer.
+    RuleDelete {
+        /// Balancer ID.
+        #[arg(short, long)]
+        id: i32,
+
+        /// Rule ID to delete.
+        #[arg(short, long)]
+        rule_id: i32
+    },
+    /// List IPs for a balancer.
+    IpList {
+        /// Balancer ID.
+        #[arg(short, long)]
+        id: i32
+    },
+    /// Add an IP to a balancer.
+    IpAdd {
+        /// Balancer ID.
+        #[arg(short, long)]
+        id: i32,
+
+        /// IP address to add.
+        #[arg(short, long)]
+        ip: String
+    },
+    /// Remove an IP from a balancer.
+    IpRemove {
+        /// Balancer ID.
+        #[arg(short, long)]
+        id: i32,
+
+        /// IP address to remove.
+        #[arg(short, long)]
+        ip: String
+    },
+    /// List available balancer presets.
+    PresetList
 }
 
 #[cfg(test)]
