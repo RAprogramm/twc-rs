@@ -46,6 +46,25 @@ pub fn handle_event(app: &mut App, event: AppEvent) -> bool {
 }
 
 fn handle_key(app: &mut App, key: KeyEvent) -> bool {
+    if app.action_menu_open() {
+        match key.code {
+            KeyCode::Char('k') | KeyCode::Up => app.menu_previous(),
+            KeyCode::Char('j') | KeyCode::Down => app.menu_next(),
+            KeyCode::Enter => app.menu_select(),
+            KeyCode::Esc | KeyCode::Char('q') => app.close_action_menu(),
+            _ => {}
+        }
+        return true;
+    }
+
+    if app.awaiting_confirm() {
+        match key.code {
+            KeyCode::Char('y' | 'Y') | KeyCode::Enter => app.confirm_action(),
+            _ => app.cancel_action()
+        }
+        return true;
+    }
+
     if app.show_help {
         match key.code {
             KeyCode::Esc | KeyCode::Char('?') => {
@@ -74,6 +93,14 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
             return true;
         }
         _ => {}
+    }
+
+    if matches!(key.code, KeyCode::Enter)
+        && app.focus == Focus::ResourceList
+        && app.selected_server().is_some()
+    {
+        app.open_action_menu();
+        return true;
     }
 
     match app.nav_level {

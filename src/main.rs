@@ -700,6 +700,12 @@ async fn run_dashboard(
             .draw(|f| tui::ui::draw(f, &app))
             .map_err(|e| TwcError::Io(e.to_string()))?;
 
+        if let Some(action) = app.take_dispatch() {
+            let config = authenticated(token.clone());
+            perform_action(&config, &mut app, action).await;
+            refresh_all(&config, &mut app).await;
+        }
+
         if app.needs_refresh() {
             let config = authenticated(token.clone());
             refresh_all(&config, &mut app).await;
@@ -715,6 +721,57 @@ async fn run_dashboard(
         .show_cursor()
         .map_err(|e| TwcError::Io(e.to_string()))?;
     Ok(())
+}
+
+#[cfg(feature = "tui")]
+async fn perform_action(
+    config: &timeweb_rs::apis::configuration::Configuration,
+    app: &mut tui::app::App,
+    pending: tui::app::PendingAction
+) {
+    use tui::app::ServerAction;
+
+    use timeweb_rs::apis::servers_api;
+
+    let id = pending.server_id;
+    let result = match pending.action {
+        ServerAction::Start => {
+            servers_api::start_server(config, id).await.map_err(|e| e.to_string())
+        }
+        ServerAction::Shutdown => {
+            servers_api::shutdown_server(config, id).await.map_err(|e| e.to_string())
+        }
+        ServerAction::Reboot => {
+            servers_api::reboot_server(config, id).await.map_err(|e| e.to_string())
+        }
+        ServerAction::Clone => servers_api::clone_server(config, id)
+            .await
+            .map(|_| ())
+            .map_err(|e| e.to_string()),
+        ServerAction::Delete => servers_api::delete_server(config, id, None, None)
+            .await
+            .map(|_| ())
+            .map_err(|e| e.to_string())
+    };
+
+    match result {
+        Ok(()) => {
+            app.error_message = None;
+            app.status_message = Some(format!(
+                "{} '{}' (id {}) — ok",
+                pending.action.verb(),
+                pending.server_name,
+                pending.server_id
+            ));
+        }
+        Err(e) => {
+            app.error_message = Some(format!(
+                "{} '{}' failed: {e}",
+                pending.action.verb(),
+                pending.server_name
+            ));
+        }
+    }
 }
 
 #[cfg(feature = "tui")]

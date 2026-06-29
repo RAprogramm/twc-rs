@@ -225,6 +225,76 @@ pub enum NavLevel {
     Inner
 }
 
+/// An action that can be triggered against a server from the dashboard.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ServerAction {
+    /// Power the server on.
+    Start,
+    /// Gracefully power the server off.
+    Shutdown,
+    /// Reboot the server.
+    Reboot,
+    /// Create a clone of the server.
+    Clone,
+    /// Permanently delete the server.
+    Delete
+}
+
+impl ServerAction {
+    /// The actions offered for a server, in menu order.
+    pub const ALL: [Self; 5] = [
+        Self::Start,
+        Self::Shutdown,
+        Self::Reboot,
+        Self::Clone,
+        Self::Delete
+    ];
+
+    /// Returns the label shown in the action menu and confirmation prompt.
+    #[must_use]
+    pub const fn verb(self) -> &'static str {
+        match self {
+            Self::Start => "Start",
+            Self::Shutdown => "Shutdown",
+            Self::Reboot => "Reboot",
+            Self::Clone => "Clone",
+            Self::Delete => "Delete"
+        }
+    }
+
+    /// Returns true when the action is destructive and irreversible.
+    ///
+    /// Destructive actions require an extra confirmation step.
+    #[must_use]
+    pub const fn is_destructive(self) -> bool {
+        matches!(self, Self::Delete)
+    }
+}
+
+/// A server action awaiting confirmation, or ready to be dispatched.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PendingAction {
+    /// The action to perform.
+    pub action:      ServerAction,
+    /// Target server id.
+    pub server_id:   i32,
+    /// Target server name, for display.
+    pub server_name: String
+}
+
+/// A context action menu opened over the selected resource.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ActionMenu {
+    /// Target server id.
+    pub server_id:   i32,
+    /// Target server name, for display.
+    pub server_name: String,
+    /// Available actions, in display order.
+    pub actions:     Vec<ServerAction>,
+    /// Index of the highlighted action.
+    pub selected:    usize
+}
+
 /// Resource category in the left panel.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ResourceTab {
@@ -446,7 +516,10 @@ pub struct App {
     pub widgets:           super::widgets::WidgetRegistry,
     pub project_manager:   ProjectManager,
     pub focus:             Focus,
-    pub nav_level:         NavLevel
+    pub nav_level:         NavLevel,
+    pub action_menu:       Option<ActionMenu>,
+    pub confirm:           Option<PendingAction>,
+    pub dispatch:          Option<PendingAction>
 }
 
 impl App {
@@ -505,7 +578,10 @@ impl App {
             widgets: super::widgets::WidgetRegistry::new(),
             project_manager: ProjectManager::new(),
             focus: Focus::ResourceList,
-            nav_level: NavLevel::Overview
+            nav_level: NavLevel::Overview,
+            action_menu: None,
+            confirm: None,
+            dispatch: None
         }
     }
 
@@ -777,6 +853,115 @@ impl App {
             self.net_out_history.pop_front();
         }
         self.net_out_history.push_back(value);
+    }
+
+    /// Returns the selected server, but only on the Servers tab.
+    #[must_use]
+    pub fn selected_server(&self) -> Option<&ServerSummary> {
+        if matches!(self.active_tab, ResourceTab::Servers) {
+            self.servers.get(self.selected)
+        } else {
+            None
+        }
+    }
+
+    /// Opens the context action menu for the selected server.
+    ///
+    /// No-op unless the Servers tab is active and a server is selected.
+    pub fn open_action_menu(&mut self) {
+        if let Some(server) = self.selected_server() {
+            self.action_menu = Some(ActionMenu {
+                server_id:   server.id,
+                server_name: server.name.clone(),
+                actions:     ServerAction::ALL.to_vec(),
+                selected:    0
+            });
+        }
+    }
+
+    /// Closes the action menu without choosing anything.
+    pub fn close_action_menu(&mut self) {
+        self.action_menu = None;
+    }
+
+    /// Returns true while the action menu is open.
+    #[must_use]
+    pub const fn action_menu_open(&self) -> bool {
+        self.action_menu.is_some()
+    }
+
+    /// Returns the open action menu, for rendering.
+    #[must_use]
+    pub const fn action_menu(&self) -> Option<&ActionMenu> {
+        self.action_menu.as_ref()
+    }
+
+    /// Moves the action-menu highlight to the next item (wraps).
+    pub fn menu_next(&mut self) {
+        if let Some(menu) = self.action_menu.as_mut()
+            && !menu.actions.is_empty()
+        {
+            menu.selected = (menu.selected + 1) % menu.actions.len();
+        }
+    }
+
+    /// Moves the action-menu highlight to the previous item (wraps).
+    pub fn menu_previous(&mut self) {
+        if let Some(menu) = self.action_menu.as_mut() {
+            let len = menu.actions.len();
+            if len > 0 {
+                menu.selected = (menu.selected + len - 1) % len;
+            }
+        }
+    }
+
+    /// Chooses the highlighted action: destructive actions open a
+    /// confirmation prompt, others are queued for dispatch immediately.
+    pub fn menu_select(&mut self) {
+        let Some(menu) = self.action_menu.take() else {
+            return;
+        };
+        let Some(&action) = menu.actions.get(menu.selected) else {
+            return;
+        };
+        let pending = PendingAction {
+            action,
+            server_id: menu.server_id,
+            server_name: menu.server_name
+        };
+        if action.is_destructive() {
+            self.confirm = Some(pending);
+        } else {
+            self.dispatch = Some(pending);
+        }
+    }
+
+    /// Confirms the pending destructive action, queueing it for dispatch.
+    pub fn confirm_action(&mut self) {
+        self.dispatch = self.confirm.take();
+    }
+
+    /// Dismisses the pending action without dispatching it.
+    pub fn cancel_action(&mut self) {
+        self.confirm = None;
+    }
+
+    /// Returns the action awaiting confirmation, for rendering the modal.
+    #[must_use]
+    pub const fn pending_action(&self) -> Option<&PendingAction> {
+        self.confirm.as_ref()
+    }
+
+    /// Returns true while a confirmation modal is open.
+    #[must_use]
+    pub const fn awaiting_confirm(&self) -> bool {
+        self.confirm.is_some()
+    }
+
+    /// Takes the action queued for dispatch, if the user confirmed one.
+    #[must_use]
+    pub fn take_dispatch(&mut self) -> Option<PendingAction> {
+        self.dispatch.take()
     }
 
     /// Quits the application.

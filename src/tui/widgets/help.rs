@@ -75,9 +75,9 @@ impl HelpWidget {
             ("Tab", "Cycle tabs"),
             ("g", "Go to first item"),
             ("$", "Go to last item"),
+            ("Enter", "Open action menu for selected server"),
             ("r", "Refresh all data"),
-            ("Enter", "Drill into panel / switch to Details"),
-            ("Esc", "Go back to Overview"),
+            ("Esc", "Close menu / go back to Overview"),
             ("?", "Toggle this help"),
             ("Q", "Quit")
         ];

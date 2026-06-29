@@ -424,3 +424,108 @@ fn handle_key_dollar() {
     assert!(keep_going);
     assert_eq!(app.selected, 1);
 }
+
+fn key(code: KeyCode) -> AppEvent {
+    AppEvent::Key(crossterm::event::KeyEvent {
+        code,
+        modifiers: crossterm::event::KeyModifiers::NONE,
+        kind: crossterm::event::KeyEventKind::Press,
+        state: crossterm::event::KeyEventState::NONE
+    })
+}
+
+#[test]
+fn open_action_menu_on_servers_tab() {
+    let mut app = App::new(5);
+    app.servers = vec![make_server(7, "web", "On")];
+    app.selected = 0;
+    app.open_action_menu();
+    let menu = app.action_menu().expect("menu should open");
+    assert_eq!(menu.server_id, 7);
+    assert_eq!(menu.server_name, "web");
+    assert_eq!(menu.actions, ServerAction::ALL.to_vec());
+    assert_eq!(menu.selected, 0);
+}
+
+#[test]
+fn open_action_menu_noop_on_other_tab() {
+    let mut app = App::new(5);
+    app.active_tab = ResourceTab::Databases;
+    app.servers = vec![make_server(7, "web", "On")];
+    app.open_action_menu();
+    assert!(!app.action_menu_open());
+}
+
+#[test]
+fn menu_navigation_wraps() {
+    let mut app = App::new(5);
+    app.servers = vec![make_server(7, "web", "On")];
+    app.open_action_menu();
+    app.menu_previous();
+    assert_eq!(app.action_menu().unwrap().selected, ServerAction::ALL.len() - 1);
+    app.menu_next();
+    assert_eq!(app.action_menu().unwrap().selected, 0);
+}
+
+#[test]
+fn menu_select_non_destructive_dispatches_directly() {
+    let mut app = App::new(5);
+    app.servers = vec![make_server(7, "web", "On")];
+    app.open_action_menu();
+    app.menu_select();
+    assert!(!app.action_menu_open());
+    assert!(!app.awaiting_confirm());
+    let dispatched = app.take_dispatch().expect("non-destructive dispatches");
+    assert_eq!(dispatched.action, ServerAction::Start);
+    assert_eq!(dispatched.server_id, 7);
+}
+
+#[test]
+fn menu_select_destructive_requires_confirm() {
+    let mut app = App::new(5);
+    app.servers = vec![make_server(7, "web", "On")];
+    app.open_action_menu();
+    for _ in 0..ServerAction::ALL.len() - 1 {
+        app.menu_next();
+    }
+    let current = {
+        let menu = app.action_menu().unwrap();
+        menu.actions[menu.selected]
+    };
+    assert_eq!(current, ServerAction::Delete);
+    app.menu_select();
+    assert!(!app.action_menu_open());
+    assert!(app.awaiting_confirm());
+    assert!(app.take_dispatch().is_none());
+
+    app.confirm_action();
+    let dispatched = app.take_dispatch().expect("confirm dispatches");
+    assert_eq!(dispatched.action, ServerAction::Delete);
+}
+
+#[test]
+fn enter_opens_menu_then_runs_action() {
+    let mut app = App::new(5);
+    app.servers = vec![make_server(7, "web", "On")];
+    app.nav_level = NavLevel::Inner;
+    app.focus = Focus::ResourceList;
+
+    crate::tui::event::handle_event(&mut app, key(KeyCode::Enter));
+    assert!(app.action_menu_open());
+
+    crate::tui::event::handle_event(&mut app, key(KeyCode::Char('j')));
+    crate::tui::event::handle_event(&mut app, key(KeyCode::Enter));
+    assert!(!app.action_menu_open());
+    let dispatched = app.take_dispatch().expect("action dispatched");
+    assert_eq!(dispatched.action, ServerAction::Shutdown);
+}
+
+#[test]
+fn menu_esc_closes_without_dispatch() {
+    let mut app = App::new(5);
+    app.servers = vec![make_server(7, "web", "On")];
+    app.open_action_menu();
+    crate::tui::event::handle_event(&mut app, key(KeyCode::Esc));
+    assert!(!app.action_menu_open());
+    assert!(app.take_dispatch().is_none());
+}

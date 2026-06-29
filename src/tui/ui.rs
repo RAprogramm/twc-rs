@@ -6,9 +6,9 @@
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
-    style::Style,
+    style::{Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Paragraph}
+    widgets::{Block, Borders, Clear, Paragraph}
 };
 
 use crate::tui::{
@@ -56,6 +56,168 @@ pub fn draw(frame: &mut Frame, app: &App) {
         let help_widget = HelpWidget::new();
         help_widget.render(frame, size, app);
     }
+
+    if app.action_menu_open() {
+        render_action_menu(frame, size, app, &palette);
+    }
+
+    if app.awaiting_confirm() {
+        render_confirm(frame, size, app, &palette);
+    }
+}
+
+/// Renders the context action menu for the selected server.
+///
+/// Lists the available actions with the highlighted one marked; destructive
+/// actions are shown in the error color with a warning glyph.
+fn render_action_menu(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
+    let Some(menu) = app.action_menu() else {
+        return;
+    };
+
+    let lines: Vec<Line> = menu
+        .actions
+        .iter()
+        .enumerate()
+        .map(|(idx, action)| {
+            let selected = idx == menu.selected;
+            let marker = if selected { "\u{25B6} " } else { "  " };
+            let color = if action.is_destructive() {
+                palette.error
+            } else if selected {
+                palette.accent
+            } else {
+                palette.fg
+            };
+            let mut style = Style::default().fg(color);
+            if selected {
+                style = style.add_modifier(Modifier::BOLD);
+            }
+            let mut spans = vec![
+                Span::styled(marker, Style::default().fg(palette.accent)),
+                Span::styled(format!("{:<10}", action.verb()), style),
+            ];
+            if action.is_destructive() {
+                spans.push(Span::styled(
+                    "\u{26A0}",
+                    Style::default().fg(palette.error)
+                ));
+            }
+            Line::from(spans)
+        })
+        .collect();
+
+    let title = format!(
+        " Actions: server '{}' (id {}) ",
+        menu.server_name, menu.server_id
+    );
+    let width = u16::try_from(title.len() + 4)
+        .unwrap_or(40)
+        .clamp(28, area.width.saturating_sub(4));
+    let height = u16::try_from(menu.actions.len()).unwrap_or(5) + 2;
+    let popup = Rect {
+        x:      area.width.saturating_sub(width) / 2,
+        y:      area.height.saturating_sub(height) / 2,
+        width,
+        height
+    };
+
+    let paragraph = Paragraph::new(lines)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(palette.accent))
+                .title(Line::from(Span::styled(
+                    title,
+                    Style::default()
+                        .fg(palette.title)
+                        .add_modifier(Modifier::BOLD)
+                )))
+        )
+        .alignment(Alignment::Left)
+        .style(Style::default().bg(palette.bg));
+
+    frame.render_widget(Clear, popup);
+    frame.render_widget(paragraph, popup);
+}
+
+/// Renders the action confirmation modal centered on screen.
+///
+/// Shows the verb, target server, an irreversibility warning for
+/// destructive actions, and the confirm/cancel keys.
+fn render_confirm(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
+    let Some(pending) = app.pending_action() else {
+        return;
+    };
+
+    let accent = if pending.action.is_destructive() {
+        palette.error
+    } else {
+        palette.warning
+    };
+
+    let mut lines = vec![
+        Line::from(Span::styled(
+            format!(
+                " {} server '{}' (id {})?",
+                pending.action.verb(),
+                pending.server_name,
+                pending.server_id
+            ),
+            Style::default()
+                .fg(palette.fg)
+                .add_modifier(Modifier::BOLD)
+        )),
+        Line::from(""),
+    ];
+    if pending.action.is_destructive() {
+        lines.push(Line::from(Span::styled(
+            " This action cannot be undone.",
+            Style::default().fg(palette.error)
+        )));
+        lines.push(Line::from(""));
+    }
+    lines.push(Line::from(vec![
+        Span::styled(
+            " [y] ",
+            Style::default().fg(accent).add_modifier(Modifier::BOLD)
+        ),
+        Span::styled("confirm    ", Style::default().fg(palette.dim)),
+        Span::styled(
+            "[n] ",
+            Style::default()
+                .fg(palette.fg)
+                .add_modifier(Modifier::BOLD)
+        ),
+        Span::styled("cancel", Style::default().fg(palette.dim)),
+    ]));
+
+    let width = 54u16.min(area.width.saturating_sub(4));
+    let height = u16::try_from(lines.len()).unwrap_or(4) + 2;
+    let popup = Rect {
+        x:      area.width.saturating_sub(width) / 2,
+        y:      area.height.saturating_sub(height) / 2,
+        width,
+        height
+    };
+
+    let paragraph = Paragraph::new(lines)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(accent))
+                .title(Line::from(Span::styled(
+                    " Confirm ",
+                    Style::default()
+                        .fg(palette.title)
+                        .add_modifier(Modifier::BOLD)
+                )))
+        )
+        .alignment(Alignment::Left)
+        .style(Style::default().bg(palette.bg));
+
+    frame.render_widget(Clear, popup);
+    frame.render_widget(paragraph, popup);
 }
 
 /// Renders the content area with resource list and details side by side.
@@ -133,7 +295,7 @@ fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, palette: &Palette
         },
         NavLevel::Inner => match app.focus {
             Focus::ResourceTabs => "k/j cycle tabs  Esc back",
-            Focus::ResourceList => "k/j select  Enter details  Esc back",
+            Focus::ResourceList => "k/j select  Enter actions  Esc back",
             Focus::Details => "k/j scroll  Esc back"
         }
     };
