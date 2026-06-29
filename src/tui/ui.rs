@@ -11,7 +11,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph, Tabs}
 };
 
-use super::app::App;
+use super::{app::App, widgets::Widget};
 
 /// Renders the full dashboard into the given frame area.
 pub fn draw(frame: &mut Frame, app: &App) {
@@ -34,7 +34,8 @@ pub fn draw(frame: &mut Frame, app: &App) {
     render_status_bar(frame, main_chunks[3], app, &palette);
 
     if app.show_help {
-        render_help_overlay(frame, size, &palette);
+        let help_widget = super::widgets::help::HelpWidget::new();
+        help_widget.render(frame, size, app);
     }
 }
 
@@ -145,44 +146,4 @@ fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, palette: &super::
             .border_style(Style::default().fg(palette.border))
     );
     frame.render_widget(paragraph, area);
-}
-
-fn render_help_overlay(frame: &mut Frame, area: Rect, palette: &super::themes::Palette) {
-    let help_text = vec![
-        Line::from(Span::styled(
-            "twc-rs dashboard — Keyboard Shortcuts",
-            Style::default()
-                .fg(palette.accent)
-                .add_modifier(Modifier::BOLD)
-        )),
-        Line::from(""),
-        Line::from("  q / Esc      Quit"),
-        Line::from("  ↑ ↓ / k j   Navigate resource list"),
-        Line::from("  h / ←       Move left"),
-        Line::from("  l / →       Move right"),
-        Line::from("  Tab          Cycle resource tabs"),
-        Line::from("  g            Go to first"),
-        Line::from("  $            Go to last"),
-        Line::from("  r            Force refresh"),
-        Line::from("  ?            Toggle this help"),
-    ];
-
-    let help = Paragraph::new(help_text)
-        .block(
-            Block::default()
-                .title(" Help ")
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(palette.accent))
-        )
-        .style(Style::default().bg(palette.bg));
-
-    let popup_area = Rect {
-        x:      area.width / 4,
-        y:      area.height / 4,
-        width:  area.width / 2,
-        height: area.height / 2
-    };
-
-    frame.render_widget(ratatui::widgets::Clear, popup_area);
-    frame.render_widget(help, popup_area);
 }
