@@ -7,7 +7,7 @@ use ratatui::{
     Frame,
     layout::Rect,
     style::{Modifier, Style},
-    text::Span,
+    text::{Line, Span},
     widgets::{Block, Borders, Tabs}
 };
 
@@ -220,15 +220,15 @@ impl crate::tui::widgets::Widget for ProjectManagerWidget {
 
     fn render(&self, frame: &mut Frame, area: Rect, app: &App) {
         let palette = app.theme.palette();
-        let labels: Vec<Span> = app
+        let labels = app
             .project_manager
             .tabs
             .iter()
             .map(|tab| {
                 let label = tab.label();
-                Span::raw(label)
-            })
-            .collect();
+                Line::from(label)
+            });
+            
 
         let tab_widget = Tabs::new(labels)
             .block(
@@ -236,7 +236,7 @@ impl crate::tui::widgets::Widget for ProjectManagerWidget {
                     .borders(Borders::BOTTOM)
                     .style(Style::default().fg(palette.border))
             )
-            .select(app.project_manager.active_tab)
+            .select(Some(app.project_manager.active_tab))
             .divider(Span::raw("  "))
             .style(Style::default().fg(palette.tab_inactive))
             .highlight_style(

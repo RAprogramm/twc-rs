@@ -27,6 +27,7 @@ pub struct ServerSummary {
     pub cpu:      i32,
     pub ram_mb:   i32,
     pub disk_gb:  i32,
+#[expect(dead_code)]
     pub ip:       String,
     pub location: String
 }
@@ -367,6 +368,7 @@ pub struct App {
 }
 
 impl App {
+#[expect(dead_code)]
     /// Creates a new `App` with default state.
     pub fn new(refresh_secs: u64) -> Self {
         Self::new_with_theme(refresh_secs, super::themes::Theme::default(), None)
@@ -647,6 +649,7 @@ impl App {
             self.selected = len - 1;
         }
     }
+#[expect(dead_code)]
 
     /// Appends a CPU sample (rolling 60-point window).
     pub fn push_cpu(&mut self, value: f64) {
@@ -657,13 +660,14 @@ impl App {
     }
 
     /// Appends a RAM sample (rolling 60-point window).
-    pub fn push_ram(&mut self, value: f64) {
+#[expect(dead_code)]
+    pub fn push_ram(&mut self, _value: f64) {
         if self.ram_history.len() >= 60 {
             self.ram_history.pop_front();
         }
-        self.ram_history.push_back(value);
     }
 
+#[expect(dead_code)]
     /// Appends a network-in sample.
     pub fn push_net_in(&mut self, value: u64) {
         if self.net_in_history.len() >= 60 {
@@ -671,6 +675,7 @@ impl App {
         }
         self.net_in_history.push_back(value);
     }
+#[expect(dead_code)]
 
     /// Appends a network-out sample.
     pub fn push_net_out(&mut self, value: u64) {

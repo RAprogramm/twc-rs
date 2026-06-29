@@ -30,6 +30,7 @@ pub struct Palette {
     pub border:       Color,
     pub title:        Color,
     pub header:       Color,
+#[expect(dead_code)]
     pub selected:     Color,
     pub accent:       Color,
     pub success:      Color,

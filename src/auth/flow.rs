@@ -93,6 +93,7 @@ pub fn logout(config_path: &Path) -> Result<(), super::AuthError> {
     Ok(())
 }
 
+#[expect(dead_code)]
 async fn verify_token(token: &str) -> Result<(), super::AuthError> {
     let config = authenticated(token.to_string());
     account_api::get_account_status(&config)

@@ -45,7 +45,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
     };
 
     let paragraph =
-        Paragraph::new(text).block(Block::default().borders(Borders::ALL).title(" Details "));
+        Paragraph::new(text).block(Block::default().borders(Borders::ALL).title(Line::from(" Details ")));
     frame.render_widget(paragraph, area);
 }
 

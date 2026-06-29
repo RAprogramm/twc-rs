@@ -75,7 +75,7 @@ fn render_content(frame: &mut Frame, area: Rect, app: &App, _palette: &Palette) 
         let spinner = crate::tui::widgets::spinner::current_frame();
         let text = Line::from(vec![spinner, Span::raw(" Loading resources...")]);
         let paragraph = Paragraph::new(text)
-            .block(Block::default().borders(Borders::ALL).title(" Loading "))
+            .block(Block::default().borders(Borders::ALL).title(Line::from(" Loading ")))
             .alignment(Alignment::Center);
         frame.render_widget(paragraph, area);
         return;

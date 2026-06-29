@@ -133,6 +133,7 @@ impl WidgetRegistry {
     ///
     /// # Returns
     ///
+#[expect(dead_code)]
     /// `Some(&mut dyn Widget)` if found, `None` otherwise.
     pub fn get_mut<'a>(&'a mut self, id: &str) -> Option<&'a mut dyn Widget> {
         for w in &mut self.widgets {
@@ -146,6 +147,7 @@ impl WidgetRegistry {
     /// Toggles the enabled state of the widget with the given id.
     ///
     /// # Arguments
+#[expect(dead_code)]
     ///
     /// * `id` - The unique identifier of the widget to toggle.
     pub fn toggle(&mut self, id: &str) {
@@ -179,6 +181,7 @@ impl WidgetRegistry {
         clippy::cast_sign_loss,
         clippy::cast_precision_loss
     )]
+#[expect(dead_code)]
     pub fn render_all(&self, frame: &mut Frame, area: Rect, app: &App) {
         let enabled = self.enabled_widgets();
         let count = enabled.len();

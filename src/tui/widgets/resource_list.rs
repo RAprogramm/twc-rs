@@ -321,13 +321,13 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
     };
 
     let list = List::new(items)
-        .block(Block::default().borders(Borders::ALL).title(" Resources "))
+        .block(Block::default().borders(Borders::ALL).title(Line::from(" Resources ")))
         .highlight_style(
             Style::default()
                 .fg(Color::Cyan)
                 .add_modifier(Modifier::BOLD)
         )
-        .highlight_symbol(">> ");
+        .highlight_symbol(Line::from(">> "));
 
     let mut state = ListState::default();
     state.select(Some(app.selected));
