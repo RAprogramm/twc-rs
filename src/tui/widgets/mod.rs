@@ -76,6 +76,7 @@ impl WidgetRegistry {
             widgets: Vec::new()
         };
         registry.register(Box::new(account::AccountWidget::new(true)));
+        registry.register(Box::new(project_manager::ProjectManagerWidget::new(true)));
         registry.register(Box::new(stats::StatsWidget::new(true)));
         registry.register(Box::new(token_info::TokenInfoWidget::new(true)));
         registry
@@ -224,6 +225,7 @@ impl fmt::Debug for WidgetRegistry {
 
 pub mod account;
 pub mod details;
+pub mod project_manager;
 pub mod resource_list;
 pub mod spinner;
 pub mod stats;

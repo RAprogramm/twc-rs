@@ -8,6 +8,8 @@ use std::{
     time::{Duration, Instant}
 };
 
+use crate::tui::widgets::project_manager::ProjectManager;
+
 /// Account information from the API.
 #[derive(Debug, Clone, Default)]
 pub struct AccountInfo {
@@ -129,7 +131,8 @@ pub struct App {
     pub status_message:   Option<String>,
     pub error_message:    Option<String>,
     pub is_loading:       bool,
-    pub widgets:          super::widgets::WidgetRegistry
+    pub widgets:          super::widgets::WidgetRegistry,
+    pub project_manager:  ProjectManager
 }
 
 impl App {
@@ -166,7 +169,8 @@ impl App {
             status_message: None,
             error_message: None,
             is_loading: false,
-            widgets: super::widgets::WidgetRegistry::new()
+            widgets: super::widgets::WidgetRegistry::new(),
+            project_manager: ProjectManager::new()
         }
     }
 
