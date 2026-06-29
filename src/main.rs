@@ -15,8 +15,8 @@ mod tui;
 use clap::Parser;
 use cli::{
     AuthCommands, BalancerCommands, Cli, Commands, ConfigCommands, DatabaseCommands,
-    KubernetesCommands, ProjectCommands, RegistryCommands, S3Commands, ServerCommands,
-    SshCommands
+    DomainCommands, KubernetesCommands, ProjectCommands, RegistryCommands, S3Commands,
+    ServerCommands, SshCommands
 };
 use config::AppConfig;
 use error::TwcError;
@@ -481,6 +481,83 @@ async fn run() -> Result<(), TwcError> {
                 BalancerCommands::PresetList => {
                     commands::balancers::preset_list(&config, format).await
                 }
+            }
+        }
+        Commands::Domain(cmd) => {
+            let token = ensure_token(cli.token.as_deref())?;
+            let config = authenticated(token);
+            match cmd {
+                DomainCommands::List {
+                    limit,
+                    offset
+                } => commands::domains::list(&config, limit, offset, format).await,
+                DomainCommands::Info {
+                    id
+                } => commands::domains::info(&config, id, format).await,
+                DomainCommands::Check {
+                    domain
+                } => commands::domains::check(&config, domain).await,
+                DomainCommands::Add {
+                    domain
+                } => commands::domains::add(&config, domain, format).await,
+                DomainCommands::Delete {
+                    id
+                } => commands::domains::delete(&config, id).await,
+                DomainCommands::DnsList {
+                    id
+                } => commands::domains::dns_list(&config, id, format).await,
+                DomainCommands::DnsAdd {
+                    id,
+                    record_type,
+                    value
+                } => commands::domains::dns_add(&config, id, record_type, value, format).await,
+                DomainCommands::DnsDelete {
+                    id,
+                    record_id
+                } => commands::domains::dns_delete(&config, id, record_id).await,
+                DomainCommands::DnsUpdate {
+                    id,
+                    record_id,
+                    record_type,
+                    value
+                } => {
+                    commands::domains::dns_update(
+                        &config,
+                        id,
+                        record_id,
+                        record_type,
+                        value,
+                        format
+                    )
+                    .await
+                }
+                DomainCommands::NsList {
+                    id
+                } => commands::domains::ns_list(&config, id, format).await,
+                DomainCommands::NsUpdate {
+                    id,
+                    ns1,
+                    ns2
+                } => commands::domains::ns_update(&config, id, ns1, ns2, format).await,
+                DomainCommands::SubdomainList {
+                    id
+                } => commands::domains::subdomain_list(&config, id, format).await,
+                DomainCommands::SubdomainAdd {
+                    id,
+                    name
+                } => commands::domains::subdomain_add(&config, id, name, format).await,
+                DomainCommands::SubdomainDelete {
+                    id,
+                    name
+                } => commands::domains::subdomain_delete(&config, id, name).await,
+                DomainCommands::RequestList => {
+                    commands::domains::request_list(&config, format).await
+                }
+                DomainCommands::TldList => commands::domains::tld_list(&config, format).await,
+                DomainCommands::AutoProlong {
+                    id,
+                    enabled
+                } => commands::domains::auto_prolong(&config, id, enabled, format).await
             }
         }
         #[cfg(feature = "auth")]
