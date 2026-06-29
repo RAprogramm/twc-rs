@@ -4,6 +4,7 @@
 pub mod balancers;
 pub mod databases;
 pub mod domains;
+pub mod firewall;
 pub mod kubernetes;
 pub mod projects;
 pub mod registry;

@@ -15,8 +15,8 @@ mod tui;
 use clap::Parser;
 use cli::{
     AuthCommands, BalancerCommands, Cli, Commands, ConfigCommands, DatabaseCommands,
-    DomainCommands, KubernetesCommands, ProjectCommands, RegistryCommands, S3Commands,
-    ServerCommands, SshCommands
+    DomainCommands, FirewallCommands, KubernetesCommands, ProjectCommands, RegistryCommands,
+    S3Commands, ServerCommands, SshCommands
 };
 use config::AppConfig;
 use error::TwcError;
@@ -558,6 +558,50 @@ async fn run() -> Result<(), TwcError> {
                     id,
                     enabled
                 } => commands::domains::auto_prolong(&config, id, enabled, format).await
+            }
+        }
+        Commands::Firewall(cmd) => {
+            let token = ensure_token(cli.token.as_deref())?;
+            let config = authenticated(token);
+            match cmd {
+                FirewallCommands::List {
+                    limit,
+                    offset
+                } => commands::firewall::list(&config, limit, offset, format).await,
+                FirewallCommands::Info {
+                    id
+                } => commands::firewall::info(&config, &id, format).await,
+                FirewallCommands::Create {
+                    name
+                } => commands::firewall::create(&config, &name, format).await,
+                FirewallCommands::Delete {
+                    id
+                } => commands::firewall::delete(&config, &id).await,
+                FirewallCommands::Update {
+                    id,
+                    name
+                } => commands::firewall::update(&config, &id, name.as_deref(), format).await,
+                FirewallCommands::RuleList {
+                    id
+                } => commands::firewall::rule_list(&config, &id, format).await,
+                FirewallCommands::RuleCreate {
+                    id
+                } => commands::firewall::rule_create(&config, &id, format).await,
+                FirewallCommands::RuleDelete {
+                    id,
+                    rule_id
+                } => commands::firewall::rule_delete(&config, &id, &rule_id).await,
+                FirewallCommands::ResourceList {
+                    id
+                } => commands::firewall::resource_list(&config, &id, format).await,
+                FirewallCommands::ResourceAdd {
+                    id,
+                    resource_id
+                } => commands::firewall::resource_add(&config, &id, &resource_id).await,
+                FirewallCommands::ResourceRemove {
+                    id,
+                    resource_id
+                } => commands::firewall::resource_remove(&config, &id, &resource_id).await
             }
         }
         #[cfg(feature = "auth")]
