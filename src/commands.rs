@@ -5,6 +5,7 @@ pub mod balancers;
 pub mod databases;
 pub mod kubernetes;
 pub mod projects;
+pub mod registry;
 pub mod s3;
 pub mod servers;
 pub mod ssh_keys;

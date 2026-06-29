@@ -15,7 +15,8 @@ mod tui;
 use clap::Parser;
 use cli::{
     AuthCommands, BalancerCommands, Cli, Commands, ConfigCommands, DatabaseCommands,
-    KubernetesCommands, ProjectCommands, S3Commands, ServerCommands, SshCommands
+    KubernetesCommands, ProjectCommands, RegistryCommands, S3Commands, ServerCommands,
+    SshCommands
 };
 use config::AppConfig;
 use error::TwcError;
@@ -404,6 +405,35 @@ async fn run() -> Result<(), TwcError> {
                 KubernetesCommands::Resources {
                     id
                 } => commands::kubernetes::resources(&config, id, format).await
+            }
+        }
+        Commands::Registry(cmd) => {
+            let token = ensure_token(cli.token.as_deref())?;
+            let config = authenticated(token);
+            match cmd {
+                RegistryCommands::List {
+                    limit,
+                    offset
+                } => commands::registry::list(&config, limit, offset, format).await,
+                RegistryCommands::Info {
+                    id
+                } => commands::registry::info(&config, id, format).await,
+                RegistryCommands::Create {
+                    name
+                } => commands::registry::create(&config, &name, format).await,
+                RegistryCommands::Delete {
+                    id
+                } => commands::registry::delete(&config, id).await,
+                RegistryCommands::Update {
+                    id,
+                    description
+                } => commands::registry::update(&config, id, description.as_deref(), format).await,
+                RegistryCommands::RepoList {
+                    id
+                } => commands::registry::repo_list(&config, id, format).await,
+                RegistryCommands::PresetList => {
+                    commands::registry::preset_list(&config, format).await
+                }
             }
         }
         Commands::Balancer(cmd) => {
