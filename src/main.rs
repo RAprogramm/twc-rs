@@ -770,7 +770,17 @@ async fn run_dashboard(
             app.prefs_dirty = false;
         }
 
+        if app.refresh_requested {
+            app.refresh_requested = false;
+            spawn_one_shot_refresh(tx.clone(), token.clone(), theme, interval);
+        }
+
         if let Some(action) = app.take_dispatch() {
+            use tui::app::LogLevel;
+            app.log(
+                LogLevel::Info,
+                format!("{} {}", action.kind.label(), action.resource_name)
+            );
             let config = authenticated(token.clone());
             perform_action(&config, &mut app, action).await;
             spawn_one_shot_refresh(tx.clone(), token.clone(), theme, interval);
@@ -854,19 +864,23 @@ async fn perform_action(
     match result {
         Ok(()) => {
             app.error_message = None;
-            app.status_message = Some(format!(
+            let msg = format!(
                 "{} '{}' (id {}) — ok",
                 pending.kind.label(),
                 pending.resource_name,
                 pending.resource_id
-            ));
+            );
+            app.log(tui::app::LogLevel::Success, msg.clone());
+            app.status_message = Some(msg);
         }
         Err(e) => {
-            app.error_message = Some(format!(
+            let msg = format!(
                 "{} '{}' failed: {e}",
                 pending.kind.label(),
                 pending.resource_name
-            ));
+            );
+            app.log(tui::app::LogLevel::Error, msg.clone());
+            app.error_message = Some(msg);
         }
     }
 }
@@ -934,6 +948,34 @@ async fn refresh_all(
         timeweb_rs::apis::ssh_api::get_keys(&c),
         timeweb_rs::apis::payments_api::get_finances(&c)
     );
+
+    app.last_load_errors = [
+        ("account", account_res.is_err()),
+        ("servers", servers_res.is_err()),
+        ("databases", dbs_res.is_err()),
+        ("s3", s3_res.is_err()),
+        ("kubernetes", k8s_res.is_err()),
+        ("projects", projects_res.is_err()),
+        ("balancers", balancers_res.is_err()),
+        ("registries", registries_res.is_err()),
+        ("domains", domains_res.is_err()),
+        ("firewall", firewalls_res.is_err()),
+        ("floating IPs", floating_ips_res.is_err()),
+        ("images", images_res.is_err()),
+        ("network drives", network_drives_res.is_err()),
+        ("VPCs", vpcs_res.is_err()),
+        ("dedicated servers", dedicated_servers_res.is_err()),
+        ("mail", mails_res.is_err()),
+        ("apps", apps_res.is_err()),
+        ("AI agents", ai_agents_res.is_err()),
+        ("knowledge bases", knowledge_bases_res.is_err()),
+        ("SSH keys", ssh_keys_res.is_err()),
+        ("finances", finances_res.is_err())
+    ]
+    .into_iter()
+    .filter(|(_, failed)| *failed)
+    .map(|(name, _)| name.to_string())
+    .collect();
 
     let mut account_id = 0.0;
     let mut login = String::new();

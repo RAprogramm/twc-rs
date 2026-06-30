@@ -10,6 +10,29 @@ use std::{
 
 use crate::tui::widgets::project_manager::ProjectManager;
 
+/// Severity of an event-log entry.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)]
+pub enum LogLevel {
+    /// Neutral informational event.
+    Info,
+    /// A successful outcome.
+    Success,
+    /// A non-fatal warning.
+    Warn,
+    /// A failure.
+    Error
+}
+
+/// A single entry in the dashboard event log.
+#[derive(Debug, Clone)]
+pub struct LogEntry {
+    /// Severity of the entry.
+    pub level: LogLevel,
+    /// Human-readable message.
+    pub text:  String
+}
+
 /// Account information from the API.
 #[derive(Debug, Clone, Default)]
 pub struct AccountInfo {
@@ -503,7 +526,10 @@ pub struct App {
     pub palette:           Option<super::command_palette::CommandPalette>,
     pub list_width_pct:    u16,
     pub anim_tick:         u64,
-    pub prefs_dirty:       bool
+    pub prefs_dirty:       bool,
+    pub logs:              VecDeque<LogEntry>,
+    pub last_load_errors:  Vec<String>,
+    pub refresh_requested: bool
 }
 
 impl App {
@@ -568,8 +594,22 @@ impl App {
             palette: None,
             list_width_pct: 40,
             anim_tick: 0,
-            prefs_dirty: false
+            prefs_dirty: false,
+            logs: VecDeque::with_capacity(200),
+            last_load_errors: Vec::new(),
+            refresh_requested: false
         }
+    }
+
+    /// Appends an entry to the event log, trimming to the last 200 entries.
+    pub fn log(&mut self, level: LogLevel, text: impl Into<String>) {
+        if self.logs.len() >= 200 {
+            self.logs.pop_front();
+        }
+        self.logs.push_back(LogEntry {
+            level,
+            text: text.into()
+        });
     }
 
     /// Returns the currently selected resource list length.
@@ -632,9 +672,8 @@ impl App {
 
     /// Marks that a refresh is needed immediately.
     pub fn force_refresh(&mut self) {
-        self.last_refresh = Instant::now()
-            .checked_sub(self.refresh_interval)
-            .unwrap_or_else(Instant::now);
+        self.refresh_requested = true;
+        self.log(LogLevel::Info, "manual refresh requested");
     }
 
     /// Returns true when the refresh interval has elapsed.
@@ -988,10 +1027,11 @@ impl App {
     }
 
     /// Widgets the user can show/hide from the layout: `(id, label)`.
-    pub const TOGGLEABLE_WIDGETS: [(&'static str, &'static str); 3] = [
+    pub const TOGGLEABLE_WIDGETS: [(&'static str, &'static str); 4] = [
         ("account", "Account header"),
         ("stats", "Stats panel"),
-        ("token_info", "Token info panel")
+        ("token_info", "Token info panel"),
+        ("events", "Events log")
     ];
 
     /// Applies persisted dashboard preferences: hides the given widgets and
@@ -1202,6 +1242,21 @@ impl App {
             self.error_message = None;
             self.status_message = data.status_message;
         }
+        if data.load_errors != self.last_load_errors {
+            let recovered: Vec<String> = self
+                .last_load_errors
+                .iter()
+                .filter(|r| !data.load_errors.contains(r))
+                .cloned()
+                .collect();
+            for resource in &data.load_errors {
+                self.log(LogLevel::Error, format!("failed to load {resource}"));
+            }
+            for resource in recovered {
+                self.log(LogLevel::Success, format!("{resource} recovered"));
+            }
+            self.last_load_errors = data.load_errors.clone();
+        }
         self.clamp_selection();
         self.is_loading = false;
         self.last_refresh = Instant::now();
@@ -1235,7 +1290,8 @@ pub struct DashboardData {
     pub ssh_keys:          Vec<String>,
     pub finances:          Vec<String>,
     pub error_message:     Option<String>,
-    pub status_message:    Option<String>
+    pub status_message:    Option<String>,
+    pub load_errors:       Vec<String>
 }
 
 impl DashboardData {
@@ -1265,7 +1321,8 @@ impl DashboardData {
             ssh_keys:          app.ssh_keys.clone(),
             finances:          app.finances.clone(),
             error_message:     app.error_message.clone(),
-            status_message:    app.status_message.clone()
+            status_message:    app.status_message.clone(),
+            load_errors:       app.last_load_errors.clone()
         }
     }
 }

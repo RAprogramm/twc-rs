@@ -632,3 +632,57 @@ fn palette_run_delete_requires_confirm() {
     assert!(app.awaiting_confirm());
     assert!(app.take_dispatch().is_none());
 }
+
+#[test]
+fn log_caps_at_200_entries() {
+    let mut app = App::new(5);
+    for i in 0..250 {
+        app.log(crate::tui::app::LogLevel::Info, format!("event {i}"));
+    }
+    assert_eq!(app.logs.len(), 200);
+    assert_eq!(app.logs.back().unwrap().text, "event 249");
+}
+
+#[test]
+fn force_refresh_sets_request_flag() {
+    let mut app = App::new(5);
+    assert!(!app.refresh_requested);
+    app.force_refresh();
+    assert!(app.refresh_requested);
+}
+
+#[test]
+fn apply_data_logs_load_errors_once() {
+    let mut app = App::new(5);
+    let data = DashboardData {
+        account:           AccountInfo::default(),
+        servers:           Vec::new(),
+        databases:         Vec::new(),
+        s3_storages:       Vec::new(),
+        k8s_clusters:      Vec::new(),
+        projects:          Vec::new(),
+        balancers:         Vec::new(),
+        registries:        Vec::new(),
+        domains:           Vec::new(),
+        firewalls:         Vec::new(),
+        floating_ips:      Vec::new(),
+        images:            Vec::new(),
+        network_drives:    Vec::new(),
+        vpcs:              Vec::new(),
+        dedicated_servers: Vec::new(),
+        mails:             Vec::new(),
+        apps:              Vec::new(),
+        ai_agents:         Vec::new(),
+        knowledge_bases:   Vec::new(),
+        ssh_keys:          Vec::new(),
+        finances:          Vec::new(),
+        error_message:     None,
+        status_message:    None,
+        load_errors:       vec!["databases".to_string()]
+    };
+    app.apply_data(data.clone());
+    let after_first = app.logs.len();
+    assert!(app.logs.iter().any(|e| e.text.contains("databases")));
+    app.apply_data(data);
+    assert_eq!(app.logs.len(), after_first);
+}

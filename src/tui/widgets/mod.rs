@@ -85,6 +85,7 @@ impl WidgetRegistry {
         registry.register(Box::new(details::DetailsWidget::new(true)));
         registry.register(Box::new(stats::StatsWidget::new(true)));
         registry.register(Box::new(token_info::TokenInfoWidget::new(true)));
+        registry.register(Box::new(events::EventsWidget::new(true)));
         registry.register(Box::new(help::HelpWidget::new()));
         registry
     }
@@ -255,6 +256,7 @@ impl fmt::Debug for WidgetRegistry {
 
 pub mod account;
 pub mod details;
+pub mod events;
 pub mod help;
 pub mod project_manager;
 pub mod resource_list;

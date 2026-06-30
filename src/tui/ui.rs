@@ -34,13 +34,17 @@ pub fn draw(frame: &mut Frame, app: &App) {
     let palette = app.theme.palette();
 
     let show_account = app.is_widget_enabled("account");
+    let show_events = app.is_widget_enabled("events");
 
-    let mut constraints = Vec::with_capacity(4);
+    let mut constraints = Vec::with_capacity(5);
     if show_account {
         constraints.push(Constraint::Length(3));
     }
     constraints.push(Constraint::Length(2));
     constraints.push(Constraint::Min(8));
+    if show_events {
+        constraints.push(Constraint::Length(7));
+    }
     constraints.push(Constraint::Length(3));
 
     let main_chunks = Layout::default()
@@ -59,6 +63,11 @@ pub fn draw(frame: &mut Frame, app: &App) {
 
     render_content(frame, main_chunks[idx], app, &palette);
     idx += 1;
+
+    if show_events {
+        crate::tui::widgets::events::render(frame, main_chunks[idx], app);
+        idx += 1;
+    }
 
     render_status_bar(frame, main_chunks[idx], app, &palette);
 
