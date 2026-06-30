@@ -3,6 +3,7 @@
 
 use std::fmt;
 
+use rust_i18n::t;
 use tabled::Tabled;
 use timeweb_rs::{apis::firewall_api, models as fw};
 
@@ -115,7 +116,7 @@ pub async fn list(
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No firewall groups found.");
+                println!("{}", t!("cli.no_firewall_groups"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -202,9 +203,8 @@ pub async fn create(
     match format {
         OutputFormat::Table => {
             println!(
-                "Firewall group '{}' created (id: {}).",
-                g.name,
-                fmt_id(&g.id)
+                "{}",
+                t!("cli.firewall_group_created", name => g.name, id => fmt_id(&g.id))
             );
         }
         OutputFormat::Json | OutputFormat::Yaml => {
@@ -233,7 +233,7 @@ pub async fn delete(
     id: &str
 ) -> Result<(), TwcError> {
     firewall_api::delete_group(config, id).await?;
-    println!("Firewall group {id} deleted.");
+    println!("{}", t!("cli.firewall_group_deleted", id => id));
     Ok(())
 }
 
@@ -262,9 +262,8 @@ pub async fn update(
     match format {
         OutputFormat::Table => {
             println!(
-                "Firewall group '{}' updated (id: {}).",
-                g.name,
-                fmt_id(&g.id)
+                "{}",
+                t!("cli.firewall_group_updated", name => g.name, id => fmt_id(&g.id))
             );
         }
         OutputFormat::Json | OutputFormat::Yaml => {
@@ -311,7 +310,7 @@ pub async fn rule_list(
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No rules found.");
+                println!("{}", t!("cli.no_rules"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -361,8 +360,15 @@ pub async fn rule_create(
             let proto_str = format!("{:?}", r.protocol);
             let port_str = r.port.as_deref().unwrap_or("*");
             println!(
-                "Rule created for group {id} (id: {}): {dir_str}:{proto_str}:{port_str}.",
-                fmt_id(&r.id)
+                "{}",
+                t!(
+                    "cli.firewall_rule_created",
+                    id => id,
+                    rule_id => fmt_id(&r.id),
+                    dir => dir_str,
+                    proto => proto_str,
+                    port => port_str
+                )
             );
         }
         OutputFormat::Json | OutputFormat::Yaml => {
@@ -392,7 +398,10 @@ pub async fn rule_delete(
     rule_id: &str
 ) -> Result<(), TwcError> {
     firewall_api::delete_group_rule(config, id, rule_id).await?;
-    println!("Rule {rule_id} deleted from group {id}.");
+    println!(
+        "{}",
+        t!("cli.firewall_rule_deleted", rule_id => rule_id, id => id)
+    );
     Ok(())
 }
 
@@ -425,7 +434,7 @@ pub async fn resource_list(
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No resources found.");
+                println!("{}", t!("cli.no_firewall_resources"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -461,7 +470,10 @@ pub async fn resource_add(
     resource_id: &str
 ) -> Result<(), TwcError> {
     firewall_api::add_resource_to_group(config, id, resource_id, None).await?;
-    println!("Resource {resource_id} added to group {id}.");
+    println!(
+        "{}",
+        t!("cli.firewall_resource_added", resource_id => resource_id, id => id)
+    );
     Ok(())
 }
 
@@ -480,6 +492,9 @@ pub async fn resource_remove(
     resource_id: &str
 ) -> Result<(), TwcError> {
     firewall_api::delete_resource_from_group(config, id, resource_id, None).await?;
-    println!("Resource {resource_id} removed from group {id}.");
+    println!(
+        "{}",
+        t!("cli.firewall_resource_removed", resource_id => resource_id, id => id)
+    );
     Ok(())
 }

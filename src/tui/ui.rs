@@ -10,6 +10,7 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, BorderType, Borders, Clear, List, ListItem, ListState, Paragraph}
 };
+use rust_i18n::t;
 
 use crate::tui::{
     app::{App, DrillView, Focus, ResourceTab},
@@ -117,7 +118,7 @@ fn render_action_menu(frame: &mut Frame, area: Rect, app: &App, palette: &Palett
             }
             let mut spans = vec![
                 Span::styled(marker, Style::default().fg(palette.accent)),
-                Span::styled(format!("{:<10}", action.label()), style),
+                Span::styled(format!("{:<10}", action.display_label()), style),
             ];
             if action.is_destructive() {
                 spans.push(Span::styled("\u{26A0}", Style::default().fg(palette.error)));
@@ -126,14 +127,18 @@ fn render_action_menu(frame: &mut Frame, area: Rect, app: &App, palette: &Palett
         })
         .collect();
 
+    let kind_fallback = t!("ui.action_menu_kind_fallback");
     let kind = ResourceTab::names()
         .get(menu.tab.index())
         .copied()
-        .unwrap_or("resource");
-    let title = format!(
-        " Actions: {kind} '{}' (id {}) ",
-        menu.resource_name, menu.resource_id
-    );
+        .map_or_else(|| kind_fallback.as_ref(), |k| k);
+    let title = t!(
+        "ui.action_menu_title",
+        kind => kind,
+        name => menu.resource_name,
+        id => menu.resource_id
+    )
+    .to_string();
     let width = u16::try_from(title.len() + 4)
         .unwrap_or(40)
         .clamp(28, area.width.saturating_sub(4));
@@ -182,19 +187,20 @@ fn render_confirm(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
 
     let mut lines = vec![
         Line::from(Span::styled(
-            format!(
-                " {} '{}' (id {})?",
-                pending.kind.label(),
-                pending.resource_name,
-                pending.resource_id
-            ),
+            t!(
+                "ui.confirm_prompt",
+                verb => pending.kind.display_label(),
+                name => pending.resource_name,
+                id => pending.resource_id
+            )
+            .to_string(),
             Style::default().fg(palette.fg).add_modifier(Modifier::BOLD)
         )),
         Line::from(""),
     ];
     if pending.kind.is_destructive() {
         lines.push(Line::from(Span::styled(
-            " This action cannot be undone.",
+            t!("ui.confirm_irreversible").to_string(),
             Style::default().fg(palette.error)
         )));
         lines.push(Line::from(""));
@@ -204,12 +210,18 @@ fn render_confirm(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
             " [y] ",
             Style::default().fg(accent).add_modifier(Modifier::BOLD)
         ),
-        Span::styled("confirm    ", Style::default().fg(palette.dim)),
+        Span::styled(
+            format!("{}    ", t!("ui.confirm_yes")),
+            Style::default().fg(palette.dim)
+        ),
         Span::styled(
             "[n] ",
             Style::default().fg(palette.fg).add_modifier(Modifier::BOLD)
         ),
-        Span::styled("cancel", Style::default().fg(palette.dim)),
+        Span::styled(
+            t!("ui.confirm_no").to_string(),
+            Style::default().fg(palette.dim)
+        ),
     ]));
 
     let width = 54u16.min(area.width.saturating_sub(4));
@@ -228,7 +240,7 @@ fn render_confirm(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
                 .border_type(BorderType::Rounded)
                 .border_style(Style::default().fg(accent))
                 .title(Line::from(Span::styled(
-                    " Confirm ",
+                    t!("ui.confirm_title").to_string(),
                     Style::default()
                         .fg(palette.title)
                         .add_modifier(Modifier::BOLD)
@@ -272,7 +284,7 @@ fn render_content(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
             frame,
             chunks[0],
             palette,
-            " Resources ",
+            &t!("ui.skeleton_resources"),
             8,
             app.anim_tick
         );
@@ -280,7 +292,7 @@ fn render_content(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
             frame,
             chunks[1],
             palette,
-            " Details ",
+            &t!("ui.skeleton_details"),
             6,
             app.anim_tick
         );
@@ -344,10 +356,11 @@ fn render_info_column(frame: &mut Frame, area: Rect, app: &App, stats: bool, tok
 /// * `app` - The application state.
 /// * `palette` - The theme color palette.
 fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
+    let resources_fallback = t!("ui.status_resources_fallback");
     let tab = ResourceTab::names()
         .get(app.active_tab.index())
         .copied()
-        .unwrap_or("Resources");
+        .map_or_else(|| resources_fallback.as_ref(), |t| t);
 
     let key = |k: &'static str| {
         Span::styled(
@@ -357,7 +370,7 @@ fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, palette: &Palette
                 .add_modifier(Modifier::BOLD)
         )
     };
-    let lbl = |t: &'static str| Span::styled(t, Style::default().fg(palette.dim));
+    let lbl = |t: String| Span::styled(t, Style::default().fg(palette.dim));
 
     let mut spans = vec![
         Span::styled(
@@ -369,19 +382,19 @@ fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, palette: &Palette
         ),
         Span::raw("  "),
         key("h/l"),
-        lbl(" tabs   "),
+        lbl(format!(" {}   ", t!("ui.status_tabs"))),
         key("j/k"),
-        lbl(" move   "),
+        lbl(format!(" {}   ", t!("ui.status_move"))),
         key("⏎"),
-        lbl(" open   "),
+        lbl(format!(" {}   ", t!("ui.status_open"))),
         key("/"),
-        lbl(" filter   "),
+        lbl(format!(" {}   ", t!("ui.status_filter"))),
         key("^K"),
-        lbl(" cmds   "),
+        lbl(format!(" {}   ", t!("ui.status_cmds"))),
         key("?"),
-        lbl(" help   "),
+        lbl(format!(" {}   ", t!("ui.status_help"))),
         key("Q"),
-        lbl(" quit"),
+        lbl(format!(" {}", t!("ui.status_quit"))),
     ];
 
     let message = match (&app.error_message, &app.status_message) {
@@ -408,7 +421,7 @@ fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, palette: &Palette
 fn render_drill(frame: &mut Frame, area: Rect, view: &DrillView, palette: &Palette) {
     let items: Vec<ListItem> = if view.items.is_empty() {
         vec![ListItem::new(Line::from(Span::styled(
-            "  (empty — no resources in this project)",
+            t!("ui.drill_empty").to_string(),
             Style::default().fg(palette.dim)
         )))]
     } else {
@@ -438,7 +451,7 @@ fn render_drill(frame: &mut Frame, area: Rect, view: &DrillView, palette: &Palet
                 .border_type(BorderType::Rounded)
                 .border_style(Style::default().fg(palette.accent))
                 .title(Line::from(Span::styled(
-                    format!(" {}  —  Esc back ", view.title),
+                    t!("ui.drill_title", title => view.title).to_string(),
                     Style::default()
                         .fg(palette.title)
                         .add_modifier(Modifier::BOLD)

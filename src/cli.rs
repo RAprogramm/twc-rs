@@ -3,6 +3,15 @@
 
 use clap::{Parser, Subcommand, ValueEnum};
 
+/// UI language selectable on the command line.
+#[derive(ValueEnum, Clone, Copy, Debug)]
+pub enum LangArg {
+    /// English.
+    En,
+    /// Russian.
+    Ru
+}
+
 /// Shell to generate a completion script for.
 #[derive(ValueEnum, Clone, Copy, Debug)]
 pub enum ShellArg {
@@ -337,7 +346,13 @@ pub enum ConfigCommands {
         profile: Option<String>
     },
     /// List configured profile names.
-    Profiles
+    Profiles,
+    /// Set the UI language (en or ru).
+    SetLanguage {
+        /// Language code.
+        #[arg(value_enum)]
+        language: LangArg
+    }
 }
 
 /// Authentication subcommands.

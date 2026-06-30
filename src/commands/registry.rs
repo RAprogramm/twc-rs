@@ -3,6 +3,7 @@
 
 use std::fmt;
 
+use rust_i18n::t;
 use tabled::Tabled;
 use timeweb_rs::apis::container_registry_api;
 
@@ -108,7 +109,7 @@ pub async fn list(
     format: OutputFormat
 ) -> Result<(), TwcError> {
     if limit.is_some() || offset.is_some() {
-        eprintln!("Note: limit/offset are not supported by this API endpoint.");
+        eprintln!("{}", t!("cli.registry_limit_offset_note"));
     }
 
     let resp = container_registry_api::get_registries(config).await?;
@@ -130,7 +131,7 @@ pub async fn list(
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No registries found.");
+                println!("{}", t!("cli.no_registries_found"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -210,7 +211,10 @@ pub async fn create(
 
     match format {
         OutputFormat::Table => {
-            println!("Registry '{}' created (id: {}).", r.name, fmt_id(r.id));
+            println!(
+                "{}",
+                t!("cli.registry_created", name => r.name, id => fmt_id(r.id))
+            );
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             let out = crate::output::serialized(format, &r).expect("json or yaml branch")?;
@@ -237,7 +241,7 @@ pub async fn delete(
     id: i32
 ) -> Result<(), TwcError> {
     container_registry_api::delete_registry(config, id).await?;
-    println!("Registry {id} deleted.");
+    println!("{}", t!("cli.registry_deleted", id => id));
     Ok(())
 }
 
@@ -268,7 +272,10 @@ pub async fn update(
 
     match format {
         OutputFormat::Table => {
-            println!("Registry '{}' updated (id: {}).", r.name, fmt_id(r.id));
+            println!(
+                "{}",
+                t!("cli.registry_updated", name => r.name, id => fmt_id(r.id))
+            );
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             let out = crate::output::serialized(format, &r).expect("json or yaml branch")?;
@@ -311,7 +318,7 @@ pub async fn repo_list(
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No repositories found.");
+                println!("{}", t!("cli.no_repositories_found"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -361,7 +368,7 @@ pub async fn preset_list(
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No presets found.");
+                println!("{}", t!("cli.no_presets_found"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");

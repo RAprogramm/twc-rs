@@ -3,6 +3,7 @@
 
 use std::fmt;
 
+use rust_i18n::t;
 use tabled::Tabled;
 use timeweb_rs::{
     apis::{configuration::Configuration, databases_api},
@@ -170,7 +171,7 @@ pub async fn list(
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No databases found.");
+                println!("{}", t!("cli.no_databases_found"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -253,7 +254,7 @@ pub async fn info(config: &Configuration, id: i32, format: OutputFormat) -> Resu
 #[allow(deprecated)]
 pub async fn delete(config: &Configuration, id: i32) -> Result<(), TwcError> {
     databases_api::delete_database(config, id, None, None).await?;
-    println!("Database {id} deleted.");
+    println!("{}", t!("cli.database_deleted", id => id));
     Ok(())
 }
 
@@ -282,7 +283,10 @@ pub async fn update(
 
     match format {
         OutputFormat::Table => {
-            println!("Database '{}' updated (id: {}).", db.name, fmt_id(db.id));
+            println!(
+                "{}",
+                t!("cli.database_updated", name => db.name, id => fmt_id(db.id))
+            );
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             let out = crate::output::serialized(format, &resp.db).expect("json or yaml branch")?;
@@ -307,7 +311,7 @@ pub async fn update(
 #[allow(deprecated)]
 pub async fn restart(config: &Configuration, id: i32) -> Result<(), TwcError> {
     databases_api::delete_database(config, id, None, None).await?;
-    println!("Database {id} deleted (restart via recreation).");
+    println!("{}", t!("cli.database_restarted", id => id));
     Ok(())
 }
 
@@ -344,7 +348,7 @@ pub async fn backup_list(
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No backups found.");
+                println!("{}", t!("cli.no_backups_found"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -375,7 +379,7 @@ pub async fn backup_list(
 /// Returns [`TwcError::Api`] on network or API failures.
 pub async fn backup_create(config: &Configuration, id: i32) -> Result<(), TwcError> {
     let _resp = databases_api::create_database_backup(config, id, None).await?;
-    println!("Backup created for database {id}.");
+    println!("{}", t!("cli.backup_created", id => id));
     Ok(())
 }
 
@@ -411,7 +415,7 @@ pub async fn user_list(
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No users found.");
+                println!("{}", t!("cli.no_users_found"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -459,9 +463,8 @@ pub async fn user_create(
     match format {
         OutputFormat::Table => {
             println!(
-                "User '{}' created for database {db_id} (id: {}).",
-                admin.login,
-                fmt_id(admin.id)
+                "{}",
+                t!("cli.db_user_created", login => admin.login, db_id => db_id, id => fmt_id(admin.id))
             );
         }
         OutputFormat::Json | OutputFormat::Yaml => {
@@ -503,7 +506,10 @@ pub async fn user_delete(
     #[allow(clippy::cast_possible_truncation)]
     let admin_id = admin.id as i32;
     databases_api::delete_database_user(config, db_id, admin_id).await?;
-    println!("User '{user_name}' deleted from database {db_id}.");
+    println!(
+        "{}",
+        t!("cli.db_user_deleted", login => user_name, db_id => db_id)
+    );
     Ok(())
 }
 
@@ -543,7 +549,7 @@ pub async fn preset_list(config: &Configuration, format: OutputFormat) -> Result
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No presets found.");
+                println!("{}", t!("cli.no_presets_found"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -596,8 +602,11 @@ pub async fn create(
 
     match format {
         OutputFormat::Table => {
-            println!("Database '{}' created (id: {}).", db.name, fmt_id(db.id));
-            println!("Password: {password}");
+            println!(
+                "{}",
+                t!("cli.database_created", name => db.name, id => fmt_id(db.id))
+            );
+            println!("{}", t!("cli.password", password => password));
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             let out = crate::output::serialized(format, &resp.db).expect("json or yaml branch")?;

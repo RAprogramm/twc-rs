@@ -602,9 +602,11 @@ fn palette_opens_with_context_commands() {
         .iter()
         .map(|c| c.title.as_str())
         .collect();
-    assert!(titles.iter().any(|t| t.contains("Reboot web")));
+    let reboot_title = format!("{} web", ActionKind::Reboot.display_label());
+    assert!(titles.iter().any(|t| t.contains(reboot_title.as_str())));
     assert!(titles.iter().any(|t| t.starts_with("Theme:")));
-    assert!(titles.iter().any(|t| t.contains("Stats panel")));
+    let stats_label = rust_i18n::t!("app.widget_stats");
+    assert!(titles.iter().any(|t| t.contains(stats_label.as_ref())));
 }
 
 #[test]

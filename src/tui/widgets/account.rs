@@ -10,6 +10,7 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, BorderType, Borders, Paragraph}
 };
+use rust_i18n::t;
 
 use crate::tui::app::{AccountInfo, App};
 
@@ -80,7 +81,7 @@ impl AccountWidget {
             account.balance.clone()
         };
         let status = if account.status.is_empty() {
-            "unknown".to_string()
+            t!("account.status_unknown").to_string()
         } else {
             account.status.clone()
         };
@@ -102,7 +103,10 @@ impl AccountWidget {
                     .add_modifier(Modifier::BOLD)
             ),
             sep(),
-            Span::styled("Balance ", Style::default().fg(palette.dim)),
+            Span::styled(
+                format!("{} ", t!("account.balance")),
+                Style::default().fg(palette.dim)
+            ),
             Span::styled(
                 balance,
                 Style::default()
@@ -143,7 +147,7 @@ impl crate::tui::widgets::Widget for AccountWidget {
                 .border_type(BorderType::Rounded)
                 .border_style(Style::default().fg(palette.border))
                 .title(Line::from(Span::styled(
-                    " Account ",
+                    format!(" {} ", t!("account.title")),
                     Style::default()
                         .fg(palette.title)
                         .add_modifier(Modifier::BOLD)

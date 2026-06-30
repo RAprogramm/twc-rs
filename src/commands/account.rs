@@ -3,6 +3,7 @@
 
 use std::fmt;
 
+use rust_i18n::t;
 use serde::Serialize;
 use tabled::Tabled;
 use timeweb_rs::apis::{account_api, configuration::Configuration, payments_api};
@@ -55,27 +56,27 @@ pub async fn show(config: &Configuration, format: OutputFormat) -> Result<(), Tw
         OutputFormat::Table => {
             let rows = vec![
                 AccountRow {
-                    field: "Login".to_string(),
+                    field: t!("cli.account_field_login").into_owned(),
                     value: summary.login.clone()
                 },
                 AccountRow {
-                    field: "Company".to_string(),
+                    field: t!("cli.account_field_company").into_owned(),
                     value: summary.company.clone()
                 },
                 AccountRow {
-                    field: "Balance".to_string(),
+                    field: t!("cli.account_field_balance").into_owned(),
                     value: format!("{} {}", summary.balance, summary.currency)
                 },
                 AccountRow {
-                    field: "Hourly cost".to_string(),
+                    field: t!("cli.account_field_hourly_cost").into_owned(),
                     value: format!("{:.2} {}", finances.hourly_cost, summary.currency)
                 },
                 AccountRow {
-                    field: "Monthly cost".to_string(),
+                    field: t!("cli.account_field_monthly_cost").into_owned(),
                     value: format!("{:.2} {}", finances.monthly_cost, summary.currency)
                 },
                 AccountRow {
-                    field: "Blocked".to_string(),
+                    field: t!("cli.account_field_blocked").into_owned(),
                     value: summary.blocked.to_string()
                 },
             ];

@@ -1,0 +1,162 @@
+_version: 2
+
+cli.no_balancers:
+  en: "No balancers found."
+  ru: "Балансировщики не найдены."
+cli.balancer_created:
+  en: "Balancer '%{name}' created (id: %{id})."
+  ru: "Балансировщик «%{name}» создан (id: %{id})."
+cli.balancer_updated:
+  en: "Balancer '%{name}' updated (id: %{id})."
+  ru: "Балансировщик «%{name}» обновлён (id: %{id})."
+cli.balancer_deleted:
+  en: "Balancer %{id} deleted."
+  ru: "Балансировщик %{id} удалён."
+cli.no_rules:
+  en: "No rules found."
+  ru: "Правила не найдены."
+cli.balancer_rule_created:
+  en: "Rule created for balancer %{id} (id: %{rule_id}): %{proto}:%{bport} -> %{server}:%{sport}."
+  ru: "Правило создано для балансировщика %{id} (id: %{rule_id}): %{proto}:%{bport} -> %{server}:%{sport}."
+cli.balancer_rule_deleted:
+  en: "Rule %{rule_id} deleted from balancer %{id}."
+  ru: "Правило %{rule_id} удалено из балансировщика %{id}."
+cli.no_balancer_ips:
+  en: "No IPs found."
+  ru: "IP-адреса не найдены."
+cli.balancer_ip_added:
+  en: "IP '%{ip}' added to balancer %{id}."
+  ru: "IP «%{ip}» добавлен в балансировщик %{id}."
+cli.balancer_ip_removed:
+  en: "IP '%{ip}' removed from balancer %{id}."
+  ru: "IP «%{ip}» удалён из балансировщика %{id}."
+cli.no_balancer_presets:
+  en: "No presets found."
+  ru: "Пресеты не найдены."
+
+cli.no_firewall_groups:
+  en: "No firewall groups found."
+  ru: "Группы файрвола не найдены."
+cli.firewall_group_created:
+  en: "Firewall group '%{name}' created (id: %{id})."
+  ru: "Группа файрвола «%{name}» создана (id: %{id})."
+cli.firewall_group_updated:
+  en: "Firewall group '%{name}' updated (id: %{id})."
+  ru: "Группа файрвола «%{name}» обновлена (id: %{id})."
+cli.firewall_group_deleted:
+  en: "Firewall group %{id} deleted."
+  ru: "Группа файрвола %{id} удалена."
+cli.firewall_rule_created:
+  en: "Rule created for group %{id} (id: %{rule_id}): %{dir}:%{proto}:%{port}."
+  ru: "Правило создано для группы %{id} (id: %{rule_id}): %{dir}:%{proto}:%{port}."
+cli.firewall_rule_deleted:
+  en: "Rule %{rule_id} deleted from group %{id}."
+  ru: "Правило %{rule_id} удалено из группы %{id}."
+cli.no_firewall_resources:
+  en: "No resources found."
+  ru: "Ресурсы не найдены."
+cli.firewall_resource_added:
+  en: "Resource %{resource_id} added to group %{id}."
+  ru: "Ресурс %{resource_id} добавлен в группу %{id}."
+cli.firewall_resource_removed:
+  en: "Resource %{resource_id} removed from group %{id}."
+  ru: "Ресурс %{resource_id} удалён из группы %{id}."
+
+cli.no_domains:
+  en: "No domains found."
+  ru: "Домены не найдены."
+cli.domain_available:
+  en: "Domain '%{fqdn}' is available for registration."
+  ru: "Домен «%{fqdn}» доступен для регистрации."
+cli.domain_not_available:
+  en: "Domain '%{fqdn}' is NOT available for registration."
+  ru: "Домен «%{fqdn}» НЕ доступен для регистрации."
+cli.domain_added:
+  en: "Domain '%{fqdn}' added successfully."
+  ru: "Домен «%{fqdn}» успешно добавлен."
+cli.domain_deleted:
+  en: "Domain '%{fqdn}' deleted."
+  ru: "Домен «%{fqdn}» удалён."
+cli.no_dns_records:
+  en: "No DNS records found."
+  ru: "DNS-записи не найдены."
+cli.dns_record_added:
+  en: "DNS record %{rtype} added to '%{fqdn}'."
+  ru: "DNS-запись %{rtype} добавлена в «%{fqdn}»."
+cli.dns_record_deleted:
+  en: "DNS record %{id} deleted from '%{fqdn}'."
+  ru: "DNS-запись %{id} удалена из «%{fqdn}»."
+cli.dns_record_updated:
+  en: "DNS record %{id} updated on '%{fqdn}'."
+  ru: "DNS-запись %{id} обновлена в «%{fqdn}»."
+cli.no_name_servers:
+  en: "No name servers found."
+  ru: "NS-серверы не найдены."
+cli.name_servers_updated:
+  en: "Name servers updated for '%{fqdn}'."
+  ru: "NS-серверы обновлены для «%{fqdn}»."
+cli.no_subdomains:
+  en: "No subdomains found."
+  ru: "Поддомены не найдены."
+cli.domain_subdomain_added:
+  en: "Subdomain '%{subdomain}' added to '%{fqdn}'."
+  ru: "Поддомен «%{subdomain}» добавлен в «%{fqdn}»."
+cli.domain_subdomain_deleted:
+  en: "Subdomain '%{subdomain}' deleted from '%{fqdn}'."
+  ru: "Поддомен «%{subdomain}» удалён из «%{fqdn}»."
+cli.no_domain_requests:
+  en: "No domain requests found."
+  ru: "Заявки по доменам не найдены."
+cli.no_tlds:
+  en: "No TLDs found."
+  ru: "Домены верхнего уровня не найдены."
+cli.domain_autoprolong_enabled:
+  en: "Auto-prolongation enabled for domain '%{fqdn}' (id: %{id})."
+  ru: "Автопродление включено для домена «%{fqdn}» (id: %{id})."
+cli.domain_autoprolong_disabled:
+  en: "Auto-prolongation disabled for domain '%{fqdn}' (id: %{id})."
+  ru: "Автопродление отключено для домена «%{fqdn}» (id: %{id})."
+
+cli.no_apps:
+  en: "No apps found."
+  ru: "Приложения не найдены."
+
+cli.no_images:
+  en: "No images found."
+  ru: "Образы не найдены."
+cli.image_deleted:
+  en: "Image %{id} deleted."
+  ru: "Образ %{id} удалён."
+
+cli.no_floating_ips:
+  en: "No floating IPs found."
+  ru: "Плавающие IP не найдены."
+cli.floating_ip_deleted:
+  en: "Floating IP %{id} deleted."
+  ru: "Плавающий IP %{id} удалён."
+
+cli.no_vpcs:
+  en: "No VPCs found."
+  ru: "Сети VPC не найдены."
+cli.vpc_deleted:
+  en: "VPC %{id} deleted."
+  ru: "VPC %{id} удалён."
+
+cli.account_field_login:
+  en: "Login"
+  ru: "Логин"
+cli.account_field_company:
+  en: "Company"
+  ru: "Компания"
+cli.account_field_balance:
+  en: "Balance"
+  ru: "Баланс"
+cli.account_field_hourly_cost:
+  en: "Hourly cost"
+  ru: "Почасовая стоимость"
+cli.account_field_monthly_cost:
+  en: "Monthly cost"
+  ru: "Ежемесячная стоимость"
+cli.account_field_blocked:
+  en: "Blocked"
+  ru: "Заблокирован"

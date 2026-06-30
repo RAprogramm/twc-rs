@@ -1,0 +1,156 @@
+_version: 2
+
+details.title:
+  en: "Details"
+  ru: "Детали"
+
+details.id:
+  en: "ID"
+  ru: "ID"
+details.status:
+  en: "Status"
+  ru: "Статус"
+details.location:
+  en: "Location"
+  ru: "Локация"
+details.cpu:
+  en: "CPU"
+  ru: "CPU"
+details.ram:
+  en: "RAM"
+  ru: "RAM"
+details.disk:
+  en: "Disk"
+  ru: "Диск"
+details.engine:
+  en: "Engine"
+  ru: "Движок"
+details.size:
+  en: "Size"
+  ru: "Размер"
+details.region:
+  en: "Region"
+  ru: "Регион"
+details.buckets:
+  en: "Buckets"
+  ru: "Бакеты"
+details.version:
+  en: "Version"
+  ru: "Версия"
+details.nodes:
+  en: "Nodes"
+  ru: "Ноды"
+details.servers:
+  en: "Servers"
+  ru: "Серверы"
+details.value:
+  en: "Value"
+  ru: "Значение"
+details.ip:
+  en: "IP"
+  ru: "IP"
+details.repos:
+  en: "Repos"
+  ru: "Репозитории"
+details.auto_prolong:
+  en: "Auto-prolong"
+  ru: "Автопродление"
+details.rules:
+  en: "Rules"
+  ru: "Правила"
+details.resources:
+  en: "Resources"
+  ru: "Ресурсы"
+details.bound_to:
+  en: "Bound to"
+  ru: "Привязан к"
+details.subnets:
+  en: "Subnets"
+  ru: "Подсети"
+details.mailboxes:
+  en: "Mailboxes"
+  ru: "Почтовые ящики"
+details.deploys:
+  en: "Deploys"
+  ru: "Деплои"
+details.model:
+  en: "Model"
+  ru: "Модель"
+details.documents:
+  en: "Documents"
+  ru: "Документы"
+
+details.cores:
+  en: "cores"
+  ru: "ядер"
+details.yes:
+  en: "yes"
+  ru: "да"
+details.no:
+  en: "no"
+  ru: "нет"
+
+details.ssh_key:
+  en: "SSH key"
+  ru: "SSH-ключ"
+details.finance:
+  en: "Finance"
+  ru: "Финансы"
+details.no_entries:
+  en: "No %{name} entries"
+  ru: "Нет записей: %{name}"
+
+details.no_servers:
+  en: "No servers available"
+  ru: "Серверов нет"
+details.no_databases:
+  en: "No databases available"
+  ru: "Баз данных нет"
+details.no_s3:
+  en: "No S3 storages available"
+  ru: "S3-хранилищ нет"
+details.no_k8s:
+  en: "No Kubernetes clusters available"
+  ru: "Кластеров Kubernetes нет"
+details.no_projects:
+  en: "No projects available"
+  ru: "Проектов нет"
+details.no_balancers:
+  en: "No balancers available"
+  ru: "Балансировщиков нет"
+details.no_registries:
+  en: "No registries available"
+  ru: "Реестров нет"
+details.no_domains:
+  en: "No domains available"
+  ru: "Доменов нет"
+details.no_firewalls:
+  en: "No firewall groups available"
+  ru: "Групп файрвола нет"
+details.no_floating_ips:
+  en: "No floating IPs available"
+  ru: "Плавающих IP нет"
+details.no_images:
+  en: "No images available"
+  ru: "Образов нет"
+details.no_network_drives:
+  en: "No network drives available"
+  ru: "Сетевых дисков нет"
+details.no_vpcs:
+  en: "No VPCs available"
+  ru: "Сетей VPC нет"
+details.no_dedicated:
+  en: "No dedicated servers available"
+  ru: "Выделенных серверов нет"
+details.no_mail:
+  en: "No mailboxes available"
+  ru: "Почтовых ящиков нет"
+details.no_apps:
+  en: "No apps available"
+  ru: "Приложений нет"
+details.no_ai_agents:
+  en: "No AI agents available"
+  ru: "AI-агентов нет"
+details.no_knowledge:
+  en: "No knowledge bases available"
+  ru: "Баз знаний нет"

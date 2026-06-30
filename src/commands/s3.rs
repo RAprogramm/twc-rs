@@ -3,6 +3,7 @@
 
 use std::fmt;
 
+use rust_i18n::t;
 use tabled::Tabled;
 use timeweb_rs::{
     apis::s3_api, models as s3_models, models::create_storage_request::Type as StorageType
@@ -143,7 +144,7 @@ pub async fn list(
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No storages found.");
+                println!("{}", t!("cli.no_storages_found"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -253,9 +254,8 @@ pub async fn create(
     match format {
         OutputFormat::Table => {
             println!(
-                "Storage '{}' created (id: {}).",
-                bucket.name,
-                fmt_id(bucket.id)
+                "{}",
+                t!("cli.storage_created", name => bucket.name, id => fmt_id(bucket.id))
             );
         }
         OutputFormat::Json | OutputFormat::Yaml => {
@@ -284,7 +284,7 @@ pub async fn delete(
     id: i32
 ) -> Result<(), TwcError> {
     s3_api::delete_storage(config, id, None, None).await?;
-    println!("Storage {id} deleted.");
+    println!("{}", t!("cli.storage_deleted", id => id));
     Ok(())
 }
 
@@ -313,9 +313,8 @@ pub async fn update(
     match format {
         OutputFormat::Table => {
             println!(
-                "Storage '{}' updated (id: {}).",
-                bucket.name,
-                fmt_id(bucket.id)
+                "{}",
+                t!("cli.storage_updated", name => bucket.name, id => fmt_id(bucket.id))
             );
         }
         OutputFormat::Json | OutputFormat::Yaml => {
@@ -360,7 +359,7 @@ pub async fn user_list(
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No users found.");
+                println!("{}", t!("cli.no_users_found"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -406,9 +405,8 @@ pub async fn user_update(
     match format {
         OutputFormat::Table => {
             println!(
-                "User '{}' updated (id: {}).",
-                user.access_key,
-                fmt_id(user.id)
+                "{}",
+                t!("cli.storage_user_updated", access_key => user.access_key, id => fmt_id(user.id))
             );
         }
         OutputFormat::Json | OutputFormat::Yaml => {
@@ -450,7 +448,7 @@ pub async fn transfer(
         )
     )
     .await?;
-    println!("Transfer initiated.");
+    println!("{}", t!("cli.transfer_initiated"));
     Ok(())
 }
 
@@ -484,7 +482,7 @@ pub async fn subdomain_list(
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No subdomains found.");
+                println!("{}", t!("cli.no_subdomains_found"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -520,7 +518,10 @@ pub async fn subdomain_add(
 ) -> Result<(), TwcError> {
     let req = s3_models::AddStorageSubdomainsRequest::new(vec![subdomain.to_string()]);
     s3_api::add_storage_subdomains(config, id, req).await?;
-    println!("Subdomain '{subdomain}' added to storage {id}.");
+    println!(
+        "{}",
+        t!("cli.subdomain_added", subdomain => subdomain, id => id)
+    );
     Ok(())
 }
 
@@ -540,7 +541,10 @@ pub async fn subdomain_delete(
 ) -> Result<(), TwcError> {
     let req = s3_models::AddStorageSubdomainsRequest::new(vec![subdomain.to_string()]);
     s3_api::delete_storage_subdomains(config, id, req).await?;
-    println!("Subdomain '{subdomain}' deleted from storage {id}.");
+    println!(
+        "{}",
+        t!("cli.subdomain_deleted", subdomain => subdomain, id => id)
+    );
     Ok(())
 }
 
@@ -576,7 +580,7 @@ pub async fn preset_list(
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No presets found.");
+                println!("{}", t!("cli.no_presets_found"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");

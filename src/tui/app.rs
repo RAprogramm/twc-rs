@@ -4,9 +4,12 @@
 //! Application state for the TUI dashboard.
 
 use std::{
+    borrow::Cow,
     collections::VecDeque,
     time::{Duration, Instant}
 };
+
+use rust_i18n::t;
 
 /// Severity of an event-log entry.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -267,6 +270,18 @@ impl ActionKind {
             Self::Reboot => "Reboot",
             Self::Clone => "Clone",
             Self::Delete => "Delete"
+        }
+    }
+
+    /// Returns the localized label shown in menus and confirmation prompts.
+    #[must_use]
+    pub fn display_label(self) -> Cow<'static, str> {
+        match self {
+            Self::Start => t!("app.action_start"),
+            Self::Shutdown => t!("app.action_shutdown"),
+            Self::Reboot => t!("app.action_reboot"),
+            Self::Clone => t!("app.action_clone"),
+            Self::Delete => t!("app.action_delete")
         }
     }
 
@@ -873,7 +888,7 @@ impl App {
     /// Marks that a refresh is needed immediately.
     pub fn force_refresh(&mut self) {
         self.refresh_requested = true;
-        self.log(LogLevel::Info, "manual refresh requested");
+        self.log(LogLevel::Info, t!("app.log_manual_refresh").to_string());
     }
 
     /// Returns true when the refresh interval has elapsed.
@@ -1306,6 +1321,18 @@ impl App {
         self.prefs_dirty = true;
     }
 
+    /// Returns the localized display label for a toggleable widget id.
+    #[must_use]
+    pub fn widget_display_label(id: &str) -> Cow<'static, str> {
+        match id {
+            "account" => t!("app.widget_account"),
+            "stats" => t!("app.widget_stats"),
+            "token_info" => t!("app.widget_token_info"),
+            "events" => t!("app.widget_events"),
+            _ => Cow::Borrowed("")
+        }
+    }
+
     /// Returns the ids of currently hidden toggleable widgets, for persisting.
     #[must_use]
     pub fn hidden_widget_ids(&self) -> Vec<String> {
@@ -1393,22 +1420,22 @@ impl App {
             for action in self.active_tab.actions() {
                 commands.push(Command {
                     id:    format!("action:{}", action.label().to_lowercase()),
-                    title: format!("{} {name}", action.label()),
-                    hint:  "action".to_string()
+                    title: format!("{} {name}", action.display_label()),
+                    hint:  t!("app.hint_action").to_string()
                 });
             }
         }
 
-        for (id, label) in Self::TOGGLEABLE_WIDGETS {
+        for (id, _) in Self::TOGGLEABLE_WIDGETS {
             let verb = if self.is_widget_enabled(id) {
-                "Hide"
+                t!("app.palette_hide")
             } else {
-                "Show"
+                t!("app.palette_show")
             };
             commands.push(Command {
                 id:    format!("widget:{id}"),
-                title: format!("{verb} {label}"),
-                hint:  "layout".to_string()
+                title: format!("{verb} {}", Self::widget_display_label(id)),
+                hint:  t!("app.hint_layout").to_string()
             });
         }
 
@@ -1416,29 +1443,29 @@ impl App {
             commands.push(Command {
                 id:    format!("theme:{}", theme.id()),
                 title: format!("Theme: {}", theme.label()),
-                hint:  "theme".to_string()
+                hint:  t!("app.hint_theme").to_string()
             });
         }
 
         commands.push(Command {
             id:    "tabs:toggle_empty".to_string(),
             title: if self.hide_empty_tabs {
-                "Show empty tabs".to_string()
+                t!("app.palette_show_empty_tabs").to_string()
             } else {
-                "Hide empty tabs".to_string()
+                t!("app.palette_hide_empty_tabs").to_string()
             },
-            hint:  "layout".to_string()
+            hint:  t!("app.hint_layout").to_string()
         });
 
         commands.push(Command {
             id:    "lang:en".to_string(),
             title: rust_i18n::t!("palette.language_english").to_string(),
-            hint:  "language".to_string()
+            hint:  t!("app.hint_language").to_string()
         });
         commands.push(Command {
             id:    "lang:ru".to_string(),
             title: rust_i18n::t!("palette.language_russian").to_string(),
-            hint:  "language".to_string()
+            hint:  t!("app.hint_language").to_string()
         });
 
         commands
@@ -1525,11 +1552,17 @@ impl App {
                 .cloned()
                 .collect();
             for entry in &data.load_errors {
-                self.log(LogLevel::Error, format!("load failed — {entry}"));
+                self.log(
+                    LogLevel::Error,
+                    t!("app.log_load_failed", entry => entry).to_string()
+                );
             }
             for entry in recovered {
                 let name = entry.split(':').next().unwrap_or(&entry);
-                self.log(LogLevel::Success, format!("{name} recovered"));
+                self.log(
+                    LogLevel::Success,
+                    t!("app.log_recovered", name => name).to_string()
+                );
             }
             self.last_load_errors = data.load_errors.clone();
         }

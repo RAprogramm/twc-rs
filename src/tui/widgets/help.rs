@@ -10,6 +10,7 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, Clear, Paragraph}
 };
+use rust_i18n::t;
 
 use crate::tui::app::App;
 
@@ -57,7 +58,7 @@ impl HelpWidget {
         let mut lines = Vec::new();
 
         lines.push(Line::from(Span::styled(
-            " Help ",
+            t!("help.title").to_string(),
             Style::default()
                 .fg(palette.title)
                 .add_modifier(Modifier::BOLD)
@@ -69,20 +70,20 @@ impl HelpWidget {
         )));
 
         let shortcuts = [
-            ("h/l", "Previous / next tab"),
-            ("j/k", "Move selection up / down"),
-            ("g/G", "Jump to first / last item"),
-            ("Enter", "Open actions / drill into selection"),
-            ("/", "Filter the current list"),
-            ("Ctrl+K", "Command palette"),
-            ("r", "Refresh now"),
-            ("Esc", "Close / clear filter"),
-            ("?", "Toggle this help"),
-            ("Q", "Quit")
+            ("h/l", t!("help.shortcut_tab")),
+            ("j/k", t!("help.shortcut_move")),
+            ("g/G", t!("help.shortcut_jump")),
+            ("Enter", t!("help.shortcut_enter")),
+            ("/", t!("help.shortcut_filter")),
+            ("Ctrl+K", t!("help.shortcut_palette")),
+            ("r", t!("help.shortcut_refresh")),
+            ("Esc", t!("help.shortcut_esc")),
+            ("?", t!("help.shortcut_toggle_help")),
+            ("Q", t!("help.shortcut_quit"))
         ];
 
         for (key, desc) in shortcuts {
-            lines.push(Self::make_shortcut_line(key, desc, palette));
+            lines.push(Self::make_shortcut_line(key, desc.as_ref(), palette));
         }
 
         lines.push(Line::from(Span::styled(
@@ -91,7 +92,7 @@ impl HelpWidget {
         )));
 
         lines.push(Line::from(Span::styled(
-            " Widgets (press number to toggle): ",
+            t!("help.widgets_header").to_string(),
             Style::default()
                 .fg(palette.title)
                 .add_modifier(Modifier::BOLD)

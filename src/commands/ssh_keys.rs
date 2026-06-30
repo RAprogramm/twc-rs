@@ -3,6 +3,7 @@
 
 use std::{fmt, fs, io::Read as _};
 
+use rust_i18n::t;
 use tabled::Tabled;
 use timeweb_rs::{
     apis::{configuration::Configuration, ssh_api},
@@ -89,7 +90,7 @@ pub async fn list(config: &Configuration, format: OutputFormat) -> Result<(), Tw
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No SSH keys found.");
+                println!("{}", t!("cli.no_ssh_keys_found"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -145,9 +146,8 @@ pub async fn add(
     let req = CreateKeyRequest::new(body, is_default, name.to_string());
     let resp = ssh_api::create_key(config, req).await?;
     println!(
-        "SSH key '{}' created (id: {}).",
-        resp.ssh_key.name,
-        fmt_id(resp.ssh_key.id)
+        "{}",
+        t!("cli.ssh_key_created", name => resp.ssh_key.name, id => fmt_id(resp.ssh_key.id))
     );
     Ok(())
 }
@@ -163,7 +163,7 @@ pub async fn add(
 /// Returns [`TwcError::Api`] on network or API failures.
 pub async fn delete(config: &Configuration, id: i32) -> Result<(), TwcError> {
     ssh_api::delete_key(config, id).await?;
-    println!("SSH key {id} deleted.");
+    println!("{}", t!("cli.ssh_key_deleted", id => id));
     Ok(())
 }
 

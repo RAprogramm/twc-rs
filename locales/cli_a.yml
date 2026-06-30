@@ -1,0 +1,155 @@
+_version: 2
+
+cli.no_servers_found:
+  en: "No servers found."
+  ru: "Серверы не найдены."
+cli.server_deleted:
+  en: "Server %{id} deleted."
+  ru: "Сервер %{id} удалён."
+cli.server_rebooting:
+  en: "Server %{id} rebooting."
+  ru: "Сервер %{id} перезагружается."
+
+cli.no_databases_found:
+  en: "No databases found."
+  ru: "Базы данных не найдены."
+cli.database_deleted:
+  en: "Database %{id} deleted."
+  ru: "База данных %{id} удалена."
+cli.database_updated:
+  en: "Database '%{name}' updated (id: %{id})."
+  ru: "База данных «%{name}» обновлена (id: %{id})."
+cli.database_restarted:
+  en: "Database %{id} deleted (restart via recreation)."
+  ru: "База данных %{id} удалена (перезапуск через пересоздание)."
+cli.database_created:
+  en: "Database '%{name}' created (id: %{id})."
+  ru: "База данных «%{name}» создана (id: %{id})."
+cli.password:
+  en: "Password: %{password}"
+  ru: "Пароль: %{password}"
+cli.no_backups_found:
+  en: "No backups found."
+  ru: "Резервные копии не найдены."
+cli.backup_created:
+  en: "Backup created for database %{id}."
+  ru: "Резервная копия создана для базы данных %{id}."
+cli.no_users_found:
+  en: "No users found."
+  ru: "Пользователи не найдены."
+cli.db_user_created:
+  en: "User '%{login}' created for database %{db_id} (id: %{id})."
+  ru: "Пользователь «%{login}» создан для базы данных %{db_id} (id: %{id})."
+cli.db_user_deleted:
+  en: "User '%{login}' deleted from database %{db_id}."
+  ru: "Пользователь «%{login}» удалён из базы данных %{db_id}."
+cli.no_presets_found:
+  en: "No presets found."
+  ru: "Пресеты не найдены."
+
+cli.no_projects_found:
+  en: "No projects found."
+  ru: "Проекты не найдены."
+cli.project_created:
+  en: "Project '%{name}' created (id: %{id})."
+  ru: "Проект «%{name}» создан (id: %{id})."
+cli.project_deleted:
+  en: "Project %{id} deleted."
+  ru: "Проект %{id} удалён."
+
+cli.no_ssh_keys_found:
+  en: "No SSH keys found."
+  ru: "SSH-ключи не найдены."
+cli.ssh_key_created:
+  en: "SSH key '%{name}' created (id: %{id})."
+  ru: "SSH-ключ «%{name}» создан (id: %{id})."
+cli.ssh_key_deleted:
+  en: "SSH key %{id} deleted."
+  ru: "SSH-ключ %{id} удалён."
+
+cli.no_storages_found:
+  en: "No storages found."
+  ru: "Хранилища не найдены."
+cli.storage_created:
+  en: "Storage '%{name}' created (id: %{id})."
+  ru: "Хранилище «%{name}» создано (id: %{id})."
+cli.storage_deleted:
+  en: "Storage %{id} deleted."
+  ru: "Хранилище %{id} удалено."
+cli.storage_updated:
+  en: "Storage '%{name}' updated (id: %{id})."
+  ru: "Хранилище «%{name}» обновлено (id: %{id})."
+cli.storage_user_updated:
+  en: "User '%{access_key}' updated (id: %{id})."
+  ru: "Пользователь «%{access_key}» обновлён (id: %{id})."
+cli.transfer_initiated:
+  en: "Transfer initiated."
+  ru: "Перенос запущен."
+cli.no_subdomains_found:
+  en: "No subdomains found."
+  ru: "Поддомены не найдены."
+cli.subdomain_added:
+  en: "Subdomain '%{subdomain}' added to storage %{id}."
+  ru: "Поддомен «%{subdomain}» добавлен к хранилищу %{id}."
+cli.subdomain_deleted:
+  en: "Subdomain '%{subdomain}' deleted from storage %{id}."
+  ru: "Поддомен «%{subdomain}» удалён из хранилища %{id}."
+
+cli.no_clusters_found:
+  en: "No Kubernetes clusters found."
+  ru: "Кластеры Kubernetes не найдены."
+cli.cluster_created:
+  en: "Cluster '%{name}' created (id: %{id})."
+  ru: "Кластер «%{name}» создан (id: %{id})."
+cli.cluster_deleted:
+  en: "Cluster %{id} deleted."
+  ru: "Кластер %{id} удалён."
+cli.cluster_updated:
+  en: "Cluster '%{name}' updated (id: %{id})."
+  ru: "Кластер «%{name}» обновлён (id: %{id})."
+cli.no_node_groups_found:
+  en: "No node groups found."
+  ru: "Группы узлов не найдены."
+cli.node_group_created:
+  en: "Node group '%{name}' created for cluster %{cluster_id} (id: %{id})."
+  ru: "Группа узлов «%{name}» создана для кластера %{cluster_id} (id: %{id})."
+cli.node_group_deleted:
+  en: "Node group %{group_id} deleted from cluster %{cluster_id}."
+  ru: "Группа узлов %{group_id} удалена из кластера %{cluster_id}."
+cli.no_nodes_found:
+  en: "No nodes found."
+  ru: "Узлы не найдены."
+cli.no_addons_installed:
+  en: "No addons installed."
+  ru: "Дополнения не установлены."
+cli.addon_install_started:
+  en: "Addon '%{name}' installation started on cluster %{cluster_id}."
+  ru: "Установка дополнения «%{name}» запущена в кластере %{cluster_id}."
+cli.addon_deleted:
+  en: "Addon '%{name}' deleted from cluster %{cluster_id}."
+  ru: "Дополнение «%{name}» удалено из кластера %{cluster_id}."
+cli.no_versions_found:
+  en: "No versions found."
+  ru: "Версии не найдены."
+cli.cluster_resources_header:
+  en: "Cluster %{id} resources:"
+  ru: "Ресурсы кластера %{id}:"
+
+cli.registry_limit_offset_note:
+  en: "Note: limit/offset are not supported by this API endpoint."
+  ru: "Примечание: параметры limit/offset не поддерживаются этим эндпоинтом API."
+cli.no_registries_found:
+  en: "No registries found."
+  ru: "Реестры не найдены."
+cli.registry_created:
+  en: "Registry '%{name}' created (id: %{id})."
+  ru: "Реестр «%{name}» создан (id: %{id})."
+cli.registry_deleted:
+  en: "Registry %{id} deleted."
+  ru: "Реестр %{id} удалён."
+cli.registry_updated:
+  en: "Registry '%{name}' updated (id: %{id})."
+  ru: "Реестр «%{name}» обновлён (id: %{id})."
+cli.no_repositories_found:
+  en: "No repositories found."
+  ru: "Репозитории не найдены."

@@ -10,6 +10,7 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, BorderType, Borders, List, ListItem, ListState}
 };
+use rust_i18n::t;
 
 use crate::tui::{
     app::{App, ResourceTab},
@@ -26,16 +27,42 @@ pub(crate) fn server_status_view(
     palette: &Palette
 ) -> (&'static str, Color, String) {
     match status {
-        "On" => ("\u{25B6}", palette.success, "running".to_string()),
-        "Off" => ("\u{25CB}", palette.error, "stopped".to_string()),
+        "On" => (
+            "\u{25B6}",
+            palette.success,
+            t!("resource_list.status_running").to_string()
+        ),
+        "Off" => (
+            "\u{25CB}",
+            palette.error,
+            t!("resource_list.status_stopped").to_string()
+        ),
         "Removed" | "Blocked" => ("\u{25CB}", palette.error, status.to_lowercase()),
-        "TurningOn" => ("\u{25D0}", palette.warning, "starting".to_string()),
-        "TurningOff" | "HardTurningOff" => ("\u{25D0}", palette.warning, "stopping".to_string()),
-        "Rebooting" | "HardRebooting" => ("\u{25D0}", palette.warning, "rebooting".to_string()),
-        "Installing" | "SoftwareInstall" | "Reinstalling" => {
-            ("\u{25D0}", palette.warning, "installing".to_string())
-        }
-        "Removing" => ("\u{25CC}", palette.error, "removing".to_string()),
+        "TurningOn" => (
+            "\u{25D0}",
+            palette.warning,
+            t!("resource_list.status_starting").to_string()
+        ),
+        "TurningOff" | "HardTurningOff" => (
+            "\u{25D0}",
+            palette.warning,
+            t!("resource_list.status_stopping").to_string()
+        ),
+        "Rebooting" | "HardRebooting" => (
+            "\u{25D0}",
+            palette.warning,
+            t!("resource_list.status_rebooting").to_string()
+        ),
+        "Installing" | "SoftwareInstall" | "Reinstalling" => (
+            "\u{25D0}",
+            palette.warning,
+            t!("resource_list.status_installing").to_string()
+        ),
+        "Removing" => (
+            "\u{25CC}",
+            palette.error,
+            t!("resource_list.status_removing").to_string()
+        ),
         other => ("\u{25D0}", palette.warning, other.to_lowercase())
     }
 }
@@ -122,7 +149,10 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
                     Span::styled(&p.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
                     Span::styled(
-                        format!("[{} servers]", p.server_count),
+                        format!(
+                            "[{}]",
+                            t!("resource_list.count_servers", n => p.server_count)
+                        ),
                         Style::default().fg(palette.dim)
                     ),
                 ]);
@@ -151,7 +181,10 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
                     Span::styled(&r.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
                     Span::styled(
-                        format!("[{} repos]", r.repository_count),
+                        format!(
+                            "[{}]",
+                            t!("resource_list.count_repos", n => r.repository_count)
+                        ),
                         Style::default().fg(palette.accent)
                     ),
                 ]);
@@ -183,7 +216,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
                     Span::styled(&f.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
                     Span::styled(
-                        format!("[{} rules]", f.rule_count),
+                        format!("[{}]", t!("resource_list.count_rules", n => f.rule_count)),
                         Style::default().fg(palette.accent)
                     ),
                 ]);
@@ -244,7 +277,10 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
                     Span::styled(&v.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
                     Span::styled(
-                        format!("[{} subnets]", v.subnet_count),
+                        format!(
+                            "[{}]",
+                            t!("resource_list.count_subnets", n => v.subnet_count)
+                        ),
                         Style::default().fg(palette.warning)
                     ),
                 ]);
@@ -273,7 +309,10 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
                     Span::styled(&m.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
                     Span::styled(
-                        format!("[{} mailboxes]", m.mailbox_count),
+                        format!(
+                            "[{}]",
+                            t!("resource_list.count_mailboxes", n => m.mailbox_count)
+                        ),
                         Style::default().fg(palette.accent)
                     ),
                 ]);
@@ -289,7 +328,10 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
                     Span::styled(&a.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
                     Span::styled(
-                        format!("[{} deploys]", a.deploy_count),
+                        format!(
+                            "[{}]",
+                            t!("resource_list.count_deploys", n => a.deploy_count)
+                        ),
                         Style::default().fg(palette.accent)
                     ),
                 ]);
@@ -318,7 +360,10 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
                     Span::styled(&k.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
                     Span::styled(
-                        format!("[{} docs]", k.document_count),
+                        format!(
+                            "[{}]",
+                            t!("resource_list.count_docs", n => k.document_count)
+                        ),
                         Style::default().fg(palette.dim)
                     ),
                 ]);
@@ -355,10 +400,11 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
         .filter_map(|&i| items.get(i).cloned())
         .collect();
 
+    let fallback = t!("resource_list.title_fallback").to_string();
     let tab_name = ResourceTab::names()
         .get(app.active_tab.index())
         .copied()
-        .unwrap_or("Resources");
+        .unwrap_or(fallback.as_str());
     let title = if app.filter_active() {
         let cursor = if app.filter_editing { "\u{2588}" } else { "" };
         format!(" {tab_name} ({})  /{}{cursor} ", items.len(), app.filter)

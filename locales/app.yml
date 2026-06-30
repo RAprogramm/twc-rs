@@ -6,3 +6,6 @@ app.no_token_configured:
 app.token_saved:
   en: Token saved. You won't be prompted again.
   ru: Токен сохранён. Больше спрашивать не будем.
+app.language_saved:
+  en: Language updated.
+  ru: Язык изменён.

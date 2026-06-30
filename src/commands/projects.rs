@@ -3,6 +3,7 @@
 
 use std::fmt;
 
+use rust_i18n::t;
 use tabled::Tabled;
 use timeweb_rs::{
     apis::{configuration::Configuration, projects_api},
@@ -66,7 +67,7 @@ pub async fn list(config: &Configuration, format: OutputFormat) -> Result<(), Tw
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No projects found.");
+                println!("{}", t!("cli.no_projects_found"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -106,9 +107,8 @@ pub async fn create(
     }
     let resp = projects_api::create_project(config, req).await?;
     println!(
-        "Project '{}' created (id: {}).",
-        resp.project.name,
-        fmt_id(resp.project.id)
+        "{}",
+        t!("cli.project_created", name => resp.project.name, id => fmt_id(resp.project.id))
     );
     Ok(())
 }
@@ -124,7 +124,7 @@ pub async fn create(
 /// Returns [`TwcError::Api`] on network or API failures.
 pub async fn delete(config: &Configuration, id: i32) -> Result<(), TwcError> {
     projects_api::delete_project(config, id).await?;
-    println!("Project {id} deleted.");
+    println!("{}", t!("cli.project_deleted", id => id));
     Ok(())
 }
 

@@ -3,6 +3,7 @@
 
 use std::fmt;
 
+use rust_i18n::t;
 use tabled::Tabled;
 use timeweb_rs::{
     apis::{configuration::Configuration, kubernetes_api},
@@ -191,7 +192,7 @@ pub async fn list(
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No Kubernetes clusters found.");
+                println!("{}", t!("cli.no_clusters_found"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -294,7 +295,10 @@ pub async fn create(
 
     match format {
         OutputFormat::Table => {
-            println!("Cluster '{}' created (id: {}).", cluster.name, cluster.id);
+            println!(
+                "{}",
+                t!("cli.cluster_created", name => cluster.name, id => cluster.id)
+            );
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             let out =
@@ -319,7 +323,7 @@ pub async fn create(
 /// Returns [`TwcError::Api`] on network or API failures.
 pub async fn delete(config: &Configuration, id: i32) -> Result<(), TwcError> {
     kubernetes_api::delete_cluster(config, id, None, None).await?;
-    println!("Cluster {id} deleted.");
+    println!("{}", t!("cli.cluster_deleted", id => id));
     Ok(())
 }
 
@@ -347,7 +351,10 @@ pub async fn update(
 
     match format {
         OutputFormat::Table => {
-            println!("Cluster '{}' updated (id: {}).", cluster.name, cluster.id);
+            println!(
+                "{}",
+                t!("cli.cluster_updated", name => cluster.name, id => cluster.id)
+            );
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             let out =
@@ -393,7 +400,7 @@ pub async fn nodegroup_list(
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No node groups found.");
+                println!("{}", t!("cli.no_node_groups_found"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -437,8 +444,8 @@ pub async fn nodegroup_create(
     match format {
         OutputFormat::Table => {
             println!(
-                "Node group '{}' created for cluster {cluster_id} (id: {}).",
-                group.name, group.id
+                "{}",
+                t!("cli.node_group_created", name => group.name, cluster_id => cluster_id, id => group.id)
             );
         }
         OutputFormat::Json | OutputFormat::Yaml => {
@@ -468,7 +475,10 @@ pub async fn nodegroup_delete(
     group_id: i32
 ) -> Result<(), TwcError> {
     kubernetes_api::delete_cluster_node_group(config, cluster_id, group_id).await?;
-    println!("Node group {group_id} deleted from cluster {cluster_id}.");
+    println!(
+        "{}",
+        t!("cli.node_group_deleted", group_id => group_id, cluster_id => cluster_id)
+    );
     Ok(())
 }
 
@@ -506,7 +516,7 @@ pub async fn node_list(
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No nodes found.");
+                println!("{}", t!("cli.no_nodes_found"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -558,7 +568,7 @@ pub async fn addon_list(
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No addons installed.");
+                println!("{}", t!("cli.no_addons_installed"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -600,7 +610,10 @@ pub async fn addon_install(
         "latest".to_string()
     );
     kubernetes_api::post_kubernetes_addons(config, cluster_id, req).await?;
-    println!("Addon '{addon_name}' installation started on cluster {cluster_id}.");
+    println!(
+        "{}",
+        t!("cli.addon_install_started", name => addon_name, cluster_id => cluster_id)
+    );
     Ok(())
 }
 
@@ -629,7 +642,10 @@ pub async fn addon_delete(
     };
 
     kubernetes_api::delete_kubernetes_addons(config, cluster_id, addon.id).await?;
-    println!("Addon '{addon_name}' deleted from cluster {cluster_id}.");
+    println!(
+        "{}",
+        t!("cli.addon_deleted", name => addon_name, cluster_id => cluster_id)
+    );
     Ok(())
 }
 
@@ -670,7 +686,7 @@ pub async fn preset_list(config: &Configuration, format: OutputFormat) -> Result
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No presets found.");
+                println!("{}", t!("cli.no_presets_found"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -713,7 +729,7 @@ pub async fn version_list(config: &Configuration, format: OutputFormat) -> Resul
     match format {
         OutputFormat::Table => {
             if resp.k8s_versions.is_empty() {
-                println!("No versions found.");
+                println!("{}", t!("cli.no_versions_found"));
             } else {
                 #[derive(Tabled)]
                 struct VersionRow {
@@ -779,7 +795,7 @@ pub async fn resources(
 
     match format {
         OutputFormat::Table => {
-            println!("Cluster {id} resources:");
+            println!("{}", t!("cli.cluster_resources_header", id => id));
             let json = serde_json::to_string_pretty(&resp.resources)
                 .map_err(|e| TwcError::Api(e.to_string()))?;
             println!("{json}");

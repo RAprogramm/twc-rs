@@ -3,6 +3,7 @@
 
 use std::fmt;
 
+use rust_i18n::t;
 use tabled::Tabled;
 use timeweb_rs::apis::{apps_api, configuration::Configuration};
 
@@ -66,7 +67,7 @@ pub async fn list(config: &Configuration, format: OutputFormat) -> Result<(), Tw
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No apps found.");
+                println!("{}", t!("cli.no_apps"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");

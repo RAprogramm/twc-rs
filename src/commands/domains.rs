@@ -3,6 +3,7 @@
 
 use std::fmt;
 
+use rust_i18n::t;
 use tabled::Tabled;
 use timeweb_rs::{apis::domains_api, models as dm};
 
@@ -232,7 +233,7 @@ pub async fn list(
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No domains found.");
+                println!("{}", t!("cli.no_domains"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -349,9 +350,9 @@ pub async fn check(
     let resp = domains_api::check_domain(config, &fqdn).await?;
 
     if resp.is_domain_available {
-        println!("Domain '{fqdn}' is available for registration.");
+        println!("{}", t!("cli.domain_available", fqdn => fqdn));
     } else {
-        println!("Domain '{fqdn}' is NOT available for registration.");
+        println!("{}", t!("cli.domain_not_available", fqdn => fqdn));
     }
     Ok(())
 }
@@ -374,7 +375,7 @@ pub async fn add(
 
     match format {
         OutputFormat::Table => {
-            println!("Domain '{fqdn}' added successfully.");
+            println!("{}", t!("cli.domain_added", fqdn => fqdn));
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             println!("{{\"fqdn\": \"{fqdn}\", \"status\": \"added\"}}");
@@ -400,7 +401,7 @@ pub async fn delete(
     fqdn: String
 ) -> Result<(), TwcError> {
     domains_api::delete_domain(config, &fqdn).await?;
-    println!("Domain '{fqdn}' deleted.");
+    println!("{}", t!("cli.domain_deleted", fqdn => fqdn));
     Ok(())
 }
 
@@ -450,7 +451,7 @@ pub async fn dns_list(
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No DNS records found.");
+                println!("{}", t!("cli.no_dns_records"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -497,7 +498,10 @@ pub async fn dns_add(
 
     match format {
         OutputFormat::Table => {
-            println!("DNS record {record_type} added to '{fqdn}'.");
+            println!(
+                "{}",
+                t!("cli.dns_record_added", rtype => record_type, fqdn => fqdn)
+            );
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             println!(
@@ -526,7 +530,10 @@ pub async fn dns_delete(
     record_id: i32
 ) -> Result<(), TwcError> {
     domains_api::delete_domain_dns_record_v2(config, &fqdn, record_id).await?;
-    println!("DNS record {record_id} deleted from '{fqdn}'.");
+    println!(
+        "{}",
+        t!("cli.dns_record_deleted", id => record_id, fqdn => fqdn)
+    );
     Ok(())
 }
 
@@ -553,7 +560,10 @@ pub async fn dns_update(
 
     match format {
         OutputFormat::Table => {
-            println!("DNS record {record_id} updated on '{fqdn}'.");
+            println!(
+                "{}",
+                t!("cli.dns_record_updated", id => record_id, fqdn => fqdn)
+            );
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             println!(
@@ -601,7 +611,7 @@ pub async fn ns_list(
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No name servers found.");
+                println!("{}", t!("cli.no_name_servers"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -647,7 +657,7 @@ pub async fn ns_update(
 
     match format {
         OutputFormat::Table => {
-            println!("Name servers updated for '{fqdn}'.");
+            println!("{}", t!("cli.name_servers_updated", fqdn => fqdn));
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             let out = crate::output::serialized(format, &resp.name_servers)
@@ -692,7 +702,7 @@ pub async fn subdomain_list(
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No subdomains found.");
+                println!("{}", t!("cli.no_subdomains"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -731,7 +741,10 @@ pub async fn subdomain_add(
 
     match format {
         OutputFormat::Table => {
-            println!("Subdomain '{subdomain}' added to '{fqdn}'.");
+            println!(
+                "{}",
+                t!("cli.domain_subdomain_added", subdomain => subdomain, fqdn => fqdn)
+            );
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             println!(
@@ -760,7 +773,10 @@ pub async fn subdomain_delete(
     subdomain: String
 ) -> Result<(), TwcError> {
     domains_api::delete_subdomain(config, &fqdn, &subdomain).await?;
-    println!("Subdomain '{subdomain}' deleted from '{fqdn}'.");
+    println!(
+        "{}",
+        t!("cli.domain_subdomain_deleted", subdomain => subdomain, fqdn => fqdn)
+    );
     Ok(())
 }
 
@@ -795,7 +811,7 @@ pub async fn request_list(
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No domain requests found.");
+                println!("{}", t!("cli.no_domain_requests"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -848,7 +864,7 @@ pub async fn tld_list(
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No TLDs found.");
+                println!("{}", t!("cli.no_tlds"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -893,13 +909,12 @@ pub async fn auto_prolong(
 
     match format {
         OutputFormat::Table => {
-            let state = if enabled { "enabled" } else { "disabled" };
-            println!(
-                "Auto-prolongation {} for domain '{}' (id: {}).",
-                state,
-                d.fqdn,
-                fmt_id(d.id)
-            );
+            let msg = if enabled {
+                t!("cli.domain_autoprolong_enabled", fqdn => d.fqdn, id => fmt_id(d.id))
+            } else {
+                t!("cli.domain_autoprolong_disabled", fqdn => d.fqdn, id => fmt_id(d.id))
+            };
+            println!("{msg}");
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             let out =

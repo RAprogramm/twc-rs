@@ -255,6 +255,20 @@ async fn run() -> Result<(), TwcError> {
                 }
                 Ok(())
             }
+            ConfigCommands::SetLanguage {
+                language
+            } => {
+                let language = match language {
+                    cli::LangArg::En => config::Language::En,
+                    cli::LangArg::Ru => config::Language::Ru
+                };
+                let mut cfg = AppConfig::load()?;
+                cfg.language = language;
+                cfg.save()?;
+                rust_i18n::set_locale(language.locale());
+                println!("{}", t!("app.language_saved"));
+                Ok(())
+            }
         },
         Commands::Server(cmd) => {
             let token = ensure_token(cli.token.as_deref(), cli.profile.as_deref())?;

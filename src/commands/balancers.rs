@@ -3,6 +3,7 @@
 
 use std::fmt;
 
+use rust_i18n::t;
 use tabled::Tabled;
 use timeweb_rs::{apis::balancers_api, models as bw};
 
@@ -150,7 +151,7 @@ pub async fn list(
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No balancers found.");
+                println!("{}", t!("cli.no_balancers"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -272,7 +273,10 @@ pub async fn create(
 
     match format {
         OutputFormat::Table => {
-            println!("Balancer '{}' created (id: {}).", b.name, fmt_id(b.id));
+            println!(
+                "{}",
+                t!("cli.balancer_created", name => b.name, id => fmt_id(b.id))
+            );
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             let out =
@@ -300,7 +304,7 @@ pub async fn delete(
     id: i32
 ) -> Result<(), TwcError> {
     balancers_api::delete_balancer(config, id, None, None).await?;
-    println!("Balancer {id} deleted.");
+    println!("{}", t!("cli.balancer_deleted", id => id));
     Ok(())
 }
 
@@ -328,7 +332,10 @@ pub async fn update(
 
     match format {
         OutputFormat::Table => {
-            println!("Balancer '{}' updated (id: {}).", b.name, fmt_id(b.id));
+            println!(
+                "{}",
+                t!("cli.balancer_updated", name => b.name, id => fmt_id(b.id))
+            );
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             let out =
@@ -374,7 +381,7 @@ pub async fn rule_list(
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No rules found.");
+                println!("{}", t!("cli.no_rules"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -423,12 +430,16 @@ pub async fn rule_create(
             let proto_str = format!("{:?}", r.balancer_proto);
             let server_str = format!("{:?}", r.server_proto);
             println!(
-                "Rule created for balancer {id} (id: {}): {}:{} -> {}:{}.",
-                fmt_id(r.id),
-                proto_str,
-                r.balancer_port,
-                server_str,
-                r.server_port
+                "{}",
+                t!(
+                    "cli.balancer_rule_created",
+                    id => id,
+                    rule_id => fmt_id(r.id),
+                    proto => proto_str,
+                    bport => r.balancer_port,
+                    server => server_str,
+                    sport => r.server_port
+                )
             );
         }
         OutputFormat::Json | OutputFormat::Yaml => {
@@ -468,7 +479,10 @@ pub async fn rule_delete(
     };
 
     balancers_api::delete_balancer_rule(config, id, rule_id).await?;
-    println!("Rule {rule_id} deleted from balancer {id}.");
+    println!(
+        "{}",
+        t!("cli.balancer_rule_deleted", rule_id => rule_id, id => id)
+    );
     Ok(())
 }
 
@@ -500,7 +514,7 @@ pub async fn ip_list(
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No IPs found.");
+                println!("{}", t!("cli.no_balancer_ips"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -536,7 +550,7 @@ pub async fn ip_add(
 ) -> Result<(), TwcError> {
     let req = bw::AddIpsToBalancerRequest::new(vec![ip.to_string()]);
     balancers_api::add_ips_to_balancer(config, id, req).await?;
-    println!("IP '{ip}' added to balancer {id}.");
+    println!("{}", t!("cli.balancer_ip_added", ip => ip, id => id));
     Ok(())
 }
 
@@ -556,7 +570,7 @@ pub async fn ip_remove(
 ) -> Result<(), TwcError> {
     let req = bw::AddIpsToBalancerRequest::new(vec![ip.to_string()]);
     balancers_api::delete_ips_from_balancer(config, id, req).await?;
-    println!("IP '{ip}' removed from balancer {id}.");
+    println!("{}", t!("cli.balancer_ip_removed", ip => ip, id => id));
     Ok(())
 }
 
@@ -593,7 +607,7 @@ pub async fn preset_list(
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No presets found.");
+                println!("{}", t!("cli.no_balancer_presets"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");

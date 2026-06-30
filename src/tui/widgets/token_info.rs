@@ -10,6 +10,7 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, BorderType, Borders, Paragraph}
 };
+use rust_i18n::t;
 
 use crate::{jwt::JwtPayload, tui::app::App};
 
@@ -62,7 +63,7 @@ impl TokenInfoWidget {
     ) -> Vec<Line<'static>> {
         let Some(token_str) = token else {
             return vec![Line::from(Span::styled(
-                "No token configured",
+                t!("token_info.no_token").to_string(),
                 Style::default().fg(palette.dim)
             ))];
         };
@@ -71,11 +72,11 @@ impl TokenInfoWidget {
         if payload.exp.is_none() {
             return vec![
                 Line::from(Span::styled(
-                    "API key",
+                    t!("token_info.api_key").to_string(),
                     Style::default().fg(palette.fg).add_modifier(Modifier::BOLD)
                 )),
                 Line::from(Span::styled(
-                    "no JWT expiry info",
+                    t!("token_info.no_jwt_expiry").to_string(),
                     Style::default().fg(palette.dim)
                 )),
             ];
@@ -83,13 +84,17 @@ impl TokenInfoWidget {
         let expires_line = payload.exp.map_or_else(
             || {
                 Line::from(Span::styled(
-                    "Expires: unknown",
+                    t!("token_info.expires_unknown").to_string(),
                     Style::default().fg(palette.dim)
                 ))
             },
             |exp| {
                 Line::from(Span::styled(
-                    format!("Expires: {} UTC", exp.format("%Y-%m-%d %H:%M:%S")),
+                    t!(
+                        "token_info.expires",
+                        date => exp.format("%Y-%m-%d %H:%M:%S").to_string()
+                    )
+                    .to_string(),
                     Style::default().fg(palette.fg)
                 ))
             }
@@ -98,13 +103,13 @@ impl TokenInfoWidget {
         let days_line = payload.days_remaining().map_or_else(
             || {
                 Line::from(Span::styled(
-                    "Days left: N/A",
+                    t!("token_info.days_left_na").to_string(),
                     Style::default().fg(palette.dim)
                 ))
             },
             |days| {
                 Line::from(Span::styled(
-                    format!("Days left: {days}"),
+                    t!("token_info.days_left", days => days).to_string(),
                     Style::default().fg(palette.fg)
                 ))
             }
@@ -119,15 +124,15 @@ impl TokenInfoWidget {
         };
 
         let status_text = if payload.is_expired() {
-            "Expired".to_string()
+            t!("token_info.status_expired").to_string()
         } else if payload.is_expiring_soon() {
-            "Expiring Soon".to_string()
+            t!("token_info.status_expiring").to_string()
         } else {
-            "Valid".to_string()
+            t!("token_info.status_valid").to_string()
         };
 
         let status_line = Line::from(Span::styled(
-            format!("Status: \u{25cf} {status_text}"),
+            format!("{}: \u{25cf} {status_text}", t!("token_info.status")),
             status_style
         ));
 
@@ -162,7 +167,7 @@ impl crate::tui::widgets::Widget for TokenInfoWidget {
                 .border_type(BorderType::Rounded)
                 .border_style(Style::default().fg(palette.border))
                 .title(Line::from(Span::styled(
-                    " Token Info ",
+                    format!(" {} ", t!("token_info.title")),
                     Style::default()
                         .fg(palette.title)
                         .add_modifier(Modifier::BOLD)

@@ -10,6 +10,7 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, BorderType, Borders, List, ListItem}
 };
+use rust_i18n::t;
 
 use crate::tui::app::{App, LogLevel};
 
@@ -43,7 +44,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
             .border_type(BorderType::Rounded)
             .border_style(Style::default().fg(palette.border))
             .title(Line::from(Span::styled(
-                " Events ",
+                format!(" {} ", t!("events.title")),
                 Style::default()
                     .fg(palette.title)
                     .add_modifier(Modifier::BOLD)

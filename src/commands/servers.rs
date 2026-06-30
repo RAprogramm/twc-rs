@@ -3,6 +3,7 @@
 
 use std::fmt;
 
+use rust_i18n::t;
 use tabled::Tabled;
 use timeweb_rs::apis::{configuration::Configuration, servers_api};
 
@@ -77,7 +78,7 @@ pub async fn list(
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No servers found.");
+                println!("{}", t!("cli.no_servers_found"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -160,7 +161,7 @@ pub async fn info(config: &Configuration, id: i32, format: OutputFormat) -> Resu
 /// Returns [`TwcError::Api`] on network or API failures.
 pub async fn delete(config: &Configuration, id: i32) -> Result<(), TwcError> {
     servers_api::delete_server(config, id, None, None).await?;
-    println!("Server {id} deleted.");
+    println!("{}", t!("cli.server_deleted", id => id));
     Ok(())
 }
 
@@ -175,7 +176,7 @@ pub async fn delete(config: &Configuration, id: i32) -> Result<(), TwcError> {
 /// Returns [`TwcError::Api`] on network or API failures.
 pub async fn reboot(config: &Configuration, id: i32) -> Result<(), TwcError> {
     servers_api::reboot_server(config, id).await?;
-    println!("Server {id} rebooting.");
+    println!("{}", t!("cli.server_rebooting", id => id));
     Ok(())
 }
 

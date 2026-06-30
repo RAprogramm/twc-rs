@@ -3,6 +3,7 @@
 
 use std::fmt;
 
+use rust_i18n::t;
 use tabled::Tabled;
 use timeweb_rs::apis::{configuration::Configuration, vpc_api};
 
@@ -61,7 +62,7 @@ pub async fn list(config: &Configuration, format: OutputFormat) -> Result<(), Tw
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No VPCs found.");
+                println!("{}", t!("cli.no_vpcs"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -92,6 +93,6 @@ pub async fn list(config: &Configuration, format: OutputFormat) -> Result<(), Tw
 /// Returns [`TwcError::Api`] on network or API failures.
 pub async fn delete(config: &Configuration, id: &str) -> Result<(), TwcError> {
     vpc_api::delete_vpc(config, id).await?;
-    println!("VPC {id} deleted.");
+    println!("{}", t!("cli.vpc_deleted", id => id));
     Ok(())
 }

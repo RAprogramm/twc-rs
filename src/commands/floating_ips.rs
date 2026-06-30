@@ -3,6 +3,7 @@
 
 use std::fmt;
 
+use rust_i18n::t;
 use tabled::Tabled;
 use timeweb_rs::apis::{configuration::Configuration, floating_ip_api};
 
@@ -54,7 +55,7 @@ pub async fn list(config: &Configuration, format: OutputFormat) -> Result<(), Tw
     match format {
         OutputFormat::Table => {
             if rows.is_empty() {
-                println!("No floating IPs found.");
+                println!("{}", t!("cli.no_floating_ips"));
             } else {
                 let table = crate::output::render_table(&rows);
                 println!("{table}");
@@ -85,6 +86,6 @@ pub async fn list(config: &Configuration, format: OutputFormat) -> Result<(), Tw
 /// Returns [`TwcError::Api`] on network or API failures.
 pub async fn delete(config: &Configuration, id: &str) -> Result<(), TwcError> {
     floating_ip_api::delete_floating_ip(config, id).await?;
-    println!("Floating IP {id} deleted.");
+    println!("{}", t!("cli.floating_ip_deleted", id => id));
     Ok(())
 }

@@ -13,6 +13,7 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, BorderType, Borders, Paragraph, Sparkline}
 };
+use rust_i18n::t;
 
 use crate::tui::{app::App, themes::Palette};
 
@@ -22,7 +23,7 @@ const BASELINE_SAMPLES: usize = 8;
 /// A single metric row prepared for rendering.
 struct MetricRow {
     /// Short label such as `CPU` or `Net↓`.
-    label:       &'static str,
+    label:       String,
     /// Current value formatted for display, or `—` when no data is available.
     value:       String,
     /// Foreground color for the displayed value.
@@ -121,24 +122,29 @@ impl StatsWidget {
     }
 
     /// Builds a percentage metric row from a history window.
-    fn percent_row(label: &'static str, history: &VecDeque<f64>, palette: Palette) -> MetricRow {
+    fn percent_row(
+        label: impl Into<String>,
+        history: &VecDeque<f64>,
+        palette: Palette
+    ) -> MetricRow {
+        let label = label.into();
         history.back().map_or_else(
             || MetricRow {
-                label,
-                value: "\u{2014}".to_owned(),
+                label:       label.clone(),
+                value:       "\u{2014}".to_owned(),
                 value_color: palette.dim,
-                data: vec![0; BASELINE_SAMPLES],
-                max: 100,
+                data:        vec![0; BASELINE_SAMPLES],
+                max:         100,
                 spark_color: palette.dim
             },
             |&last| {
                 let color = Self::level_color(last, palette);
                 MetricRow {
-                    label,
-                    value: format!("{}%", Self::pct_to_u64(last)),
+                    label:       label.clone(),
+                    value:       format!("{}%", Self::pct_to_u64(last)),
                     value_color: color,
-                    data: history.iter().map(|&v| Self::pct_to_u64(v)).collect(),
-                    max: 100,
+                    data:        history.iter().map(|&v| Self::pct_to_u64(v)).collect(),
+                    max:         100,
                     spark_color: color
                 }
             }
@@ -147,25 +153,26 @@ impl StatsWidget {
 
     /// Builds a network throughput metric row from a history window.
     fn net_row(
-        label: &'static str,
+        label: impl Into<String>,
         history: &VecDeque<u64>,
         color: Color,
         palette: Palette
     ) -> MetricRow {
+        let label = label.into();
         history.back().map_or_else(
             || MetricRow {
-                label,
-                value: "\u{2014}".to_owned(),
+                label:       label.clone(),
+                value:       "\u{2014}".to_owned(),
                 value_color: palette.dim,
-                data: vec![0; BASELINE_SAMPLES],
-                max: 1,
+                data:        vec![0; BASELINE_SAMPLES],
+                max:         1,
                 spark_color: palette.dim
             },
             |&last| {
                 let data: Vec<u64> = history.iter().copied().collect();
                 let max = data.iter().copied().max().unwrap_or(1).max(1);
                 MetricRow {
-                    label,
+                    label: label.clone(),
                     value: format!("{:.1}M", Self::bytes_to_mb(last)),
                     value_color: color,
                     data,
@@ -179,11 +186,16 @@ impl StatsWidget {
     /// Assembles all four metric rows for the current application state.
     fn metric_rows(app: &App, palette: Palette) -> [MetricRow; 4] {
         [
-            Self::percent_row("CPU", &app.cpu_history, palette),
-            Self::percent_row("RAM", &app.ram_history, palette),
-            Self::net_row("Net\u{2193}", &app.net_in_history, palette.accent, palette),
+            Self::percent_row(t!("stats.cpu").to_string(), &app.cpu_history, palette),
+            Self::percent_row(t!("stats.ram").to_string(), &app.ram_history, palette),
             Self::net_row(
-                "Net\u{2191}",
+                t!("stats.net_in").to_string(),
+                &app.net_in_history,
+                palette.accent,
+                palette
+            ),
+            Self::net_row(
+                t!("stats.net_out").to_string(),
                 &app.net_out_history,
                 palette.warning,
                 palette
@@ -217,7 +229,7 @@ impl crate::tui::widgets::Widget for StatsWidget {
             .border_type(BorderType::Rounded)
             .border_style(Style::default().fg(palette.border))
             .title(Line::from(Span::styled(
-                " Stats ",
+                format!(" {} ", t!("stats.title")),
                 Style::default()
                     .fg(palette.title)
                     .add_modifier(Modifier::BOLD)
