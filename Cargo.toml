@@ -24,8 +24,16 @@ Timeweb Cloud infrastructure: servers, databases, S3, Kubernetes, \
 balancers, domains, firewalls and more. Written in Rust, no runtime \
 dependencies beyond the system libc."""
 assets = [
-    ["target/release/twc-rs", "usr/bin/", "755"],
-    ["README.md", "usr/share/doc/twc-rs/README.md", "644"],
+  [
+    "target/release/twc-rs",
+    "usr/bin/",
+    "755",
+  ],
+  [
+    "README.md",
+    "usr/share/doc/twc-rs/README.md",
+    "644",
+  ],
 ]
 
 [[bin]]
@@ -38,7 +46,7 @@ auth = ["dep:open", "dep:tiny_http", "dep:keyring"]
 tui = ["dep:ratatui", "dep:crossterm", "dep:tokio-stream"]
 
 [dependencies]
-timeweb-rs = "0.3"
+timeweb-rs = "0.4"
 clap = { version = "4", features = ["derive", "env", "string"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 serde = { version = "1", features = ["derive"] }
@@ -62,9 +70,9 @@ ratatui = { version = "0.30", optional = true }
 crossterm = { version = "0.29", optional = true }
 tokio-stream = { version = "0.1", optional = true }
 clap_complete = "4"
-clap_complete_nushell = "4.6.0"
+clap_complete_nushell = "4"
 serde_yaml_ng = "0.10"
-rust-i18n = "4.1.0"
+rust-i18n = "4"
 
 [dev-dependencies]
 assert_cmd = "2"
