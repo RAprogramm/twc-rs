@@ -133,3 +133,6 @@ account.status_error:
 account.status_failed:
   en: "failed"
   ru: "сбой"
+stats.subject_hint:
+  en: "Select a server or app to see live CPU, RAM and network."
+  ru: "Выберите сервер или приложение, чтобы увидеть CPU, RAM и сеть."

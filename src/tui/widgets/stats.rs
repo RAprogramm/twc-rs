@@ -116,9 +116,15 @@ impl StatsWidget {
     /// # Returns
     ///
     /// The value expressed in mebibytes (MiB).
-    #[expect(clippy::cast_precision_loss)]
-    fn bytes_to_mb(bytes: u64) -> f64 {
-        bytes as f64 / 1_048_576.0
+    fn bytes_to_mb(bytes: f64) -> f64 {
+        bytes / 1_048_576.0
+    }
+
+    /// Converts a byte sample to a non-negative integer for the sparkline,
+    /// which renders `u64` data points.
+    #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    fn bytes_to_spark(value: f64) -> u64 {
+        value.max(0.0).round() as u64
     }
 
     /// Builds a percentage metric row from a history window.
@@ -154,7 +160,7 @@ impl StatsWidget {
     /// Builds a network throughput metric row from a history window.
     fn net_row(
         label: impl Into<String>,
-        history: &VecDeque<u64>,
+        history: &VecDeque<f64>,
         color: Color,
         palette: Palette
     ) -> MetricRow {
@@ -169,7 +175,7 @@ impl StatsWidget {
                 spark_color: palette.dim
             },
             |&last| {
-                let data: Vec<u64> = history.iter().copied().collect();
+                let data: Vec<u64> = history.iter().map(|&v| Self::bytes_to_spark(v)).collect();
                 let max = data.iter().copied().max().unwrap_or(1).max(1);
                 MetricRow {
                     label: label.clone(),
@@ -183,24 +189,41 @@ impl StatsWidget {
         )
     }
 
-    /// Assembles all four metric rows for the current application state.
-    fn metric_rows(app: &App, palette: Palette) -> [MetricRow; 4] {
-        [
-            Self::percent_row(t!("stats.cpu").to_string(), &app.cpu_history, palette),
-            Self::percent_row(t!("stats.ram").to_string(), &app.ram_history, palette),
-            Self::net_row(
+    /// Assembles a metric row for every series that has data, so resources that
+    /// expose only some metrics (servers report no live RAM) show just those.
+    fn metric_rows(app: &App, palette: Palette) -> Vec<MetricRow> {
+        let mut rows = Vec::with_capacity(4);
+        if !app.cpu_history.is_empty() {
+            rows.push(Self::percent_row(
+                t!("stats.cpu").to_string(),
+                &app.cpu_history,
+                palette
+            ));
+        }
+        if !app.ram_history.is_empty() {
+            rows.push(Self::percent_row(
+                t!("stats.ram").to_string(),
+                &app.ram_history,
+                palette
+            ));
+        }
+        if !app.net_in_history.is_empty() {
+            rows.push(Self::net_row(
                 t!("stats.net_in").to_string(),
                 &app.net_in_history,
                 palette.accent,
                 palette
-            ),
-            Self::net_row(
+            ));
+        }
+        if !app.net_out_history.is_empty() {
+            rows.push(Self::net_row(
                 t!("stats.net_out").to_string(),
                 &app.net_out_history,
                 palette.warning,
                 palette
-            )
-        ]
+            ));
+        }
+        rows
     }
 }
 
@@ -224,12 +247,16 @@ impl crate::tui::widgets::Widget for StatsWidget {
     fn render(&self, frame: &mut Frame, area: Rect, app: &App) {
         let palette = app.theme.palette();
 
+        let title = match &app.stats_subject {
+            Some(name) => format!(" {} — {name} ", t!("stats.title")),
+            None => format!(" {} ", t!("stats.title"))
+        };
         let block = Block::default()
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
             .border_style(Style::default().fg(palette.border))
             .title(Line::from(Span::styled(
-                format!(" {} ", t!("stats.title")),
+                title,
                 Style::default()
                     .fg(palette.title)
                     .add_modifier(Modifier::BOLD)
@@ -238,8 +265,20 @@ impl crate::tui::widgets::Widget for StatsWidget {
         let inner = block.inner(area);
         frame.render_widget(block, area);
 
+        if app.stats_subject.is_none() {
+            let hint = Paragraph::new(t!("stats.subject_hint").to_string())
+                .style(Style::default().fg(palette.dim))
+                .alignment(ratatui::layout::Alignment::Center);
+            frame.render_widget(hint, inner);
+            return;
+        }
+
         let rows = Self::metric_rows(app, palette);
-        let row_areas = Layout::vertical([Constraint::Fill(1); 4]).split(inner);
+        if rows.is_empty() {
+            return;
+        }
+        let constraints: Vec<Constraint> = rows.iter().map(|_| Constraint::Fill(1)).collect();
+        let row_areas = Layout::vertical(constraints).split(inner);
 
         for (row, &row_area) in rows.iter().zip(row_areas.iter()) {
             let cols =
@@ -309,8 +348,8 @@ mod tests {
 
     #[test]
     fn bytes_to_mb_converts_mebibytes() {
-        assert!((StatsWidget::bytes_to_mb(1_048_576) - 1.0).abs() < f64::EPSILON);
-        assert!((StatsWidget::bytes_to_mb(0) - 0.0).abs() < f64::EPSILON);
+        assert!((StatsWidget::bytes_to_mb(1_048_576.0) - 1.0).abs() < f64::EPSILON);
+        assert!((StatsWidget::bytes_to_mb(0.0) - 0.0).abs() < f64::EPSILON);
     }
 
     #[test]
@@ -349,7 +388,7 @@ mod tests {
     #[test]
     fn net_row_with_data_scales_to_max() {
         let p = palette();
-        let history: VecDeque<u64> = [0, 1_048_576, 2_097_152].into_iter().collect();
+        let history: VecDeque<f64> = [0.0, 1_048_576.0, 2_097_152.0].into_iter().collect();
         let row = StatsWidget::net_row("Net\u{2193}", &history, p.accent, p);
         assert_eq!(row.value, "2.0M");
         assert_eq!(row.value_color, p.accent);
@@ -357,13 +396,24 @@ mod tests {
     }
 
     #[test]
-    fn metric_rows_returns_four_labels() {
+    fn metric_rows_returns_a_row_per_populated_series() {
         let p = palette();
-        let app = App::new(5);
+        let mut app = App::new(5);
+        app.push_cpu(10.0);
+        app.push_ram(20.0);
+        app.push_net_in(100.0);
+        app.push_net_out(200.0);
         let rows = StatsWidget::metric_rows(&app, p);
         assert_eq!(rows[0].label, "CPU");
         assert_eq!(rows[1].label, "RAM");
         assert_eq!(rows[2].label, "Net\u{2193}");
         assert_eq!(rows[3].label, "Net\u{2191}");
+    }
+
+    #[test]
+    fn metric_rows_empty_without_data() {
+        let p = palette();
+        let app = App::new(5);
+        assert!(StatsWidget::metric_rows(&app, p).is_empty());
     }
 }

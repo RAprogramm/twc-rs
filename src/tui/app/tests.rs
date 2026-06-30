@@ -179,8 +179,8 @@ fn push_ram_rolling_window() {
 #[test]
 fn push_net_in_rolling_window() {
     let mut app = App::new(5);
-    for i in 0..65u64 {
-        app.push_net_in(i);
+    for i in 0..65i32 {
+        app.push_net_in(f64::from(i));
     }
     assert_eq!(app.net_in_history.len(), 60);
 }
@@ -188,8 +188,8 @@ fn push_net_in_rolling_window() {
 #[test]
 fn push_net_out_rolling_window() {
     let mut app = App::new(5);
-    for i in 0..65u64 {
-        app.push_net_out(i);
+    for i in 0..65i32 {
+        app.push_net_out(f64::from(i));
     }
     assert_eq!(app.net_out_history.len(), 60);
 }
