@@ -8,21 +8,12 @@ on:
 permissions:
   contents: write
 
+# release-plz creates the GitHub Release and its changelog body when it pushes
+# the tag. This workflow only attaches build artifacts to that existing
+# release — it never recreates or rewrites the release notes.
 jobs:
-  create-release:
-    name: Create GitHub Release
-    runs-on: ubuntu-latest
-    steps:
-      # softprops/action-gh-release@v2 creates (or reuses) the Release for the tag.
-      - name: Create release
-        uses: softprops/action-gh-release@v2 # pinned to major tag
-        with:
-          generate_release_notes: true
-          token: ${{ secrets.GITHUB_TOKEN }}
-
   upload-assets:
     name: Build ${{ matrix.target }}
-    needs: create-release
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -39,39 +30,35 @@ jobs:
           - target: x86_64-pc-windows-msvc
             os: windows-latest
     steps:
-      - uses: actions/checkout@v4 # pinned to major tag
+      - uses: actions/checkout@v4 # checkout repository
       # taiki-e/upload-rust-binary-action builds with --release, strips the
       # binary, archives (.tar.gz on unix / .zip on windows), generates the
-      # checksum and uploads everything to the Release for this tag.
+      # checksum and uploads everything to the existing release for this tag.
       - name: Build and upload binary
         uses: taiki-e/upload-rust-binary-action@v1 # pinned to major tag
         with:
           bin: twc-rs
           features: tui
           target: ${{ matrix.target }}
-          # Version-stamped archive name: twc-rs-vX.Y.Z-<target>.tar.gz
           archive: $bin-$tag-$target
           checksum: sha256
           token: ${{ secrets.GITHUB_TOKEN }}
 
   deb:
     name: Build .deb package
-    needs: create-release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4 # pinned to major tag
+      - uses: actions/checkout@v4 # checkout repository
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable # pinned to branch tag
+        uses: dtolnay/rust-toolchain@stable # stable toolchain
       - name: Install cargo-deb
         uses: taiki-e/install-action@v2 # pinned to major tag
         with:
           tool: cargo-deb
-      # `cargo deb -- --features tui` forwards --features tui to the cargo
-      # build invoked by cargo-deb, producing a .deb with the TUI enabled.
       - name: Build .deb
         run: cargo deb -- --features tui
+      # Attach the .deb to the existing release without touching its notes.
       - name: Upload .deb to release
-        uses: softprops/action-gh-release@v2 # pinned to major tag
-        with:
-          files: target/debian/*.deb
-          token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${GITHUB_REF_NAME}" target/debian/*.deb --clobber
