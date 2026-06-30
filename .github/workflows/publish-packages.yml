@@ -1,0 +1,95 @@
+name: Publish packages
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to publish (e.g. v0.2.1)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  aur:
+    name: Publish AUR (twc-rs-bin)
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'RAprogramm'
+    steps:
+      - name: Guard on AUR_SSH_PRIVATE_KEY
+        id: guard
+        env:
+          AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+        run: if [ -n "${AUR_SSH_PRIVATE_KEY}" ]; then echo "ok=true" >> "$GITHUB_OUTPUT"; fi
+      - name: Checkout repository
+        if: steps.guard.outputs.ok == 'true'
+        uses: actions/checkout@v4 # pinned to major tag
+      - name: Resolve tag and version
+        if: steps.guard.outputs.ok == 'true'
+        id: meta
+        env:
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          tag="${INPUT_TAG:-${RELEASE_TAG}}"
+          version="${tag#v}"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+      - name: Update PKGBUILD pkgver and sha256sums
+        if: steps.guard.outputs.ok == 'true'
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          asset="twc-rs-${TAG}-x86_64-unknown-linux-gnu.tar.gz"
+          url="https://github.com/RAprogramm/twc-rs/releases/download/${TAG}/${asset}.sha256"
+          checksum="$(curl -fsSL "${url}" | awk '{print $1}')"
+          if [ -z "${checksum}" ]; then
+            echo "::error::Could not read checksum from ${url}"
+            exit 1
+          fi
+          sed -i "s/^pkgver=.*/pkgver=${VERSION}/" packaging/PKGBUILD
+          sed -i "s/^sha256sums=.*/sha256sums=('${checksum}')/" packaging/PKGBUILD
+          cat packaging/PKGBUILD
+      - name: Publish to AUR
+        if: steps.guard.outputs.ok == 'true'
+        uses: KSXGitHub/github-actions-deploy-aur@v4 # pinned to major tag
+        with:
+          pkgname: twc-rs-bin
+          pkgbuild: ./packaging/PKGBUILD
+          commit_username: RAprogramm
+          commit_email: andrey.rozanov.vl@gmail.com
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: "Update to ${{ steps.meta.outputs.tag }}"
+
+  homebrew:
+    name: Bump Homebrew formula (twc-rs)
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'RAprogramm'
+    steps:
+      - name: Guard on HOMEBREW_TAP_TOKEN
+        id: guard
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: if [ -n "${HOMEBREW_TAP_TOKEN}" ]; then echo "ok=true" >> "$GITHUB_OUTPUT"; fi
+      - name: Resolve tag
+        if: steps.guard.outputs.ok == 'true'
+        id: meta
+        env:
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          tag="${INPUT_TAG:-${RELEASE_TAG}}"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+      - name: Bump formula in tap
+        if: steps.guard.outputs.ok == 'true'
+        uses: dawidd6/action-homebrew-bump-formula@v4 # pinned to major tag
+        with:
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          tap: RAprogramm/homebrew-tap
+          formula: twc-rs
+          tag: ${{ steps.meta.outputs.tag }}
