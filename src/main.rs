@@ -1014,7 +1014,7 @@ async fn refresh_all(
                 ram_mb:   s.ram as i32,
                 disk_gb:  0,
                 ip:       String::new(),
-                location: format!("{:?}", s.location)
+                location: s.location.clone()
             })
             .collect();
         app.update_servers(summaries);
@@ -1031,7 +1031,7 @@ async fn refresh_all(
                 id:      d.id as i32,
                 name:    d.name.clone(),
                 status:  format!("{:?}", d.status),
-                engine:  format!("{:?}", d.r#type),
+                engine:  d.r#type.clone(),
                 size_mb: 0
             })
             .collect();
@@ -1098,7 +1098,7 @@ async fn refresh_all(
                 name:     b.name.clone(),
                 status:   format!("{:?}", b.status),
                 ip:       b.ips.first().cloned().unwrap_or_default(),
-                location: format!("{:?}", b.location)
+                location: b.location.clone()
             })
             .collect();
         app.update_balancers(summaries);
