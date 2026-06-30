@@ -1635,6 +1635,21 @@ impl App {
         use super::command_palette::Command;
         let mut commands = Vec::new();
 
+        let general = t!("app.hint_general").to_string();
+        for (id, title) in [
+            ("app:create", t!("palette.cmd_create")),
+            ("app:filter", t!("palette.cmd_filter")),
+            ("app:refresh", t!("palette.cmd_refresh")),
+            ("app:help", t!("palette.cmd_help")),
+            ("app:quit", t!("palette.cmd_quit"))
+        ] {
+            commands.push(Command {
+                id:    id.to_string(),
+                title: title.to_string(),
+                hint:  general.clone()
+            });
+        }
+
         if let Some((_, name)) = self.selected_resource() {
             for action in self.active_tab.actions() {
                 commands.push(Command {
@@ -1702,7 +1717,17 @@ impl App {
     }
 
     fn run_command(&mut self, id: &str) {
-        if id == "tabs:toggle_empty" {
+        if id == "app:help" {
+            self.toggle_help();
+        } else if id == "app:refresh" {
+            self.force_refresh();
+        } else if id == "app:filter" {
+            self.start_filter();
+        } else if id == "app:create" {
+            self.open_create_form();
+        } else if id == "app:quit" {
+            self.quit();
+        } else if id == "tabs:toggle_empty" {
             self.toggle_hide_empty_tabs();
         } else if id == "lang:en" {
             self.set_language(crate::config::Language::En);

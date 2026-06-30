@@ -121,3 +121,6 @@ ui.drill_title:
 app.hint_account:
   en: "account"
   ru: "аккаунт"
+app.hint_general:
+  en: "general"
+  ru: "общее"

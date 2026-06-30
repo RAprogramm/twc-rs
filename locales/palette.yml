@@ -9,3 +9,18 @@ palette.language_russian:
 palette.switch_profile:
   en: "Profile: switch to %{name}"
   ru: "Профиль: переключить на %{name}"
+palette.cmd_create:
+  en: "Create a new resource"
+  ru: "Создать ресурс"
+palette.cmd_filter:
+  en: "Filter the current list"
+  ru: "Фильтровать список"
+palette.cmd_refresh:
+  en: "Refresh all resources"
+  ru: "Обновить все ресурсы"
+palette.cmd_help:
+  en: "Toggle help"
+  ru: "Показать справку"
+palette.cmd_quit:
+  en: "Quit twc-rs"
+  ru: "Выйти из twc-rs"
