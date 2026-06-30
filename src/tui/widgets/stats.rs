@@ -1,38 +1,50 @@
 // SPDX-FileCopyrightText: 2026 RAprogramm <andrey.rozanov.vl@gmail.com>
 // SPDX-License-Identifier: MIT
 
-//! System metrics widget — renders CPU, RAM, and network usage as ASCII bar
-//! charts.
+//! System metrics widget — renders CPU, RAM, and network usage as live
+//! sparklines.
 
-use std::fmt::Write;
+use std::collections::VecDeque;
 
 use ratatui::{
     Frame,
-    layout::Rect,
-    style::{Modifier, Style},
+    layout::{Constraint, Layout, Rect},
+    style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Paragraph}
+    widgets::{Block, BorderType, Borders, Paragraph, Sparkline}
 };
 
-use crate::tui::app::App;
+use crate::tui::{app::App, themes::Palette};
 
-/// Renders system resource usage as ASCII bar charts.
+/// Number of baseline samples rendered when a metric history is empty.
+const BASELINE_SAMPLES: usize = 8;
+
+/// A single metric row prepared for rendering.
+struct MetricRow {
+    /// Short label such as `CPU` or `Net↓`.
+    label:       &'static str,
+    /// Current value formatted for display, or `—` when no data is available.
+    value:       String,
+    /// Foreground color for the displayed value.
+    value_color: Color,
+    /// Sparkline samples, oldest first.
+    data:        Vec<u64>,
+    /// Upper bound used to scale the sparkline bars.
+    max:         u64,
+    /// Foreground color for the sparkline bars.
+    spark_color: Color
+}
+
+/// Renders system resource usage as live sparklines.
 ///
 /// # Overview
 ///
 /// Displays four metrics — CPU usage (%), RAM usage (%), network in (MB/s),
-/// and network out (MB/s) — as horizontal bars using Unicode block characters.
-/// Shows "No data" when the corresponding history is empty.
-///
-/// # Bar characters
-///
-/// | Fill | Char | Code |
-/// |------|------|------|
-/// | Full | █ | U+2588 |
-/// | 3/4  | ▓ | U+2593 |
-/// | 1/2  | ▒ | U+2592 |
-/// | 1/4  | ░ | U+2591 |
-/// | Empty| ░ | U+2591 |
+/// and network out (MB/s) — each as a label, current value, and a
+/// [`Sparkline`] of the rolling history window. Percentage metrics are colored
+/// by level (green below 60%, warning below 85%, error otherwise). When a
+/// history is empty, a flat baseline sparkline is shown with a dim `—` value
+/// rather than any "no data" text.
 ///
 /// # Examples
 ///
@@ -59,147 +71,119 @@ impl StatsWidget {
         }
     }
 
-    /// Returns the Unicode block character for a given fill fraction.
+    /// Maps a percentage value to a level color.
     ///
     /// # Arguments
     ///
-    /// * `frac` - Fraction of the character to fill (0.0 to 1.0).
-    /// * `full` - Character for fully filled blocks.
-    /// * `empty` - Character for empty blocks.
+    /// * `value` - Percentage in the range 0.0 to 100.0.
+    /// * `palette` - The active theme palette.
     ///
     /// # Returns
     ///
-    /// The appropriate block character for the given fill fraction.
+    /// `palette.success` below 60%, `palette.warning` below 85%, otherwise
+    /// `palette.error`.
+    fn level_color(value: f64, palette: Palette) -> Color {
+        if value < 60.0 {
+            palette.success
+        } else if value < 85.0 {
+            palette.warning
+        } else {
+            palette.error
+        }
+    }
+
+    /// Converts a percentage to a clamped, rounded sparkline sample.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - Percentage that may fall outside the 0.0 to 100.0 range.
+    ///
+    /// # Returns
+    ///
+    /// The value clamped to `0..=100` and rounded to the nearest integer.
     #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-    fn bar_char(frac: f64, full: char, empty: char) -> char {
-        let idx = (frac * 4.0) as usize;
-        match idx {
-            4 => full,
-            3 => '\u{2593}',
-            2 => '\u{2592}',
-            1 => '\u{2591}',
-            _ => empty
-        }
+    fn pct_to_u64(value: f64) -> u64 {
+        value.clamp(0.0, 100.0).round() as u64
     }
 
-    /// Builds the bar string for a given percentage.
+    /// Converts a byte count to mebibytes for display.
     ///
     /// # Arguments
     ///
-    /// * `percentage` - Fill percentage (0.0 to 100.0).
-    /// * `width` - Total bar width in characters.
-    /// * `full` - Character for fully filled blocks.
-    /// * `empty` - Character for empty blocks.
+    /// * `bytes` - Raw byte count for the sampling interval.
     ///
     /// # Returns
     ///
-    /// A string of exactly `width` characters representing the bar.
-    #[expect(
-        clippy::cast_possible_truncation,
-        clippy::cast_precision_loss,
-        clippy::cast_sign_loss
-    )]
-    fn build_bar(percentage: f64, width: usize, full: char, empty: char) -> String {
-        let fill_pct = percentage / 100.0;
-        let filled = fill_pct * (width as f64);
-        let full_blocks = filled as usize;
-        let remainder = filled - (full_blocks as f64);
-        let half_block = Self::bar_char(remainder, full, empty);
-        let empty_blocks = width - full_blocks - 1;
-
-        let mut bar = String::with_capacity(width);
-        for _ in 0..full_blocks {
-            let _ = write!(bar, "{full}");
-        }
-        let _ = write!(bar, "{half_block}");
-        for _ in 0..empty_blocks {
-            let _ = write!(bar, "{empty}");
-        }
-        bar
+    /// The value expressed in mebibytes (MiB).
+    #[expect(clippy::cast_precision_loss)]
+    fn bytes_to_mb(bytes: u64) -> f64 {
+        bytes as f64 / 1_048_576.0
     }
 
-    /// Builds the styled lines for the stats panel.
-    ///
-    /// # Arguments
-    ///
-    /// * `app` - The application state with metric histories.
-    /// * `palette` - The theme color palette.
-    ///
-    /// # Returns
-    ///
-    /// A vector of `Line` structs representing the rendered content.
-    fn build_lines(app: &App, palette: crate::tui::themes::Palette) -> Vec<Line<'static>> {
-        let bar_width: usize = 16;
-
-        let cpu_line = match app.cpu_history.back() {
-            #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-            Some(&val) => {
-                let pct = val.round() as u64;
-                let bar = Self::build_bar(val, bar_width, '\u{2588}', '\u{2591}');
-                Line::from(Span::styled(
-                    format!("CPU Usage  {bar} {pct}%"),
-                    Style::default().fg(palette.accent)
-                ))
+    /// Builds a percentage metric row from a history window.
+    fn percent_row(label: &'static str, history: &VecDeque<f64>, palette: Palette) -> MetricRow {
+        history.back().map_or_else(
+            || MetricRow {
+                label,
+                value: "\u{2014}".to_owned(),
+                value_color: palette.dim,
+                data: vec![0; BASELINE_SAMPLES],
+                max: 100,
+                spark_color: palette.dim
+            },
+            |&last| {
+                let color = Self::level_color(last, palette);
+                MetricRow {
+                    label,
+                    value: format!("{}%", Self::pct_to_u64(last)),
+                    value_color: color,
+                    data: history.iter().map(|&v| Self::pct_to_u64(v)).collect(),
+                    max: 100,
+                    spark_color: color
+                }
             }
-            None => Line::from(Span::styled(
-                "CPU Usage       No data",
-                Style::default().fg(palette.dim)
-            ))
-        };
+        )
+    }
 
-        let ram_line = match app.ram_history.back() {
-            #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-            Some(&val) => {
-                let pct = val.round() as u64;
-                let bar = Self::build_bar(val, bar_width, '\u{2588}', '\u{2591}');
-                Line::from(Span::styled(
-                    format!("RAM Usage  {bar} {pct}%"),
-                    Style::default().fg(palette.accent)
-                ))
+    /// Builds a network throughput metric row from a history window.
+    fn net_row(
+        label: &'static str,
+        history: &VecDeque<u64>,
+        color: Color,
+        palette: Palette
+    ) -> MetricRow {
+        history.back().map_or_else(
+            || MetricRow {
+                label,
+                value: "\u{2014}".to_owned(),
+                value_color: palette.dim,
+                data: vec![0; BASELINE_SAMPLES],
+                max: 1,
+                spark_color: palette.dim
+            },
+            |&last| {
+                let data: Vec<u64> = history.iter().copied().collect();
+                let max = data.iter().copied().max().unwrap_or(1).max(1);
+                MetricRow {
+                    label,
+                    value: format!("{:.1}M", Self::bytes_to_mb(last)),
+                    value_color: color,
+                    data,
+                    max,
+                    spark_color: color
+                }
             }
-            None => Line::from(Span::styled(
-                "RAM Usage       No data",
-                Style::default().fg(palette.dim)
-            ))
-        };
+        )
+    }
 
-        let net_in_line = match app.net_in_history.back() {
-            #[expect(clippy::cast_precision_loss)]
-            Some(&val) => {
-                let max_val = app.net_in_history.iter().copied().max().unwrap_or(1);
-                let pct = (val as f64 / max_val as f64) * 100.0;
-                let mb = (val as f64 / 1_048_576.0).round();
-                let bar = Self::build_bar(pct, bar_width, '\u{2588}', '\u{2591}');
-                Line::from(Span::styled(
-                    format!("Net In    {bar} {mb} MB/s"),
-                    Style::default().fg(palette.accent)
-                ))
-            }
-            None => Line::from(Span::styled(
-                "Net In          No data",
-                Style::default().fg(palette.dim)
-            ))
-        };
-
-        let net_out_line = match app.net_out_history.back() {
-            #[expect(clippy::cast_precision_loss)]
-            Some(&val) => {
-                let max_val = app.net_out_history.iter().copied().max().unwrap_or(1);
-                let pct = (val as f64 / max_val as f64) * 100.0;
-                let mb = (val as f64 / 1_048_576.0).round();
-                let bar = Self::build_bar(pct, bar_width, '\u{2588}', '\u{2591}');
-                Line::from(Span::styled(
-                    format!("Net Out   {bar} {mb} MB/s"),
-                    Style::default().fg(palette.accent)
-                ))
-            }
-            None => Line::from(Span::styled(
-                "Net Out         No data",
-                Style::default().fg(palette.dim)
-            ))
-        };
-
-        vec![cpu_line, ram_line, net_in_line, net_out_line]
+    /// Assembles all four metric rows for the current application state.
+    fn metric_rows(app: &App, palette: Palette) -> [MetricRow; 4] {
+        [
+            Self::percent_row("CPU", &app.cpu_history, palette),
+            Self::percent_row("RAM", &app.ram_history, palette),
+            Self::net_row("Net\u{2193}", &app.net_in_history, palette.accent, palette),
+            Self::net_row("Net\u{2191}", &app.net_out_history, palette.warning, palette)
+        ]
     }
 }
 
@@ -222,19 +206,147 @@ impl crate::tui::widgets::Widget for StatsWidget {
 
     fn render(&self, frame: &mut Frame, area: Rect, app: &App) {
         let palette = app.theme.palette();
-        let lines = Self::build_lines(app, palette);
 
-        let paragraph = Paragraph::new(lines).block(
-            Block::default()
-                .borders(Borders::ALL)
-                .title(Line::from(Span::styled(
-                    " Stats ",
+        let block = Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(Style::default().fg(palette.border))
+            .title(Line::from(Span::styled(
+                " Stats ",
+                Style::default()
+                    .fg(palette.title)
+                    .add_modifier(Modifier::BOLD)
+            )));
+
+        let inner = block.inner(area);
+        frame.render_widget(block, area);
+
+        let rows = Self::metric_rows(app, palette);
+        let row_areas = Layout::vertical([Constraint::Fill(1); 4]).split(inner);
+
+        for (row, &row_area) in rows.iter().zip(row_areas.iter()) {
+            let cols =
+                Layout::horizontal([Constraint::Length(11), Constraint::Min(0)]).split(row_area);
+
+            let label = Paragraph::new(Line::from(vec![
+                Span::styled(
+                    format!("{} ", row.label),
+                    Style::default().fg(palette.header)
+                ),
+                Span::styled(
+                    row.value.clone(),
                     Style::default()
-                        .fg(palette.title)
+                        .fg(row.value_color)
                         .add_modifier(Modifier::BOLD)
-                )))
-        );
+                ),
+            ]));
+            frame.render_widget(label, cols[0]);
 
-        frame.render_widget(paragraph, area);
+            let sparkline = Sparkline::default()
+                .data(row.data.clone())
+                .max(row.max)
+                .style(Style::default().fg(row.spark_color));
+            frame.render_widget(sparkline, cols[1]);
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::tui::themes::Theme;
+
+    fn palette() -> Palette {
+        Theme::default().palette()
+    }
+
+    #[test]
+    fn level_color_low_is_success() {
+        let p = palette();
+        assert_eq!(StatsWidget::level_color(0.0, p), p.success);
+        assert_eq!(StatsWidget::level_color(59.9, p), p.success);
+    }
+
+    #[test]
+    fn level_color_mid_is_warning() {
+        let p = palette();
+        assert_eq!(StatsWidget::level_color(60.0, p), p.warning);
+        assert_eq!(StatsWidget::level_color(84.9, p), p.warning);
+    }
+
+    #[test]
+    fn level_color_high_is_error() {
+        let p = palette();
+        assert_eq!(StatsWidget::level_color(85.0, p), p.error);
+        assert_eq!(StatsWidget::level_color(100.0, p), p.error);
+    }
+
+    #[test]
+    fn pct_to_u64_clamps_and_rounds() {
+        assert_eq!(StatsWidget::pct_to_u64(-5.0), 0);
+        assert_eq!(StatsWidget::pct_to_u64(0.4), 0);
+        assert_eq!(StatsWidget::pct_to_u64(0.5), 1);
+        assert_eq!(StatsWidget::pct_to_u64(73.6), 74);
+        assert_eq!(StatsWidget::pct_to_u64(150.0), 100);
+    }
+
+    #[test]
+    fn bytes_to_mb_converts_mebibytes() {
+        assert!((StatsWidget::bytes_to_mb(1_048_576) - 1.0).abs() < f64::EPSILON);
+        assert!((StatsWidget::bytes_to_mb(0) - 0.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn percent_row_empty_shows_dim_dash_baseline() {
+        let p = palette();
+        let history = VecDeque::new();
+        let row = StatsWidget::percent_row("CPU", &history, p);
+        assert_eq!(row.value, "\u{2014}");
+        assert_eq!(row.value_color, p.dim);
+        assert_eq!(row.data.len(), BASELINE_SAMPLES);
+        assert!(row.data.iter().all(|&v| v == 0));
+        assert_eq!(row.max, 100);
+    }
+
+    #[test]
+    fn percent_row_with_data_uses_level_color() {
+        let p = palette();
+        let history: VecDeque<f64> = [10.0, 50.0, 90.0].into_iter().collect();
+        let row = StatsWidget::percent_row("CPU", &history, p);
+        assert_eq!(row.value, "90%");
+        assert_eq!(row.value_color, p.error);
+        assert_eq!(row.data, vec![10, 50, 90]);
+    }
+
+    #[test]
+    fn net_row_empty_shows_dim_dash_baseline() {
+        let p = palette();
+        let history = VecDeque::new();
+        let row = StatsWidget::net_row("Net\u{2193}", &history, p.accent, p);
+        assert_eq!(row.value, "\u{2014}");
+        assert_eq!(row.value_color, p.dim);
+        assert_eq!(row.data.len(), BASELINE_SAMPLES);
+        assert_eq!(row.max, 1);
+    }
+
+    #[test]
+    fn net_row_with_data_scales_to_max() {
+        let p = palette();
+        let history: VecDeque<u64> = [0, 1_048_576, 2_097_152].into_iter().collect();
+        let row = StatsWidget::net_row("Net\u{2193}", &history, p.accent, p);
+        assert_eq!(row.value, "2.0M");
+        assert_eq!(row.value_color, p.accent);
+        assert_eq!(row.max, 2_097_152);
+    }
+
+    #[test]
+    fn metric_rows_returns_four_labels() {
+        let p = palette();
+        let app = App::new(5);
+        let rows = StatsWidget::metric_rows(&app, p);
+        assert_eq!(rows[0].label, "CPU");
+        assert_eq!(rows[1].label, "RAM");
+        assert_eq!(rows[2].label, "Net\u{2193}");
+        assert_eq!(rows[3].label, "Net\u{2191}");
     }
 }

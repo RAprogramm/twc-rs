@@ -8,7 +8,7 @@ use ratatui::{
     layout::Rect,
     style::{Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Paragraph}
+    widgets::{Block, BorderType, Borders, Paragraph}
 };
 
 use crate::{jwt::JwtPayload, tui::app::App};
@@ -147,6 +147,8 @@ impl crate::tui::widgets::Widget for TokenInfoWidget {
         let paragraph = Paragraph::new(lines).block(
             Block::default()
                 .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(palette.border))
                 .title(Line::from(Span::styled(
                     " Token Info ",
                     Style::default()

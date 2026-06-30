@@ -936,10 +936,12 @@ async fn refresh_all(
     );
 
     let mut account_id = 0.0;
+    let mut login = String::new();
     let mut balance = String::new();
 
     if let Ok(resp) = account_res {
         account_id = resp.status.company_info.id;
+        login = resp.status.login.clone().unwrap_or_default();
     } else {
         has_error = true;
         app.error_message = Some("Failed to load account".to_string());
@@ -952,6 +954,7 @@ async fn refresh_all(
         app.error_message = Some("Failed to load balance".to_string());
     }
     app.update_account(AccountInfo {
+        login,
         account_id,
         balance,
         status: String::from("active")

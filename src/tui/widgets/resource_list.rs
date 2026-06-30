@@ -8,7 +8,7 @@ use ratatui::{
     layout::Rect,
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, ListState}
+    widgets::{Block, BorderType, Borders, List, ListItem, ListState}
 };
 
 use crate::tui::{
@@ -21,7 +21,7 @@ use crate::tui::{
 ///
 /// The API reports states like `On`, `Off`, `Installing`, `Rebooting` —
 /// not `Running`/`Stopped` — so the dashboard translates them here.
-fn server_status_view(status: &str, palette: &Palette) -> (&'static str, Color, String) {
+pub(crate) fn server_status_view(status: &str, palette: &Palette) -> (&'static str, Color, String) {
     match status {
         "On" => ("\u{25B6}", palette.success, "running".to_string()),
         "Off" => ("\u{25CB}", palette.error, "stopped".to_string()),
@@ -355,6 +355,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
         .block(
             Block::default()
                 .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
                 .border_style(Style::default().fg(border_color))
                 .title(Line::from(Span::styled(
                     title,
@@ -365,10 +366,11 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
         )
         .highlight_style(
             Style::default()
-                .fg(palette.accent)
+                .fg(palette.bg)
+                .bg(palette.accent)
                 .add_modifier(Modifier::BOLD)
         )
-        .highlight_symbol(Line::from("\u{25B6} "));
+        .highlight_symbol("\u{2503} ");
 
     let mut state = ListState::default();
     state.select(Some(app.selected));

@@ -8,7 +8,7 @@ use ratatui::{
     layout::Rect,
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph}
+    widgets::{Block, BorderType, Borders, Clear, List, ListItem, ListState, Paragraph}
 };
 
 use crate::tui::themes::Palette;
@@ -188,6 +188,7 @@ pub fn render(frame: &mut Frame, area: Rect, palette: &Palette, cp: &CommandPale
 
     let block = Block::default()
         .borders(Borders::ALL)
+        .border_type(BorderType::Rounded)
         .title(Span::styled(
             " Command ",
             Style::default()

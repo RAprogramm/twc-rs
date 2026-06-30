@@ -8,10 +8,17 @@ use ratatui::{
     layout::Rect,
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Paragraph}
+    widgets::{Block, BorderType, Borders, Paragraph}
 };
 
-use crate::tui::app::{App, ResourceTab};
+use crate::tui::{
+    app::{App, ResourceTab},
+    themes::Palette,
+    widgets::resource_list::server_status_view
+};
+
+const KEY_WIDTH: usize = 10;
+const RULE_WIDTH: usize = 32;
 
 /// Renders the details panel for the selected resource.
 ///
@@ -50,6 +57,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
     let paragraph = Paragraph::new(text).block(
         Block::default()
             .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
             .border_style(Style::default().fg(border_color))
             .title(Line::from(Span::styled(
                 " Details ",
@@ -61,187 +69,178 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
     frame.render_widget(paragraph, area);
 }
 
-fn render_server_details(app: &App, palette: crate::tui::themes::Palette) -> Vec<Line<'static>> {
-    if app.servers.is_empty() {
-        return vec![Line::from(Span::styled(
-            "No servers available",
-            Style::default().fg(palette.dim)
-        ))];
-    }
+/// Builds the bold heading line shown at the top of a populated panel.
+fn heading(name: &str, palette: Palette) -> Line<'static> {
+    Line::from(Span::styled(
+        name.to_string(),
+        Style::default()
+            .fg(palette.title)
+            .add_modifier(Modifier::BOLD)
+    ))
+}
 
-    let server = &app.servers[app.selected.min(app.servers.len() - 1)];
+/// Builds a dim horizontal rule used to separate sections.
+fn rule(palette: Palette) -> Line<'static> {
+    Line::from(Span::styled(
+        "\u{2500}".repeat(RULE_WIDTH),
+        Style::default().fg(palette.dim)
+    ))
+}
+
+/// Builds a dim, bold section header line.
+fn section(label: &str, palette: Palette) -> Line<'static> {
+    Line::from(Span::styled(
+        label.to_string(),
+        Style::default()
+            .fg(palette.header)
+            .add_modifier(Modifier::BOLD)
+    ))
+}
+
+/// Builds a key/value row, dimming the key via the palette's dim color.
+fn kv(key: &str, value: String, value_style: Style, palette: Palette) -> Line<'static> {
+    Line::from(vec![
+        Span::styled(format!("{key:<KEY_WIDTH$}"), Style::default().fg(palette.dim)),
+        Span::styled(value, value_style),
+    ])
+}
+
+/// Builds a status row rendered as a colored `\u{25CF} label` chip.
+fn chip(key: &str, label: &str, color: Color, palette: Palette) -> Line<'static> {
+    Line::from(vec![
+        Span::styled(format!("{key:<KEY_WIDTH$}"), Style::default().fg(palette.dim)),
+        Span::styled(
+            format!("\u{25CF} {label}"),
+            Style::default().fg(color).add_modifier(Modifier::BOLD)
+        ),
+    ])
+}
+
+/// Builds a centered, dim empty-state notice.
+fn empty(message: &str, palette: Palette) -> Vec<Line<'static>> {
     vec![
-        Line::from(Span::styled(
-            format!("Name: {}", server.name),
-            Style::default().fg(palette.fg)
-        )),
-        Line::from(Span::styled(
-            format!("ID: {}", server.id),
-            Style::default().fg(palette.fg)
-        )),
-        Line::from(Span::styled(
-            format!("Status: {}", server.status),
-            Style::default().fg(palette.success)
-        )),
         Line::from(""),
         Line::from(Span::styled(
-            "Resources:",
+            format!("  {message}"),
             Style::default()
-                .fg(palette.accent)
-                .add_modifier(Modifier::BOLD)
-        )),
-        Line::from(Span::styled(
-            format!("  CPU: {} cores", server.cpu),
-            Style::default().fg(palette.fg)
-        )),
-        Line::from(Span::styled(
-            format!("  RAM: {} MB", server.ram_mb),
-            Style::default().fg(palette.fg)
-        )),
-        Line::from(Span::styled(
-            format!("  Disk: {} GB", server.disk_gb),
-            Style::default().fg(palette.fg)
-        )),
-        Line::from(""),
-        Line::from(Span::styled(
-            format!("Location: {}", server.location),
-            Style::default().fg(palette.warning)
+                .fg(palette.dim)
+                .add_modifier(Modifier::ITALIC)
         )),
     ]
 }
 
-fn render_database_details(app: &App, palette: crate::tui::themes::Palette) -> Vec<Line<'static>> {
+fn accent(palette: Palette) -> Style {
+    Style::default().fg(palette.accent)
+}
+
+fn name_style(palette: Palette) -> Style {
+    Style::default().fg(palette.fg).add_modifier(Modifier::BOLD)
+}
+
+fn warn(palette: Palette) -> Style {
+    Style::default().fg(palette.warning)
+}
+
+fn render_server_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+    if app.servers.is_empty() {
+        return empty("No servers available", palette);
+    }
+
+    let server = &app.servers[app.selected.min(app.servers.len() - 1)];
+    let (_, color, label) = server_status_view(&server.status, &palette);
+    vec![
+        heading(&server.name, palette),
+        rule(palette),
+        kv("ID", format!("#{}", server.id), accent(palette), palette),
+        chip("Status", &label, color, palette),
+        kv("Location", server.location.clone(), warn(palette), palette),
+        Line::from(""),
+        section("Resources", palette),
+        kv("CPU", format!("{} cores", server.cpu), accent(palette), palette),
+        kv("RAM", format!("{} MB", server.ram_mb), accent(palette), palette),
+        kv("Disk", format!("{} GB", server.disk_gb), accent(palette), palette),
+    ]
+}
+
+fn render_database_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
     if app.databases.is_empty() {
-        return vec![Line::from(Span::styled(
-            "No databases available",
-            Style::default().fg(palette.dim)
-        ))];
+        return empty("No databases available", palette);
     }
 
     let db = &app.databases[app.selected.min(app.databases.len() - 1)];
     vec![
-        Line::from(Span::styled(
-            format!("Name: {}", db.name),
-            Style::default().fg(palette.fg)
-        )),
-        Line::from(Span::styled(
-            format!("ID: {}", db.id),
-            Style::default().fg(palette.fg)
-        )),
-        Line::from(Span::styled(
-            format!("Engine: {}", db.engine),
-            Style::default().fg(palette.accent)
-        )),
-        Line::from(Span::styled(
-            format!("Status: {}", db.status),
-            Style::default().fg(palette.success)
-        )),
-        Line::from(Span::styled(
-            format!("Size: {} MB", db.size_mb),
-            Style::default().fg(palette.fg)
-        )),
+        heading(&db.name, palette),
+        rule(palette),
+        kv("ID", format!("#{}", db.id), accent(palette), palette),
+        kv("Engine", db.engine.clone(), accent(palette), palette),
+        chip("Status", &db.status.to_lowercase(), palette.success, palette),
+        kv("Size", format!("{} MB", db.size_mb), name_style(palette), palette),
     ]
 }
 
-fn render_s3_details(app: &App, palette: crate::tui::themes::Palette) -> Vec<Line<'static>> {
+fn render_s3_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
     if app.s3_storages.is_empty() {
-        return vec![Line::from(Span::styled(
-            "No S3 storages available",
-            Style::default().fg(palette.dim)
-        ))];
+        return empty("No S3 storages available", palette);
     }
 
     let storage = &app.s3_storages[app.selected.min(app.s3_storages.len() - 1)];
     vec![
-        Line::from(Span::styled(
-            format!("Name: {}", storage.name),
-            Style::default().fg(palette.fg)
-        )),
-        Line::from(Span::styled(
-            format!("ID: {}", storage.id),
-            Style::default().fg(palette.fg)
-        )),
-        Line::from(Span::styled(
-            format!("Region: {}", storage.region),
-            Style::default().fg(palette.warning)
-        )),
-        Line::from(Span::styled(
-            format!("Size: {} KB", storage.size_bytes / 1024),
-            Style::default().fg(palette.fg)
-        )),
-        Line::from(Span::styled(
-            format!("Buckets: {}", storage.bucket_count),
-            Style::default().fg(palette.fg)
-        )),
+        heading(&storage.name, palette),
+        rule(palette),
+        kv("ID", format!("#{}", storage.id), accent(palette), palette),
+        kv("Region", storage.region.clone(), warn(palette), palette),
+        kv(
+            "Size",
+            format!("{} KB", storage.size_bytes / 1024),
+            name_style(palette),
+            palette
+        ),
+        kv(
+            "Buckets",
+            storage.bucket_count.to_string(),
+            accent(palette),
+            palette
+        ),
     ]
 }
 
-fn render_k8s_details(app: &App, palette: crate::tui::themes::Palette) -> Vec<Line<'static>> {
+fn render_k8s_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
     if app.k8s_clusters.is_empty() {
-        return vec![Line::from(Span::styled(
-            "No Kubernetes clusters available",
-            Style::default().fg(palette.dim)
-        ))];
+        return empty("No Kubernetes clusters available", palette);
     }
 
     let cluster = &app.k8s_clusters[app.selected.min(app.k8s_clusters.len() - 1)];
     vec![
-        Line::from(Span::styled(
-            format!("Name: {}", cluster.name),
-            Style::default().fg(palette.fg)
-        )),
-        Line::from(Span::styled(
-            format!("ID: {}", cluster.id),
-            Style::default().fg(palette.fg)
-        )),
-        Line::from(Span::styled(
-            format!("Version: v{}", cluster.version),
-            Style::default().fg(palette.accent)
-        )),
-        Line::from(Span::styled(
-            format!("Status: {}", cluster.status),
-            Style::default().fg(palette.success)
-        )),
-        Line::from(Span::styled(
-            format!("Nodes: {}", cluster.node_count),
-            Style::default().fg(palette.fg)
-        )),
+        heading(&cluster.name, palette),
+        rule(palette),
+        kv("ID", format!("#{}", cluster.id), accent(palette), palette),
+        kv("Version", format!("v{}", cluster.version), accent(palette), palette),
+        chip("Status", &cluster.status.to_lowercase(), palette.success, palette),
+        kv("Nodes", cluster.node_count.to_string(), name_style(palette), palette),
     ]
 }
 
-fn render_project_details(app: &App, palette: crate::tui::themes::Palette) -> Vec<Line<'static>> {
+fn render_project_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
     if app.projects.is_empty() {
-        return vec![Line::from(Span::styled(
-            "No projects available",
-            Style::default().fg(palette.dim)
-        ))];
+        return empty("No projects available", palette);
     }
 
     let project = &app.projects[app.selected.min(app.projects.len() - 1)];
     vec![
-        Line::from(Span::styled(
-            format!("Name: {}", project.name),
-            Style::default().fg(palette.fg)
-        )),
-        Line::from(Span::styled(
-            format!("ID: {}", project.id),
-            Style::default().fg(palette.fg)
-        )),
-        Line::from(Span::styled(
-            format!("Servers: {}", project.server_count),
-            Style::default().fg(palette.fg)
-        )),
+        heading(&project.name, palette),
+        rule(palette),
+        kv("ID", format!("#{}", project.id), accent(palette), palette),
+        kv(
+            "Servers",
+            project.server_count.to_string(),
+            name_style(palette),
+            palette
+        ),
     ]
 }
 
-fn render_generic_details(
-    resource: &str,
-    palette: crate::tui::themes::Palette
-) -> Vec<Line<'static>> {
-    vec![Line::from(Span::styled(
-        format!("No {resource} data available"),
-        Style::default().fg(palette.dim)
-    ))]
+fn render_generic_details(resource: &str, palette: Palette) -> Vec<Line<'static>> {
+    empty(&format!("No {resource} data available"), palette)
 }
 
 /// Widget wrapper for the details panel.

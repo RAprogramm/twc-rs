@@ -8,7 +8,7 @@ use ratatui::{
     layout::Rect,
     style::{Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Paragraph}
+    widgets::{Block, BorderType, Borders, Paragraph}
 };
 
 use crate::tui::app::{AccountInfo, App};
@@ -63,7 +63,11 @@ impl AccountWidget {
         account: &AccountInfo,
         palette: crate::tui::themes::Palette
     ) -> Vec<Line<'static>> {
-        let id_text = Self::format_account_id(account.account_id);
+        let (id_label, id_text) = if account.login.is_empty() {
+            ("ID ", Self::format_account_id(account.account_id))
+        } else {
+            ("\u{1F464} ", account.login.clone())
+        };
         let status_color = match account.status.as_str() {
             "active" | "running" | "enabled" => palette.success,
             "inactive" | "suspended" => palette.warning,
@@ -90,7 +94,7 @@ impl AccountWidget {
                     .add_modifier(Modifier::BOLD)
             ),
             sep(),
-            Span::styled("ID ", Style::default().fg(palette.dim)),
+            Span::styled(id_label, Style::default().fg(palette.dim)),
             Span::styled(
                 id_text,
                 Style::default()
@@ -136,6 +140,8 @@ impl crate::tui::widgets::Widget for AccountWidget {
         let paragraph = Paragraph::new(lines).block(
             Block::default()
                 .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(palette.border))
                 .title(Line::from(Span::styled(
                     " Account ",
                     Style::default()
@@ -157,6 +163,7 @@ mod tests {
 
     fn make_account(id: f64, balance: &str, status: &str) -> AccountInfo {
         AccountInfo {
+            login:      String::new(),
             account_id: id,
             balance:    balance.to_string(),
             status:     status.to_string()

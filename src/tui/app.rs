@@ -13,6 +13,7 @@ use crate::tui::widgets::project_manager::ProjectManager;
 /// Account information from the API.
 #[derive(Debug, Clone, Default)]
 pub struct AccountInfo {
+    pub login:      String,
     pub account_id: f64,
     pub balance:    String,
     pub status:     String
