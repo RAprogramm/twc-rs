@@ -571,7 +571,11 @@ fn toggle_widget_flips_and_marks_dirty() {
 #[test]
 fn apply_prefs_hides_widgets_and_sets_width() {
     let mut app = App::new(5);
-    app.apply_prefs(&["account".to_string(), "token_info".to_string()], 55);
+    app.apply_prefs(
+        &["account".to_string(), "token_info".to_string()],
+        55,
+        false
+    );
     assert!(!app.is_widget_enabled("account"));
     assert!(!app.is_widget_enabled("token_info"));
     assert!(app.is_widget_enabled("stats"));

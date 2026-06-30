@@ -33,7 +33,11 @@ pub struct DashboardPrefs {
 
     /// Resource-list panel width, as a percentage of the content area.
     #[serde(default = "default_list_width")]
-    pub list_width_pct: u16
+    pub list_width_pct: u16,
+
+    /// Hide resource tabs that currently have no items.
+    #[serde(default)]
+    pub hide_empty_tabs: bool
 }
 
 #[cfg(feature = "tui")]
@@ -45,8 +49,9 @@ const fn default_list_width() -> u16 {
 impl Default for DashboardPrefs {
     fn default() -> Self {
         Self {
-            hidden_widgets: Vec::new(),
-            list_width_pct: default_list_width()
+            hidden_widgets:  Vec::new(),
+            list_width_pct:  default_list_width(),
+            hide_empty_tabs: false
         }
     }
 }

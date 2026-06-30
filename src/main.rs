@@ -759,6 +759,7 @@ fn persist_dashboard_prefs(app: &tui::app::App) {
     cfg.theme = app.theme;
     cfg.dashboard.hidden_widgets = app.hidden_widget_ids();
     cfg.dashboard.list_width_pct = app.list_width_pct;
+    cfg.dashboard.hide_empty_tabs = app.hide_empty_tabs;
     let _ = cfg.save();
 }
 
@@ -830,7 +831,11 @@ async fn run_dashboard(
     let mut terminal = Terminal::new(backend).map_err(|e| TwcError::Io(e.to_string()))?;
 
     let mut app = tui::app::App::new_with_theme(interval, theme, Some(token.clone()));
-    app.apply_prefs(&prefs.hidden_widgets, prefs.list_width_pct);
+    app.apply_prefs(
+        &prefs.hidden_widgets,
+        prefs.list_width_pct,
+        prefs.hide_empty_tabs
+    );
     app.is_loading = true;
     draw_splash(&mut terminal);
 

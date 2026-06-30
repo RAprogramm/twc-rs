@@ -385,6 +385,7 @@ impl ResourceTab {
     }
 
     /// Cycles to the next tab.
+    #[allow(dead_code)]
     #[must_use]
     pub const fn next(self) -> Self {
         match self {
@@ -412,6 +413,7 @@ impl ResourceTab {
     }
 
     /// Cycles to the previous tab.
+    #[allow(dead_code)]
     #[must_use]
     pub const fn previous(self) -> Self {
         match self {
@@ -483,6 +485,30 @@ impl ResourceTab {
             _ => &[]
         }
     }
+
+    /// All tabs, in display order.
+    pub const ALL: [Self; 20] = [
+        Self::Servers,
+        Self::Databases,
+        Self::S3,
+        Self::Kubernetes,
+        Self::Projects,
+        Self::Balancers,
+        Self::Registry,
+        Self::Domains,
+        Self::Firewall,
+        Self::FloatingIps,
+        Self::Images,
+        Self::NetworkDrives,
+        Self::Vpc,
+        Self::DedicatedServers,
+        Self::Mail,
+        Self::Apps,
+        Self::AiAgents,
+        Self::KnowledgeBases,
+        Self::SshKeys,
+        Self::Finances
+    ];
 }
 /// Which panel is currently highlighted.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -551,7 +577,8 @@ pub struct App {
     pub drill:             Option<DrillView>,
     pub drill_request:     Option<(ResourceTab, i32, String)>,
     pub filter:            String,
-    pub filter_editing:    bool
+    pub filter_editing:    bool,
+    pub hide_empty_tabs:   bool
 }
 
 impl App {
@@ -622,8 +649,59 @@ impl App {
             drill: None,
             drill_request: None,
             filter: String::new(),
-            filter_editing: false
+            filter_editing: false,
+            hide_empty_tabs: false
         }
+    }
+
+    /// Returns the number of items currently loaded for the given tab.
+    #[must_use]
+    pub fn tab_count(&self, tab: ResourceTab) -> usize {
+        match tab {
+            ResourceTab::Servers => self.servers.len(),
+            ResourceTab::Databases => self.databases.len(),
+            ResourceTab::S3 => self.s3_storages.len(),
+            ResourceTab::Kubernetes => self.k8s_clusters.len(),
+            ResourceTab::Projects => self.projects.len(),
+            ResourceTab::Balancers => self.balancers.len(),
+            ResourceTab::Registry => self.registries.len(),
+            ResourceTab::Domains => self.domains.len(),
+            ResourceTab::Firewall => self.firewalls.len(),
+            ResourceTab::FloatingIps => self.floating_ips.len(),
+            ResourceTab::Images => self.images.len(),
+            ResourceTab::NetworkDrives => self.network_drives.len(),
+            ResourceTab::Vpc => self.vpcs.len(),
+            ResourceTab::DedicatedServers => self.dedicated_servers.len(),
+            ResourceTab::Mail => self.mails.len(),
+            ResourceTab::Apps => self.apps.len(),
+            ResourceTab::AiAgents => self.ai_agents.len(),
+            ResourceTab::KnowledgeBases => self.knowledge_bases.len(),
+            ResourceTab::SshKeys => self.ssh_keys.len(),
+            ResourceTab::Finances => self.finances.len()
+        }
+    }
+
+    /// Returns the tabs to display: all tabs, or only non-empty ones (plus the
+    /// active tab) when empty tabs are hidden.
+    #[must_use]
+    pub fn visible_tabs(&self) -> Vec<ResourceTab> {
+        if !self.hide_empty_tabs {
+            return ResourceTab::ALL.to_vec();
+        }
+        let mut tabs: Vec<ResourceTab> = ResourceTab::ALL
+            .into_iter()
+            .filter(|t| self.tab_count(*t) > 0 || *t == self.active_tab)
+            .collect();
+        if tabs.is_empty() {
+            tabs.push(self.active_tab);
+        }
+        tabs
+    }
+
+    /// Toggles hiding of empty tabs and marks preferences dirty.
+    pub fn toggle_hide_empty_tabs(&mut self) {
+        self.hide_empty_tabs = !self.hide_empty_tabs;
+        self.prefs_dirty = true;
     }
 
     /// Returns the display names of the current tab's items, in list order.
@@ -756,17 +834,23 @@ impl App {
         }
     }
 
-    /// Cycles to the next resource tab, resetting any filter.
+    /// Cycles to the next visible resource tab, resetting any filter.
     pub fn next_tab(&mut self) {
-        self.active_tab = self.active_tab.next();
-        self.selected = 0;
-        self.filter.clear();
-        self.filter_editing = false;
+        let tabs = self.visible_tabs();
+        let pos = tabs.iter().position(|t| *t == self.active_tab).unwrap_or(0);
+        self.active_tab = tabs[(pos + 1) % tabs.len()];
+        self.reset_after_tab_change();
     }
 
-    /// Cycles to the previous resource tab, resetting any filter.
+    /// Cycles to the previous visible resource tab, resetting any filter.
     pub fn previous_tab(&mut self) {
-        self.active_tab = self.active_tab.previous();
+        let tabs = self.visible_tabs();
+        let pos = tabs.iter().position(|t| *t == self.active_tab).unwrap_or(0);
+        self.active_tab = tabs[(pos + tabs.len() - 1) % tabs.len()];
+        self.reset_after_tab_change();
+    }
+
+    fn reset_after_tab_change(&mut self) {
         self.selected = 0;
         self.filter.clear();
         self.filter_editing = false;
@@ -1187,7 +1271,7 @@ impl App {
 
     /// Applies persisted dashboard preferences: hides the given widgets and
     /// sets the resource-list width.
-    pub fn apply_prefs(&mut self, hidden: &[String], list_width_pct: u16) {
+    pub fn apply_prefs(&mut self, hidden: &[String], list_width_pct: u16, hide_empty_tabs: bool) {
         for id in hidden {
             if self.is_widget_enabled(id) {
                 self.widgets.toggle(id);
@@ -1196,6 +1280,7 @@ impl App {
         if (10..=90).contains(&list_width_pct) {
             self.list_width_pct = list_width_pct;
         }
+        self.hide_empty_tabs = hide_empty_tabs;
     }
 
     /// Returns true when the widget with `id` is registered and enabled.
@@ -1326,11 +1411,23 @@ impl App {
             });
         }
 
+        commands.push(Command {
+            id:    "tabs:toggle_empty".to_string(),
+            title: if self.hide_empty_tabs {
+                "Show empty tabs".to_string()
+            } else {
+                "Hide empty tabs".to_string()
+            },
+            hint:  "layout".to_string()
+        });
+
         commands
     }
 
     fn run_command(&mut self, id: &str) {
-        if let Some(rest) = id.strip_prefix("theme:") {
+        if id == "tabs:toggle_empty" {
+            self.toggle_hide_empty_tabs();
+        } else if let Some(rest) = id.strip_prefix("theme:") {
             if let Some(theme) = super::themes::Theme::ALL
                 .into_iter()
                 .find(|t| t.id() == rest)

@@ -72,32 +72,6 @@ impl ResourceTabsWidget {
         }
     }
 
-    /// Collects the live item count for every tab, ordered by tab index.
-    fn tab_counts(app: &App) -> [usize; 20] {
-        [
-            app.servers.len(),
-            app.databases.len(),
-            app.s3_storages.len(),
-            app.k8s_clusters.len(),
-            app.projects.len(),
-            app.balancers.len(),
-            app.registries.len(),
-            app.domains.len(),
-            app.firewalls.len(),
-            app.floating_ips.len(),
-            app.images.len(),
-            app.network_drives.len(),
-            app.vpcs.len(),
-            app.dedicated_servers.len(),
-            app.mails.len(),
-            app.apps.len(),
-            app.ai_agents.len(),
-            app.knowledge_bases.len(),
-            app.ssh_keys.len(),
-            app.finances.len()
-        ]
-    }
-
     /// Computes the visible tab window `[start, end)` for a given budget.
     ///
     /// The active tab is always included; the window then grows outward
@@ -158,15 +132,17 @@ impl ResourceTabsWidget {
     /// A `Line` containing the styled tab bar.
     fn build_tab_bar(app: &App, width: u16) -> Line<'static> {
         let names = ResourceTab::names();
-        let len = names.len();
-        let active_idx = app.active_tab.index();
         let palette = app.theme.palette();
-        let counts = Self::tab_counts(app);
+        let tabs = app.visible_tabs();
+        let len = tabs.len();
+        let active_idx = tabs.iter().position(|t| *t == app.active_tab).unwrap_or(0);
 
-        let labels: Vec<(String, String, u16)> = (0..len)
-            .map(|i| {
-                let head = format!(" {} {} ", TAB_ICONS[i], names[i]);
-                let tail = format!("{} ", counts[i]);
+        let labels: Vec<(String, String, u16)> = tabs
+            .iter()
+            .map(|tab| {
+                let idx = tab.index();
+                let head = format!(" {} {} ", TAB_ICONS[idx], names[idx]);
+                let tail = format!("{} ", app.tab_count(*tab));
                 let w =
                     u16::try_from(head.chars().count() + tail.chars().count()).unwrap_or(u16::MAX);
                 (head, tail, w)
