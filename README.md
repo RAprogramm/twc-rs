@@ -3,21 +3,51 @@ SPDX-FileCopyrightText: 2026 RAprogramm <andrey.rozanov.vl@gmail.com>
 SPDX-License-Identifier: MIT
 -->
 
+<a id="top"></a>
+
+<div align="center">
+
 # twc-rs
 
-A fast, single-binary CLI **and interactive TUI dashboard** for managing
-[Timeweb Cloud](https://timeweb.cloud) infrastructure — servers, databases,
-S3, Kubernetes, balancers, domains, firewalls and more.
+**A fast, single-binary CLI _and_ interactive TUI dashboard for [Timeweb Cloud](https://timeweb.cloud).**
 
-Written in Rust. No Python, no `pip`, no virtualenv — just one static binary.
+Servers, databases, S3, Kubernetes, balancers, domains, firewalls and more —
+managed from one native binary. No Python, no `pip`, no virtualenv.
+
+[![crates.io](https://img.shields.io/crates/v/twc-rs.svg?logo=rust&color=fc8d62)](https://crates.io/crates/twc-rs)
+[![downloads](https://img.shields.io/crates/d/twc-rs.svg?color=brightgreen)](https://crates.io/crates/twc-rs)
+[![CI](https://github.com/RAprogramm/twc-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/RAprogramm/twc-rs/actions/workflows/ci.yml)
+[![release-plz](https://img.shields.io/badge/release-plz-automated-blue)](https://github.com/RAprogramm/twc-rs/actions/workflows/release-plz.yml)
+[![license](https://img.shields.io/crates/l/twc-rs.svg?color=blue)](LICENSE)
+[![MSRV](https://img.shields.io/badge/MSRV-1.96-blue.svg?logo=rust)](Cargo.toml)
+[![platforms](https://img.shields.io/badge/platforms-linux%20%7C%20macos%20%7C%20windows-informational)](#supported-platforms)
+
+</div>
+
+---
+
+## Table of contents
+
+- [Why twc-rs](#why-twc-rs)
+- [The dashboard](#the-dashboard)
+- [Install](#install)
+  - [Supported platforms](#supported-platforms)
+- [Authenticate](#authenticate)
+- [Usage](#usage)
+- [Shell completions](#shell-completions)
+- [Benchmarks](#benchmarks)
+- [Building from source](#building-from-source)
+- [License](#license)
 
 ## Why twc-rs
 
+<a id="why-twc-rs"></a>
+
 The official Timeweb CLI ([`timeweb-cloud/twc`](https://github.com/timeweb-cloud/twc))
 is a Python application. `twc-rs` matches its command coverage and beats it on
-speed, footprint, and experience — every number below is measured, not
-estimated (see [docs/COMPARISON.md](docs/COMPARISON.md) for the full report and
-the reproducible benchmark).
+speed, footprint, and experience — every number below is **measured, not
+estimated** (see [docs/COMPARISON.md](docs/COMPARISON.md) for the full report
+and the reproducible benchmark).
 
 | | `twc-rs` (Rust) | Official `twc` (Python) |
 |---|---|---|
@@ -28,76 +58,173 @@ the reproducible benchmark).
 | Runtime deps | system libc only | Python + 15 PyPI packages |
 | Command coverage | near-full parity | baseline |
 | Interactive dashboard | **yes** — full TUI with live metrics | no |
+| Create / delete from the dashboard | **yes** | no |
 | Shell completions | bash, zsh, fish, powershell, elvish, **nushell** | bash, zsh, fish, powershell |
 | Output formats | table, json, yaml, quiet | default, raw, json, yaml |
-| Profiles (multi-account) | yes (`--profile`) | yes |
+| Profiles (multi-account) | yes (`--profile`, switchable in the TUI) | yes |
 | Languages | **English + Russian** (TUI & CLI) | English only |
 
 Measured on an AMD Ryzen AI MAX+ 395 (Linux 7.1, rustc 1.96) against
 `twc-cli` v2.15.2, 50 runs each. The Python tool pays ~350 ms of interpreter
 and import startup before any application code runs.
 
-### The dashboard (`twc-rs dashboard`)
+<p align="right"><a href="#top">↑ back to top</a></p>
 
-The headline feature the Python CLI does not have: a live, k9s-style TUI.
+## The dashboard
 
-- Flat, discoverable navigation: `h/l` switch tabs, `j/k` move, `Enter` opens
-  actions or drills into a resource, `/` filters the list, `Q` quits.
-- `Ctrl+K` command palette — fuzzy-run actions, toggle widgets, switch theme.
-- Context action menu per resource (reboot / shutdown / clone / delete, with a
-  confirmation step for destructive actions).
-- Drill into a project to see the resources it contains.
-- Live event log surfacing actions and load failures.
-- Customizable layout (toggle widgets) and 4 themes (Gruvbox, Catppuccin),
+<a id="the-dashboard"></a>
+
+The headline feature the Python CLI does not have: a live, k9s-style TUI
+(`twc-rs dashboard`).
+
+| Key | Action |
+|---|---|
+| `h` / `l` | switch resource tabs |
+| `j` / `k` | move selection |
+| `Enter` | open the action menu / drill into a resource |
+| `n` | create a new resource (where supported) |
+| `/` | filter the current list |
+| `Ctrl+K` | command palette — actions, theme, language, profile switch |
+| `?` | help overlay |
+| `Q` | quit |
+
+- Context action menu per resource (reboot / shutdown / clone / delete) with a
+  confirmation step for destructive actions.
+- Create resources and **switch account profile** without leaving the dashboard.
+- Live per-resource metrics (CPU / RAM / network sparklines), fetched off the
+  UI thread so input never blocks on the network.
+- Drill into a project to see the resources it contains; live event log.
+- Customizable layout, hide-empty-tabs, 4 true-color themes and EN/RU — all
   persisted to the config file.
-- Sparkline metrics, status chips, skeleton loaders — all true-color.
-- Data is fetched off the UI thread, so input never blocks on the network.
+
+<p align="right"><a href="#top">↑ back to top</a></p>
 
 ## Install
 
-```sh
-cargo install --path .          # from a checkout
-# or build:
-cargo build --release           # target/release/twc-rs
-```
+<a id="install"></a>
 
-The interactive dashboard needs the `tui` feature:
+Pick the channel that fits your platform. Prebuilt binaries are built with the
+`tui` feature, so the interactive dashboard works out of the box.
 
-```sh
-cargo build --release --features tui
-```
+| Channel | Command |
+|---|---|
+| **crates.io** | `cargo install twc-rs` |
+| **Installer** (Linux/macOS) | `curl -fsSL https://raw.githubusercontent.com/RAprogramm/twc-rs/main/install.sh \| sh` |
+| **Arch (AUR)** | `yay -S twc-rs-bin` |
+| **Debian/Ubuntu** | `sudo apt install ./twc-rs_<ver>_amd64.deb` |
+| **Homebrew** | `brew install RAprogramm/tap/twc-rs` |
+| **Releases** | download an archive from [Releases](https://github.com/RAprogramm/twc-rs/releases), verify the `.sha256`, put `twc-rs` on your `PATH` |
+
+The one-line installer detects your OS/arch, downloads the matching tarball
+from the latest GitHub release and installs to `~/.local/bin` (or
+`/usr/local/bin` when writable). The `.deb` and Homebrew packages are attached
+to every tagged release automatically.
+
+> `twc-rs` is **not** in the official Debian/Ubuntu (`apt install twc-rs`) or
+> Arch (`pacman -S twc-rs`) repositories — those require distro maintainership.
+> Use the AUR package, the `.deb`, the Homebrew tap, the installer, or
+> `cargo install`.
+
+### Supported platforms
+
+<a id="supported-platforms"></a>
+
+Every tagged release ships prebuilt, checksummed binaries for:
+
+| OS | Architectures |
+|---|---|
+| Linux (glibc) | `x86_64`, `aarch64` |
+| macOS | `x86_64` (Intel), `aarch64` (Apple Silicon) |
+| Windows | `x86_64` |
+
+<p align="right"><a href="#top">↑ back to top</a></p>
 
 ## Authenticate
 
+<a id="authenticate"></a>
+
 ```sh
-twc-rs auth flow                # guided browser flow, stores in the OS keyring
+twc-rs auth flow                       # guided browser flow, stored in the OS keyring
 # or
 twc-rs config set-token --token <TOKEN>
 ```
 
-The token is read from the OS keyring, the config file, `--token`, or the
-`TWC_TOKEN` environment variable, in that order.
+The token is resolved from the OS keyring, the config file, `--token`, or the
+`TWC_TOKEN` environment variable, in that order. Multiple accounts are
+supported via named profiles:
+
+```sh
+twc-rs config set-token --profile staging --token <TOKEN>
+twc-rs --profile staging server list
+```
+
+<p align="right"><a href="#top">↑ back to top</a></p>
 
 ## Usage
+
+<a id="usage"></a>
 
 ```sh
 twc-rs server list
 twc-rs database info --id 12345
 twc-rs project list -f json
-twc-rs dashboard                # interactive TUI
+twc-rs dashboard                       # interactive TUI
 ```
 
-Global flags: `-f, --format <table|json|quiet>` (env `TWC_OUTPUT`) and
+Global flags: `-f, --format <table|json|yaml|quiet>` (env `TWC_OUTPUT`) and
 `-t, --token <TOKEN>` (env `TWC_TOKEN`).
 
-### Shell completions
+<p align="right"><a href="#top">↑ back to top</a></p>
+
+## Shell completions
+
+<a id="shell-completions"></a>
 
 ```sh
 twc-rs completions nushell > ~/.config/nushell/completions/twc-rs.nu
-twc-rs completions zsh   > ~/.zfunc/_twc-rs
-twc-rs completions bash  > /etc/bash_completion.d/twc-rs
+twc-rs completions zsh     > ~/.zfunc/_twc-rs
+twc-rs completions bash    > /etc/bash_completion.d/twc-rs
 ```
+
+Supported shells: `bash`, `zsh`, `fish`, `powershell`, `elvish`, `nushell`.
+
+<p align="right"><a href="#top">↑ back to top</a></p>
+
+## Benchmarks
+
+<a id="benchmarks"></a>
+
+All performance claims are reproducible. [docs/COMPARISON.md](docs/COMPARISON.md)
+documents the test environment and methodology; rerun it with:
+
+```sh
+cargo build --release --features tui
+python3 -m venv /tmp/twcbench && /tmp/twcbench/bin/pip install twc-cli
+benches/compare.sh ./target/release/twc-rs /tmp/twcbench/bin/twc
+```
+
+<p align="right"><a href="#top">↑ back to top</a></p>
+
+## Building from source
+
+<a id="building-from-source"></a>
+
+```sh
+git clone https://github.com/RAprogramm/twc-rs && cd twc-rs
+cargo build --release --features tui    # full binary with the TUI dashboard
+cargo install --path .                  # install from the checkout
+```
+
+Requires Rust **1.96+**. The crate is linted under `clippy` pedantic + nursery
+and the SDK is generated from the official OpenAPI spec via
+[`timeweb-rs`](https://crates.io/crates/timeweb-rs).
+
+<p align="right"><a href="#top">↑ back to top</a></p>
 
 ## License
 
+<a id="license"></a>
+
 MIT © RAprogramm
+
+<p align="right"><a href="#top">↑ back to top</a></p>
