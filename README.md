@@ -14,23 +14,28 @@ Written in Rust. No Python, no `pip`, no virtualenv — just one static binary.
 ## Why twc-rs
 
 The official Timeweb CLI ([`timeweb-cloud/twc`](https://github.com/timeweb-cloud/twc))
-is a Python application. `twc-rs` aims to match its coverage and beat it on
-speed, footprint, and experience.
+is a Python application. `twc-rs` matches its command coverage and beats it on
+speed, footprint, and experience — every number below is measured, not
+estimated (see [docs/COMPARISON.md](docs/COMPARISON.md) for the full report and
+the reproducible benchmark).
 
 | | `twc-rs` (Rust) | Official `twc` (Python) |
 |---|---|---|
-| Cold start (`--version`/`--help`) | **~2 ms** | ~300–600 ms (interpreter + imports) |
-| Install | one binary (`cargo install` / download) | Python 3.8+, `pip`, dependencies |
-| Footprint | 1 file, ~11 MB stripped | interpreter + many packages |
-| Runtime deps | system libc only | Python + click/typer/requests/pydantic/… |
-| Interactive dashboard | **yes** — full TUI | no |
+| Cold start (`--version`) | **2.3 ms** | 357 ms |
+| Cold start (`--help`) | **2.1 ms** | 347 ms |
+| Peak memory (RSS) | **13.7 MB** | 59.2 MB |
+| Footprint | 1 static binary, 15 MB stripped | 33 MB packages + a Python interpreter |
+| Runtime deps | system libc only | Python + 15 PyPI packages |
+| Command coverage | near-full parity | baseline |
+| Interactive dashboard | **yes** — full TUI with live metrics | no |
 | Shell completions | bash, zsh, fish, powershell, elvish, **nushell** | bash, zsh, fish, powershell |
 | Output formats | table, json, yaml, quiet | default, raw, json, yaml |
 | Profiles (multi-account) | yes (`--profile`) | yes |
 | Languages | **English + Russian** (TUI & CLI) | English only |
 
-Startup was measured on the same machine over 20 runs; `python3 -c "import click"`
-alone takes ~180 ms before any application code runs.
+Measured on an AMD Ryzen AI MAX+ 395 (Linux 7.1, rustc 1.96) against
+`twc-cli` v2.15.2, 50 runs each. The Python tool pays ~350 ms of interpreter
+and import startup before any application code runs.
 
 ### The dashboard (`twc-rs dashboard`)
 

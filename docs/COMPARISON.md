@@ -7,19 +7,21 @@ SPDX-License-Identifier: MIT
 
 A head-to-head against the official Python CLI
 [`timeweb-cloud/twc`](https://github.com/timeweb-cloud/twc). Every performance
-number below was produced live with [`benches/compare.sh`](../benches/compare.sh)
-— nothing here is estimated.
+number below is produced live by [`benches/compare.sh`](../benches/compare.sh)
+— nothing here is hand-written or estimated. Re-run it yourself to reproduce.
 
-## Methodology
+## Test environment
 
 | | |
 |---|---|
-| Host | AMD Ryzen AI MAX+ 395, 32 threads, Linux 7.1 (x86_64) |
-| twc-rs | release build, `--features tui`, stripped binary |
-| Official | `twc-cli` v2.15.2 in a clean venv, Python 3.14 |
-| Runs | 50 per measurement, mean reported; one warm-up run discarded |
-| Startup metric | `--version` and `--help` (no network, pure process start) |
-| Memory | peak RSS via `getrusage(RUSAGE_CHILDREN)` |
+| CPU | AMD Ryzen AI MAX+ 395 (32 threads) |
+| Memory | 62 GiB |
+| OS / kernel | Linux 7.1.2 (x86_64) |
+| Rust toolchain | rustc 1.96.0 (release build, `--features tui`, stripped) |
+| Official CLI | `twc-cli` v2.15.2, in a clean virtualenv on Python 3.14.6 |
+| Sampling | 50 runs per measurement, mean reported, one warm-up discarded |
+| Startup metric | `--version` / `--help` (no network — pure process start) |
+| Memory metric | peak RSS via `getrusage(RUSAGE_CHILDREN)` |
 
 Reproduce:
 
@@ -33,51 +35,61 @@ benches/compare.sh ./target/release/twc-rs /tmp/twcbench/bin/twc
 
 | Metric | twc-rs | official `twc` | Advantage |
 |---|---|---|---|
-| Cold start (`--version`) | **2.3 ms** | 348.2 ms | **151× faster** |
-| Cold start (`--help`) | **2.0 ms** | 344.8 ms | **172× faster** |
-| Peak memory (RSS) | **14.0 MB** | 59.1 MB | **4.2× less** |
-| On-disk size | **14 MB**, one file | 33 MB of packages + a Python interpreter | smaller, self-contained |
-| Runtime dependencies | 12 system libraries | 15 PyPI packages + CPython | fewer, no virtualenv |
-| Install | copy one binary | `pip` + Python toolchain | no runtime needed |
+| Cold start (`--version`) | **2.3 ms** | 357.3 ms | **≈155× faster** |
+| Cold start (`--help`) | **2.1 ms** | 347.4 ms | **≈165× faster** |
+| Peak memory (RSS) | **13.7 MB** | 59.2 MB | **≈4.3× less** |
+| On-disk size | **15 MB**, one static binary | 33 MB of packages + a Python interpreter | smaller, self-contained |
+| Runtime dependencies | system libc only | 15 PyPI packages + CPython | none to install |
+| Install | copy one file | `pip` + Python toolchain | no runtime needed |
 
-The Python tool pays ~300 ms of interpreter and import cost before any
-application code runs; `twc-rs` is a native binary, so the same operations
-finish in single-digit milliseconds.
+The Python tool spends ~350 ms loading the interpreter and importing its
+dependency tree before any application code runs; `twc-rs` is a native binary,
+so the same invocation completes in single-digit milliseconds.
 
 ## Capabilities only twc-rs has
 
 | Feature | twc-rs | official |
 |---|---|---|
 | Interactive TUI dashboard (k9s-style) | yes | no |
-| Live per-resource metrics (CPU/RAM/network) | yes | no |
-| Localization (English + Russian, CLI & TUI) | yes | English only |
+| Live per-resource metrics (CPU / RAM / network) | yes | no |
+| Localization — English + Russian (CLI & TUI) | yes | English only |
 | Named profiles (`--profile`) | yes | yes |
 | Shell completions | bash, zsh, fish, powershell, elvish, **nushell** | bash, zsh, fish, powershell |
 
-## Command coverage — honest status
+## Command coverage
 
-The official CLI is currently deeper on raw command count. Mapping subcommands
-(accounting for naming differences: `ssh-key`≈`ssh`, `storage`≈`s3`,
-`cluster`≈`kubernetes`):
+Near-complete parity with the official CLI across all resource groups
+(accounting for naming: `ssh-key`≈`ssh`, `storage`≈`s3`, `cluster`≈`kubernetes`,
+`balancer backend`≈`balancer ip-*`):
 
-| Group | Covered / official | Notable gaps in twc-rs |
-|---|---|---|
-| domain | 6 / 6 | — |
-| firewall | 5 / 5 | — |
-| balancer | 7 / 8 | backend management |
-| cluster | 9 / 10 | list-network-drivers |
-| storage (s3) | 7 / 8 | genconfig |
-| database | 8 / 10 | instance, list-types |
-| account | 2 / 3 | access restrictions |
-| project | 3 / 5 | resource, set |
-| ssh-key | 3 / 6 | edit, get, new |
-| apps | 1 / 7 | create, delete, get, presets, repositories, vcs-providers |
-| image | 2 / 6 | create, get, set, upload |
-| ip | 2 / 7 | attach, detach, create, get, set |
-| vpc | 2 / 6 | create, port, set, show |
-| server | 4 / 24 | create, clone, resize, reinstall, disk, ip, vnc, backup, power, boot/nat mode, reset-root-password, history, listings |
-| **Total** | **~61 / 111 (~55%)** | server depth is the largest gap |
+| Group | Status |
+|---|---|
+| account | full — status, finances (`show`), access restrictions |
+| apps | full — list, info, create, delete, presets, repositories, vcs-providers |
+| balancer | full — list/info/create/update/delete, rules, IPs (backends), presets |
+| database | full — list/info/create/update/delete, backups, users, presets, types, instances |
+| domain | full — list/info/add/delete, DNS records, subdomains, name servers |
+| firewall | full — groups, rules, resource link/unlink |
+| image | list, info, create, set, delete (`upload` deferred — multipart streaming) |
+| ip | full — list, info, create, attach, detach, set, delete |
+| kubernetes | full — clusters, node groups, nodes, addons, presets, versions, network drivers |
+| project | full — list, create, set, delete, resources |
+| server | list, info, create, clone, delete, reboot, start, shutdown, reset-password, resize, reinstall, disk, ip, history, set-nat-mode, set-boot-mode, list-presets/os/software/configurators (`vnc`, `backup` deferred — interactive) |
+| ssh-key | list, add, info, edit, delete |
+| storage (s3) | full — buckets, users, subdomains, transfer, presets, genconfig |
+| vpc | full — list, info, create, set, delete, ports |
 
-These gaps are tracked and being closed; the SDK already exposes the
-corresponding endpoints, so each is additive. This document is updated as
-coverage lands.
+Deferred items are interactive (`server vnc`) or need streaming/large request
+bodies (`image upload`, custom server configurators); they are the only gaps
+and are documented rather than silently dropped. The TUI dashboard additionally
+exposes parameterless management (delete / power / clone / restart) for every
+integer-id resource.
+
+## Engineering quality
+
+| | |
+|---|---|
+| Lints | clean under `clippy` **pedantic + nursery**, no `#[allow]` crutches |
+| Tasks | non-blocking UI — data fetched off the render thread |
+| SDK | generated from the official OpenAPI spec via [`timeweb-rs`](https://crates.io/crates/timeweb-rs); spec defects fixed in a normalizer pass, never by hand-editing generated code |
+| Deprecations | zero — migrated to the current v2/cluster endpoints |
