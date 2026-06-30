@@ -1,0 +1,50 @@
+name: Bug report
+description: Report a defect in twc-rs
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. Please fill in the details below.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and what you expected instead.
+      placeholder: When I run `twc-rs server list` ...
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: The exact commands and arguments you ran.
+      placeholder: |
+        1. twc-rs ...
+        2. ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: twc-rs version
+      description: Output of `twc-rs --version`.
+      placeholder: twc-rs 0.2.0
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: Linux x86_64 / macOS arm64 / Windows
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or output
+      description: Relevant output. Run with `RUST_BACKTRACE=1` if it panics.
+      render: shell
+    validations:
+      required: false
