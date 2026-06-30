@@ -259,6 +259,6 @@ pub mod help;
 pub mod project_manager;
 pub mod resource_list;
 pub mod resource_tabs;
-pub mod spinner;
+pub mod skeleton;
 pub mod stats;
 pub mod token_info;

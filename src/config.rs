@@ -23,6 +23,34 @@ pub enum OutputPreference {
     Quiet
 }
 
+/// Dashboard customization preferences, persisted in the config file.
+#[cfg(feature = "tui")]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct DashboardPrefs {
+    /// IDs of widgets the user has hidden from the layout.
+    #[serde(default)]
+    pub hidden_widgets: Vec<String>,
+
+    /// Resource-list panel width, as a percentage of the content area.
+    #[serde(default = "default_list_width")]
+    pub list_width_pct: u16
+}
+
+#[cfg(feature = "tui")]
+const fn default_list_width() -> u16 {
+    40
+}
+
+#[cfg(feature = "tui")]
+impl Default for DashboardPrefs {
+    fn default() -> Self {
+        Self {
+            hidden_widgets: Vec::new(),
+            list_width_pct: default_list_width()
+        }
+    }
+}
+
 /// File-based configuration stored at `~/.config/twc-rs/config.toml`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
@@ -45,7 +73,12 @@ pub struct AppConfig {
 
     /// Auto-refresh interval in seconds for TUI monitor.
     #[serde(default = "default_refresh_interval")]
-    pub refresh_interval: u64
+    pub refresh_interval: u64,
+
+    /// Dashboard layout customization.
+    #[cfg(feature = "tui")]
+    #[serde(default)]
+    pub dashboard: DashboardPrefs
 }
 
 const fn default_refresh_interval() -> u64 {
@@ -60,7 +93,9 @@ impl Default for AppConfig {
             theme: crate::tui::themes::Theme::default(),
             output: OutputPreference::Table,
             default_region: None,
-            refresh_interval: 5
+            refresh_interval: 5,
+            #[cfg(feature = "tui")]
+            dashboard: DashboardPrefs::default()
         }
     }
 }

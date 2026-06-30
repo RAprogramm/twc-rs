@@ -37,6 +37,36 @@ pub struct Palette {
 }
 
 impl Theme {
+    /// All selectable themes, in display order.
+    pub const ALL: [Self; 4] = [
+        Self::GruvboxDark,
+        Self::GruvboxLight,
+        Self::CatppuccinMocha,
+        Self::CatppuccinLatte
+    ];
+
+    /// Returns the human-readable theme name.
+    #[must_use]
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::GruvboxDark => "Gruvbox Dark",
+            Self::GruvboxLight => "Gruvbox Light",
+            Self::CatppuccinMocha => "Catppuccin Mocha",
+            Self::CatppuccinLatte => "Catppuccin Latte"
+        }
+    }
+
+    /// Returns the stable identifier used in command ids and config.
+    #[must_use]
+    pub const fn id(self) -> &'static str {
+        match self {
+            Self::GruvboxDark => "gruvbox_dark",
+            Self::GruvboxLight => "gruvbox_light",
+            Self::CatppuccinMocha => "catppuccin_mocha",
+            Self::CatppuccinLatte => "catppuccin_latte"
+        }
+    }
+
     /// Returns the palette for this theme.
     #[must_use]
     pub const fn palette(self) -> Palette {

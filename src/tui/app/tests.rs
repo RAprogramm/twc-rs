@@ -571,3 +571,78 @@ fn no_menu_on_action_less_tab() {
     app.open_action_menu();
     assert!(!app.action_menu_open());
 }
+
+#[test]
+fn toggle_widget_flips_and_marks_dirty() {
+    let mut app = App::new(5);
+    assert!(app.is_widget_enabled("stats"));
+    app.toggle_widget("stats");
+    assert!(!app.is_widget_enabled("stats"));
+    assert!(app.prefs_dirty);
+    assert_eq!(app.hidden_widget_ids(), vec!["stats".to_string()]);
+}
+
+#[test]
+fn apply_prefs_hides_widgets_and_sets_width() {
+    let mut app = App::new(5);
+    app.apply_prefs(&["account".to_string(), "token_info".to_string()], 55);
+    assert!(!app.is_widget_enabled("account"));
+    assert!(!app.is_widget_enabled("token_info"));
+    assert!(app.is_widget_enabled("stats"));
+    assert_eq!(app.list_width_pct, 55);
+}
+
+#[test]
+fn set_theme_marks_dirty() {
+    let mut app = App::new(5);
+    app.set_theme(crate::tui::themes::Theme::CatppuccinMocha);
+    assert_eq!(app.theme, crate::tui::themes::Theme::CatppuccinMocha);
+    assert!(app.prefs_dirty);
+}
+
+#[test]
+fn palette_opens_with_context_commands() {
+    let mut app = App::new(5);
+    app.servers = vec![make_server(7, "web", "On")];
+    app.open_palette();
+    assert!(app.palette_open());
+    let cp = app.palette.as_ref().unwrap();
+    let titles: Vec<&str> = cp.filtered_commands().iter().map(|c| c.title.as_str()).collect();
+    assert!(titles.iter().any(|t| t.contains("Reboot web")));
+    assert!(titles.iter().any(|t| t.starts_with("Theme:")));
+    assert!(titles.iter().any(|t| t.contains("Stats panel")));
+}
+
+#[test]
+fn palette_run_theme_command() {
+    let mut app = App::new(5);
+    app.open_palette();
+    app.run_command("theme:catppuccin_latte");
+    assert_eq!(app.theme, crate::tui::themes::Theme::CatppuccinLatte);
+}
+
+#[test]
+fn palette_run_widget_toggle_command() {
+    let mut app = App::new(5);
+    app.run_command("widget:stats");
+    assert!(!app.is_widget_enabled("stats"));
+}
+
+#[test]
+fn palette_run_action_command_dispatches() {
+    let mut app = App::new(5);
+    app.servers = vec![make_server(7, "web", "On")];
+    app.run_command("action:reboot");
+    let dispatched = app.take_dispatch().expect("reboot dispatched via palette");
+    assert_eq!(dispatched.kind, ActionKind::Reboot);
+    assert_eq!(dispatched.resource_id, 7);
+}
+
+#[test]
+fn palette_run_delete_requires_confirm() {
+    let mut app = App::new(5);
+    app.servers = vec![make_server(7, "web", "On")];
+    app.run_command("action:delete");
+    assert!(app.awaiting_confirm());
+    assert!(app.take_dispatch().is_none());
+}

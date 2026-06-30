@@ -492,6 +492,7 @@ impl Focus {
 }
 
 /// Holds all runtime state for the TUI dashboard.
+#[allow(clippy::struct_excessive_bools)]
 pub struct App {
     pub account:           AccountInfo,
     pub servers:           Vec<ServerSummary>,
@@ -535,7 +536,11 @@ pub struct App {
     pub nav_level:         NavLevel,
     pub action_menu:       Option<ActionMenu>,
     pub confirm:           Option<PendingAction>,
-    pub dispatch:          Option<PendingAction>
+    pub dispatch:          Option<PendingAction>,
+    pub palette:           Option<super::command_palette::CommandPalette>,
+    pub list_width_pct:    u16,
+    pub anim_tick:         u64,
+    pub prefs_dirty:       bool
 }
 
 impl App {
@@ -597,7 +602,11 @@ impl App {
             nav_level: NavLevel::Overview,
             action_menu: None,
             confirm: None,
-            dispatch: None
+            dispatch: None,
+            palette: None,
+            list_width_pct: 40,
+            anim_tick: 0,
+            prefs_dirty: false
         }
     }
 
@@ -1007,6 +1016,186 @@ impl App {
     #[must_use]
     pub fn take_dispatch(&mut self) -> Option<PendingAction> {
         self.dispatch.take()
+    }
+
+    /// Widgets the user can show/hide from the layout: `(id, label)`.
+    pub const TOGGLEABLE_WIDGETS: [(&'static str, &'static str); 3] = [
+        ("account", "Account header"),
+        ("stats", "Stats panel"),
+        ("token_info", "Token info panel")
+    ];
+
+    /// Applies persisted dashboard preferences: hides the given widgets and
+    /// sets the resource-list width.
+    pub fn apply_prefs(&mut self, hidden: &[String], list_width_pct: u16) {
+        for id in hidden {
+            if self.is_widget_enabled(id) {
+                self.widgets.toggle(id);
+            }
+        }
+        if (10..=90).contains(&list_width_pct) {
+            self.list_width_pct = list_width_pct;
+        }
+    }
+
+    /// Returns true when the widget with `id` is registered and enabled.
+    #[must_use]
+    pub fn is_widget_enabled(&self, id: &str) -> bool {
+        self.widgets.get(id).is_some_and(super::widgets::Widget::enabled)
+    }
+
+    /// Toggles a widget's visibility and marks preferences dirty.
+    pub fn toggle_widget(&mut self, id: &str) {
+        self.widgets.toggle(id);
+        self.prefs_dirty = true;
+    }
+
+    /// Returns the ids of currently hidden toggleable widgets, for persisting.
+    #[must_use]
+    pub fn hidden_widget_ids(&self) -> Vec<String> {
+        Self::TOGGLEABLE_WIDGETS
+            .iter()
+            .filter(|(id, _)| !self.is_widget_enabled(id))
+            .map(|(id, _)| (*id).to_string())
+            .collect()
+    }
+
+    /// Switches the active theme and marks preferences dirty.
+    pub fn set_theme(&mut self, theme: super::themes::Theme) {
+        self.theme = theme;
+        self.prefs_dirty = true;
+    }
+
+    /// Advances the animation tick (drives skeleton shimmer).
+    pub const fn tick(&mut self) {
+        self.anim_tick = self.anim_tick.wrapping_add(1);
+    }
+
+    /// Returns true while the command palette is open.
+    #[must_use]
+    pub const fn palette_open(&self) -> bool {
+        self.palette.is_some()
+    }
+
+    /// Opens the command palette, populated for the current context.
+    pub fn open_palette(&mut self) {
+        let commands = self.build_palette_commands();
+        self.palette = Some(super::command_palette::CommandPalette::new(commands));
+    }
+
+    /// Closes the command palette.
+    pub fn close_palette(&mut self) {
+        self.palette = None;
+    }
+
+    /// Feeds a character to the open palette query.
+    pub fn palette_input(&mut self, c: char) {
+        if let Some(p) = self.palette.as_mut() {
+            p.push_char(c);
+        }
+    }
+
+    /// Deletes the last palette query character.
+    pub fn palette_backspace(&mut self) {
+        if let Some(p) = self.palette.as_mut() {
+            p.backspace();
+        }
+    }
+
+    /// Moves the palette selection down.
+    pub fn palette_next(&mut self) {
+        if let Some(p) = self.palette.as_mut() {
+            p.next();
+        }
+    }
+
+    /// Moves the palette selection up.
+    pub fn palette_previous(&mut self) {
+        if let Some(p) = self.palette.as_mut() {
+            p.previous();
+        }
+    }
+
+    /// Runs the highlighted palette command, then closes the palette.
+    pub fn palette_run_selected(&mut self) {
+        let id = self
+            .palette
+            .as_ref()
+            .and_then(|p| p.selected_command())
+            .map(|c| c.id.clone());
+        if let Some(id) = id {
+            self.run_command(&id);
+        }
+        self.close_palette();
+    }
+
+    fn build_palette_commands(&self) -> Vec<super::command_palette::Command> {
+        use super::command_palette::Command;
+        let mut commands = Vec::new();
+
+        if let Some((_, name)) = self.selected_resource() {
+            for action in self.active_tab.actions() {
+                commands.push(Command {
+                    id:    format!("action:{}", action.label().to_lowercase()),
+                    title: format!("{} {name}", action.label()),
+                    hint:  "action".to_string()
+                });
+            }
+        }
+
+        for (id, label) in Self::TOGGLEABLE_WIDGETS {
+            let verb = if self.is_widget_enabled(id) {
+                "Hide"
+            } else {
+                "Show"
+            };
+            commands.push(Command {
+                id:    format!("widget:{id}"),
+                title: format!("{verb} {label}"),
+                hint:  "layout".to_string()
+            });
+        }
+
+        for theme in super::themes::Theme::ALL {
+            commands.push(Command {
+                id:    format!("theme:{}", theme.id()),
+                title: format!("Theme: {}", theme.label()),
+                hint:  "theme".to_string()
+            });
+        }
+
+        commands
+    }
+
+    fn run_command(&mut self, id: &str) {
+        if let Some(rest) = id.strip_prefix("theme:") {
+            if let Some(theme) =
+                super::themes::Theme::ALL.into_iter().find(|t| t.id() == rest)
+            {
+                self.set_theme(theme);
+            }
+        } else if let Some(widget_id) = id.strip_prefix("widget:") {
+            self.toggle_widget(widget_id);
+        } else if let Some(action_label) = id.strip_prefix("action:")
+            && let Some((resource_id, resource_name)) = self.selected_resource()
+            && let Some(&kind) = self
+                .active_tab
+                .actions()
+                .iter()
+                .find(|a| a.label().eq_ignore_ascii_case(action_label))
+        {
+            let pending = PendingAction {
+                tab: self.active_tab,
+                kind,
+                resource_id,
+                resource_name
+            };
+            if kind.is_destructive() {
+                self.confirm = Some(pending);
+            } else {
+                self.dispatch = Some(pending);
+            }
+        }
     }
 
     /// Quits the application.

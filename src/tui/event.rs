@@ -3,7 +3,7 @@
 
 //! Event types and async event loop for the TUI dashboard.
 
-use crossterm::event::{self, Event, KeyCode, KeyEvent};
+use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use tokio::{sync::mpsc, time::Duration};
 
 use super::app::{App, Focus, NavLevel};
@@ -32,7 +32,11 @@ pub enum AppEvent {
 /// Returns `false` when the app should quit.
 pub fn handle_event(app: &mut App, event: AppEvent) -> bool {
     match event {
-        AppEvent::Tick | AppEvent::Resize(_, _) => true,
+        AppEvent::Tick => {
+            app.tick();
+            true
+        }
+        AppEvent::Resize(_, _) => true,
         AppEvent::Key(key) => handle_key(app, key),
         AppEvent::Error(msg) => {
             app.error_message = Some(msg);
@@ -46,6 +50,28 @@ pub fn handle_event(app: &mut App, event: AppEvent) -> bool {
 }
 
 fn handle_key(app: &mut App, key: KeyEvent) -> bool {
+    if key.modifiers.contains(KeyModifiers::CONTROL) && matches!(key.code, KeyCode::Char('k')) {
+        if app.palette_open() {
+            app.close_palette();
+        } else {
+            app.open_palette();
+        }
+        return true;
+    }
+
+    if app.palette_open() {
+        match key.code {
+            KeyCode::Esc => app.close_palette(),
+            KeyCode::Enter => app.palette_run_selected(),
+            KeyCode::Up => app.palette_previous(),
+            KeyCode::Down => app.palette_next(),
+            KeyCode::Backspace => app.palette_backspace(),
+            KeyCode::Char(c) => app.palette_input(c),
+            _ => {}
+        }
+        return true;
+    }
+
     if app.action_menu_open() {
         match key.code {
             KeyCode::Char('k') | KeyCode::Up => app.menu_previous(),

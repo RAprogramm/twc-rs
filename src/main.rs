@@ -647,7 +647,9 @@ async fn run() -> Result<(), TwcError> {
         } => {
             let config = AppConfig::load()?;
             let token = ensure_token(cli.token.as_deref())?;
-            Box::pin(run_dashboard(token, interval, config.theme)).await
+            let theme = config.theme;
+            let prefs = config.dashboard.clone();
+            Box::pin(run_dashboard(token, interval, theme, prefs)).await
         }
         #[cfg(not(feature = "tui"))]
         Commands::Dashboard {
@@ -663,11 +665,23 @@ async fn run() -> Result<(), TwcError> {
 }
 
 #[cfg(feature = "tui")]
+fn persist_dashboard_prefs(app: &tui::app::App) {
+    let Ok(mut cfg) = AppConfig::load() else {
+        return;
+    };
+    cfg.theme = app.theme;
+    cfg.dashboard.hidden_widgets = app.hidden_widget_ids();
+    cfg.dashboard.list_width_pct = app.list_width_pct;
+    let _ = cfg.save();
+}
+
+#[cfg(feature = "tui")]
 #[expect(clippy::large_futures)]
 async fn run_dashboard(
     token: String,
     interval: u64,
-    theme: crate::tui::themes::Theme
+    theme: crate::tui::themes::Theme,
+    prefs: crate::config::DashboardPrefs
 ) -> Result<(), TwcError> {
     use crossterm::{
         execute,
@@ -685,8 +699,8 @@ async fn run_dashboard(
     let mut terminal = Terminal::new(backend).map_err(|e| TwcError::Io(e.to_string()))?;
 
     let mut app = tui::app::App::new_with_theme(interval, theme, Some(token.clone()));
+    app.apply_prefs(&prefs.hidden_widgets, prefs.list_width_pct);
 
-    // Show loading screen while fetching initial data
     let config = authenticated(token.clone());
     draw_splash(&mut terminal);
     app.is_loading = true;
@@ -708,6 +722,11 @@ async fn run_dashboard(
         terminal
             .draw(|f| tui::ui::draw(f, &app))
             .map_err(|e| TwcError::Io(e.to_string()))?;
+
+        if app.prefs_dirty {
+            persist_dashboard_prefs(&app);
+            app.prefs_dirty = false;
+        }
 
         if let Some(action) = app.take_dispatch() {
             let config = authenticated(token.clone());

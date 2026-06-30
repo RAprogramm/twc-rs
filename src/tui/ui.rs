@@ -33,28 +33,37 @@ pub fn draw(frame: &mut Frame, app: &App) {
     let size = frame.area();
     let palette = app.theme.palette();
 
+    let show_account = app.is_widget_enabled("account");
+
+    let mut constraints = Vec::with_capacity(4);
+    if show_account {
+        constraints.push(Constraint::Length(3));
+    }
+    constraints.push(Constraint::Length(2));
+    constraints.push(Constraint::Min(8));
+    constraints.push(Constraint::Length(3));
+
     let main_chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Length(3),
-            Constraint::Length(2),
-            Constraint::Min(10),
-            Constraint::Length(3)
-        ])
+        .constraints(constraints)
         .split(size);
 
-    let account_widget = AccountWidget::new(true);
-    account_widget.render(frame, main_chunks[0], app);
+    let mut idx = 0;
+    if show_account {
+        AccountWidget::new(true).render(frame, main_chunks[idx], app);
+        idx += 1;
+    }
 
-    let rt_widget = ResourceTabsWidget::new(true);
-    rt_widget.render(frame, main_chunks[1], app);
+    ResourceTabsWidget::new(true).render(frame, main_chunks[idx], app);
+    idx += 1;
 
-    render_content(frame, main_chunks[2], app, &palette);
-    render_status_bar(frame, main_chunks[3], app, &palette);
+    render_content(frame, main_chunks[idx], app, &palette);
+    idx += 1;
+
+    render_status_bar(frame, main_chunks[idx], app, &palette);
 
     if app.show_help {
-        let help_widget = HelpWidget::new();
-        help_widget.render(frame, size, app);
+        HelpWidget::new().render(frame, size, app);
     }
 
     if app.action_menu_open() {
@@ -63,6 +72,10 @@ pub fn draw(frame: &mut Frame, app: &App) {
 
     if app.awaiting_confirm() {
         render_confirm(frame, size, app, &palette);
+    }
+
+    if let Some(cp) = app.palette.as_ref() {
+        crate::tui::command_palette::render(frame, size, &palette, cp);
     }
 }
 
@@ -229,45 +242,78 @@ fn render_confirm(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
 /// * `app` - The application state.
 /// * `palette` - The theme color palette.
 fn render_content(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
-    if app.is_loading {
-        let spinner = crate::tui::widgets::spinner::current_frame();
-        let text = Line::from(vec![spinner, Span::raw(" Loading resources...")]);
-        let paragraph = Paragraph::new(text)
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .title(Line::from(" Loading "))
-            )
-            .alignment(Alignment::Center);
-        frame.render_widget(paragraph, area);
-        return;
-    }
-
+    let list_pct = app.list_width_pct.clamp(20, 70);
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(40), Constraint::Percentage(60)])
+        .constraints([Constraint::Percentage(list_pct), Constraint::Percentage(100 - list_pct)])
         .split(area);
+
+    if app.is_loading {
+        crate::tui::widgets::skeleton::render(
+            frame,
+            chunks[0],
+            palette,
+            " Resources ",
+            8,
+            app.anim_tick
+        );
+        crate::tui::widgets::skeleton::render(
+            frame,
+            chunks[1],
+            palette,
+            " Details ",
+            6,
+            app.anim_tick
+        );
+        return;
+    }
 
     let list_border_color = if app.focus == Focus::ResourceList {
         palette.accent
     } else {
         palette.border
     };
-
     let detail_border_color = if app.focus == Focus::Details {
         palette.accent
     } else {
         palette.border
     };
 
-    crate::tui::widgets::WidgetRegistry::render_side_by_side(
-        frame,
-        chunks[0],
-        chunks[1],
-        app,
-        list_border_color,
-        detail_border_color
-    );
+    let show_stats = app.is_widget_enabled("stats");
+    let show_token = app.is_widget_enabled("token_info");
+
+    crate::tui::widgets::resource_list::render(frame, chunks[0], app, list_border_color);
+
+    if show_stats || show_token {
+        let right = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Percentage(62), Constraint::Percentage(38)])
+            .split(chunks[1]);
+        crate::tui::widgets::details::render(frame, right[0], app, detail_border_color);
+        render_info_column(frame, right[1], app, show_stats, show_token);
+    } else {
+        crate::tui::widgets::details::render(frame, chunks[1], app, detail_border_color);
+    }
+}
+
+/// Renders the optional right-hand info column with the Stats and Token Info
+/// widgets, stacked according to which are enabled.
+fn render_info_column(frame: &mut Frame, area: Rect, app: &App, stats: bool, token: bool) {
+    use crate::tui::widgets::{Widget, stats::StatsWidget, token_info::TokenInfoWidget};
+
+    match (stats, token) {
+        (true, true) => {
+            let rows = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([Constraint::Percentage(55), Constraint::Percentage(45)])
+                .split(area);
+            StatsWidget::new(true).render(frame, rows[0], app);
+            TokenInfoWidget::new(true).render(frame, rows[1], app);
+        }
+        (true, false) => StatsWidget::new(true).render(frame, area, app),
+        (false, true) => TokenInfoWidget::new(true).render(frame, area, app),
+        (false, false) => {}
+    }
 }
 
 /// Renders the status bar with mode indicator and available keys.
@@ -297,7 +343,7 @@ fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, palette: &Palette
         }
     };
 
-    let left = format!("{mode}: {focus}  {keys}");
+    let left = format!("{mode}: {focus}  {keys}  ^K cmds");
     let right = match (&app.error_message, &app.status_message) {
         (Some(err), _) => err.clone(),
         (_, Some(msg)) => msg.clone(),
