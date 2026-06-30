@@ -1163,7 +1163,6 @@ async fn fetch_drill(
 }
 
 #[cfg(feature = "tui")]
-#[allow(deprecated)]
 async fn perform_action(
     config: &timeweb_rs::apis::configuration::Configuration,
     app: &mut tui::app::App,
@@ -1196,7 +1195,7 @@ async fn perform_action(
                 .map_err(|e| e.to_string())
         }
         (ResourceTab::Databases, ActionKind::Delete) => {
-            databases_api::delete_database(config, id, None, None)
+            databases_api::delete_database_cluster(config, id, None, None)
                 .await
                 .map(|_| ())
                 .map_err(|e| e.to_string())
@@ -1250,7 +1249,6 @@ async fn perform_action(
 }
 
 #[cfg(feature = "tui")]
-#[allow(deprecated)]
 #[expect(clippy::too_many_lines)]
 #[expect(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
 async fn refresh_all(
@@ -1292,7 +1290,7 @@ async fn refresh_all(
     ) = tokio::join!(
         timeweb_rs::apis::account_api::get_account_status(&c),
         timeweb_rs::apis::servers_api::get_servers(&c, None, None),
-        timeweb_rs::apis::databases_api::get_databases(&c, None, None),
+        timeweb_rs::apis::databases_api::get_database_clusters(&c, None, None),
         timeweb_rs::apis::s3_api::get_storages(&c),
         timeweb_rs::apis::kubernetes_api::get_clusters(&c, None, None),
         timeweb_rs::apis::projects_api::get_projects(&c),
@@ -1305,10 +1303,10 @@ async fn refresh_all(
         timeweb_rs::apis::network_drives_api::get_network_drives(&c),
         timeweb_rs::apis::vpc_api::get_vpcs(&c),
         timeweb_rs::apis::dedicated_servers_api::get_dedicated_servers(&c),
-        timeweb_rs::apis::mail_api::get_mailboxes(&c, None, None, None),
+        timeweb_rs::apis::mail_api::get_all_mailboxes_v2(&c, None, None, None),
         timeweb_rs::apis::apps_api::get_apps(&c),
         timeweb_rs::apis::ai_agents_api::get_agents(&c),
-        timeweb_rs::apis::knowledge_bases_api::get_knowledgebases(&c),
+        timeweb_rs::apis::knowledge_bases_api::get_knowledgebases_v2(&c),
         timeweb_rs::apis::ssh_api::get_keys(&c),
         timeweb_rs::apis::payments_api::get_finances(&c)
     );
@@ -1707,7 +1705,7 @@ async fn refresh_all(
             .map(|kb| KnowledgeBaseSummary {
                 id:             kb.id as i32,
                 name:           kb.name.clone(),
-                document_count: kb.documents.len() as i32,
+                document_count: 0,
                 status:         format!("{:?}", kb.status)
             })
             .collect();

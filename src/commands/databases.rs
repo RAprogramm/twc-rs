@@ -147,14 +147,13 @@ impl fmt::Display for PresetRow {
 /// # Errors
 ///
 /// Returns [`TwcError::Api`] on network or API failures.
-#[allow(deprecated)]
 pub async fn list(
     config: &Configuration,
     limit: Option<i32>,
     offset: Option<i32>,
     format: OutputFormat
 ) -> Result<(), TwcError> {
-    let resp = databases_api::get_databases(config, limit, offset).await?;
+    let resp = databases_api::get_database_clusters(config, limit, offset).await?;
 
     let rows: Vec<DbRow> = resp
         .dbs
@@ -163,7 +162,7 @@ pub async fn list(
             id:       fmt_id(d.id),
             name:     d.name.clone(),
             status:   format!("{:?}", d.status),
-            engine:   d.r#type.clone(),
+            engine:   String::new(),
             location: d.location.clone().unwrap_or_else(|| "-".to_string())
         })
         .collect();
@@ -200,31 +199,33 @@ pub async fn list(
 /// # Errors
 ///
 /// Returns [`TwcError::Api`] on network or API failures.
-#[allow(deprecated)]
 pub async fn info(config: &Configuration, id: i32, format: OutputFormat) -> Result<(), TwcError> {
-    let resp = databases_api::get_database(config, id).await?;
+    let resp = databases_api::get_database_cluster(config, id).await?;
     let db = &resp.db;
 
     match format {
         OutputFormat::Table => {
+            let disk_size = db
+                .disk
+                .as_ref()
+                .and_then(|o| o.as_ref())
+                .map_or(0.0, |disk| disk.size);
             println!("ID:             {}", fmt_id(db.id));
             println!("Name:           {}", db.name);
             println!("Status:         {:?}", db.status);
-            println!("Engine:         {:?}", db.r#type);
-            println!("Login:          {}", db.login);
-            println!("Host:           {}", opt_display(db.host.as_deref(), "-"));
-            println!("Port:           {}", db.port);
-            println!("IP:             {}", opt_display(db.ip.as_deref(), "-"));
+            println!("Engine:         {}", String::new());
+            println!(
+                "Port:           {}",
+                db.port
+                    .map_or_else(|| "-".to_string(), |p| p.to_string())
+            );
             println!("Location:       {:?}", db.location);
             println!("Preset ID:      {}", db.preset_id);
             println!("Created at:     {}", db.created_at);
+            println!("Disk (GB):      {disk_size}");
             println!(
-                "Local IP:       {}",
-                opt_display(db.local_ip.as_deref(), "-")
-            );
-            println!(
-                "Only Local IP:  {}",
-                if db.is_only_local_ip_access {
+                "Public network: {}",
+                if db.is_enabled_public_network {
                     "yes"
                 } else {
                     "no"
@@ -251,9 +252,8 @@ pub async fn info(config: &Configuration, id: i32, format: OutputFormat) -> Resu
 /// # Errors
 ///
 /// Returns [`TwcError::Api`] on network or API failures.
-#[allow(deprecated)]
 pub async fn delete(config: &Configuration, id: i32) -> Result<(), TwcError> {
-    databases_api::delete_database(config, id, None, None).await?;
+    databases_api::delete_database_cluster(config, id, None, None).await?;
     println!("{}", t!("cli.database_deleted", id => id));
     Ok(())
 }
@@ -267,18 +267,17 @@ pub async fn delete(config: &Configuration, id: i32) -> Result<(), TwcError> {
 /// # Errors
 ///
 /// Returns [`TwcError::Api`] on network or API failures.
-#[allow(deprecated)]
 pub async fn update(
     config: &Configuration,
     id: i32,
     name: Option<&str>,
     format: OutputFormat
 ) -> Result<(), TwcError> {
-    let mut update = db_models::UpdateDb::default();
+    let mut update = db_models::UpdateCluster::default();
     if let Some(n) = name {
         update.name = Some(n.to_string());
     }
-    let resp = databases_api::update_database(config, id, update).await?;
+    let resp = databases_api::update_database_cluster(config, id, update).await?;
     let db = &resp.db;
 
     match format {
@@ -308,9 +307,8 @@ pub async fn update(
 /// # Errors
 ///
 /// Returns [`TwcError::Api`] on network or API failures.
-#[allow(deprecated)]
 pub async fn restart(config: &Configuration, id: i32) -> Result<(), TwcError> {
-    databases_api::delete_database(config, id, None, None).await?;
+    databases_api::delete_database_cluster(config, id, None, None).await?;
     println!("{}", t!("cli.database_restarted", id => id));
     Ok(())
 }
@@ -585,7 +583,6 @@ pub async fn preset_list(config: &Configuration, format: OutputFormat) -> Result
 /// # Errors
 ///
 /// Returns [`TwcError::Api`] on network or API failures.
-#[allow(deprecated)]
 pub async fn create(
     config: &Configuration,
     name: &str,
@@ -596,8 +593,9 @@ pub async fn create(
     let password = format!("twc-{}", chrono::Utc::now().timestamp_micros());
     let type_val = parse_db_type(db_type)?;
 
-    let req = db_models::CreateDb::new(password.clone(), name.to_string(), type_val, preset_id);
-    let resp = databases_api::create_database(config, req).await?;
+    let mut req = db_models::CreateCluster::new(name.to_string(), type_val);
+    req.preset_id = Some(preset_id);
+    let resp = databases_api::create_database_cluster(config, req).await?;
     let db = &resp.db;
 
     match format {
