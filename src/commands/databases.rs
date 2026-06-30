@@ -162,7 +162,7 @@ pub async fn list(
             id:       fmt_id(d.id),
             name:     d.name.clone(),
             status:   format!("{:?}", d.status),
-            engine:   format!("{}", d.r#type),
+            engine:   d.r#type.clone(),
             location: d
                 .location
                 .clone()
@@ -530,7 +530,7 @@ pub async fn preset_list(config: &Configuration, format: OutputFormat) -> Result
         .iter()
         .map(|p| PresetRow {
             id:          p.id.map_or_else(|| "-".to_string(), fmt_id),
-            engine:      p.r#type.map_or_else(|| "-".to_string(), |t| format!("{t}")),
+            engine:      p.r#type.clone().unwrap_or_else(|| "-".to_string()),
             cpu:         p.cpu.map_or_else(|| "-".to_string(), |c| format!("{c}")),
             ram:         p.ram.map_or_else(|| "-".to_string(), |r| format!("{r}")),
             disk:        p.disk.map_or_else(|| "-".to_string(), |d| format!("{d}")),
@@ -567,7 +567,7 @@ pub async fn preset_list(config: &Configuration, format: OutputFormat) -> Result
                 println!(
                     "{}\t{}\t{}",
                     p.id.map_or_else(|| "-".to_string(), fmt_id),
-                    p.r#type.map_or_else(|| "-".to_string(), |t| format!("{t}")),
+                    p.r#type.clone().unwrap_or_else(|| "-".to_string()),
                     p.description_short
                         .as_deref()
                         .map_or_else(|| "-".to_string(), ToString::to_string)
@@ -629,27 +629,30 @@ pub async fn create(
 /// # Errors
 ///
 /// Returns [`TwcError::Api`] for unrecognized type names.
-fn parse_db_type(s: &str) -> Result<db_models::DbType, TwcError> {
-    match s.to_lowercase().as_str() {
-        "mysql" | "mysql5" => Ok(db_models::DbType::Mysql),
-        "mysql8" | "mysql84" => Ok(db_models::DbType::Mysql84),
-        "postgres" | "pg" | "postgres14" => Ok(db_models::DbType::Postgres14),
-        "postgres15" => Ok(db_models::DbType::Postgres15),
-        "postgres16" => Ok(db_models::DbType::Postgres16),
-        "postgres17" => Ok(db_models::DbType::Postgres17),
-        "redis" | "redis7" => Ok(db_models::DbType::Redis7),
-        "redis8" | "redis81" => Ok(db_models::DbType::Redis81),
-        "mongo" | "mongodb" | "mongodb7" => Ok(db_models::DbType::Mongodb7),
-        "mongodb8" | "mongodb80" => Ok(db_models::DbType::Mongodb80),
-        "opensearch" | "opensearch2" | "opensearch219" => Ok(db_models::DbType::Opensearch),
-        "clickhouse" | "clickhouse24" | "clickhouse25" => Ok(db_models::DbType::Clickhouse),
-        "kafka" => Ok(db_models::DbType::Kafka),
-        "rabbitmq" | "rabbitmq4" | "rabbitmq40" => Ok(db_models::DbType::Rabbitmq40),
-        _ => Err(TwcError::Api(format!(
-            "unknown database type: {s} \
-             (expected mysql, postgres, redis, mongodb, opensearch, clickhouse, kafka, rabbitmq)"
-        )))
-    }
+fn parse_db_type(s: &str) -> Result<String, TwcError> {
+    let canonical = match s.to_lowercase().as_str() {
+        "mysql" | "mysql5" => "mysql",
+        "mysql8" | "mysql84" => "mysql8_4",
+        "postgres" | "pg" | "postgres14" => "postgres14",
+        "postgres15" => "postgres15",
+        "postgres16" => "postgres16",
+        "postgres17" => "postgres17",
+        "redis" | "redis7" => "redis7",
+        "redis8" | "redis81" => "redis8_1",
+        "mongo" | "mongodb" | "mongodb7" => "mongodb7",
+        "mongodb8" | "mongodb80" => "mongodb8_0",
+        "opensearch" | "opensearch2" | "opensearch219" => "opensearch",
+        "clickhouse" | "clickhouse24" | "clickhouse25" => "clickhouse",
+        "kafka" => "kafka",
+        "rabbitmq" | "rabbitmq4" | "rabbitmq40" => "rabbitmq4_0",
+        _ => {
+            return Err(TwcError::Api(format!(
+                "unknown database type: {s} (expected mysql, postgres, redis, \
+                 mongodb, opensearch, clickhouse, kafka, rabbitmq)"
+            )));
+        }
+    };
+    Ok(canonical.to_string())
 }
 
 // Tests are managed by the @tester subagent.

@@ -1290,7 +1290,7 @@ async fn refresh_all(
 
     if let Ok(resp) = knowledge_bases_res {
         let summaries: Vec<KnowledgeBaseSummary> = resp
-            .knowledgebases
+            .knowledge_bases
             .iter()
             .map(|kb| KnowledgeBaseSummary {
                 id:             kb.id as i32,
