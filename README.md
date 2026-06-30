@@ -27,6 +27,7 @@ speed, footprint, and experience.
 | Shell completions | bash, zsh, fish, powershell, elvish, **nushell** | bash, zsh, fish, powershell |
 | Output formats | table, json, yaml, quiet | default, raw, json, yaml |
 | Profiles (multi-account) | yes (`--profile`) | yes |
+| Languages | **English + Russian** (TUI & CLI) | English only |
 
 Startup was measured on the same machine over 20 runs; `python3 -c "import click"`
 alone takes ~180 ms before any application code runs.
