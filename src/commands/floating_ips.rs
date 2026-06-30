@@ -60,10 +60,10 @@ pub async fn list(config: &Configuration, format: OutputFormat) -> Result<(), Tw
                 println!("{table}");
             }
         }
-        OutputFormat::Json => {
-            let json = serde_json::to_string_pretty(&resp.ips)
-                .map_err(|e| TwcError::Api(e.to_string()))?;
-            println!("{json}");
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out =
+                crate::output::serialized(format, &resp.ips).expect("json or yaml branch")?;
+            println!("{out}");
         }
         OutputFormat::Quiet => {
             for f in &resp.ips {

@@ -176,10 +176,10 @@ pub async fn list(
                 println!("{table}");
             }
         }
-        OutputFormat::Json => {
-            let json = serde_json::to_string_pretty(&resp.dbs)
-                .map_err(|e| TwcError::Api(e.to_string()))?;
-            println!("{json}");
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out =
+                crate::output::serialized(format, &resp.dbs).expect("json or yaml branch")?;
+            println!("{out}");
         }
         OutputFormat::Quiet => {
             for d in &resp.dbs {
@@ -230,10 +230,9 @@ pub async fn info(config: &Configuration, id: i32, format: OutputFormat) -> Resu
                 }
             );
         }
-        OutputFormat::Json => {
-            let json = serde_json::to_string_pretty(&resp.db)
-                .map_err(|e| TwcError::Api(e.to_string()))?;
-            println!("{json}");
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out = crate::output::serialized(format, &resp.db).expect("json or yaml branch")?;
+            println!("{out}");
         }
         OutputFormat::Quiet => {
             println!("{}\t{}\t{:?}", fmt_id(db.id), db.name, db.status);
@@ -285,10 +284,9 @@ pub async fn update(
         OutputFormat::Table => {
             println!("Database '{}' updated (id: {}).", db.name, fmt_id(db.id));
         }
-        OutputFormat::Json => {
-            let json = serde_json::to_string_pretty(&resp.db)
-                .map_err(|e| TwcError::Api(e.to_string()))?;
-            println!("{json}");
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out = crate::output::serialized(format, &resp.db).expect("json or yaml branch")?;
+            println!("{out}");
         }
         OutputFormat::Quiet => {
             println!("{}\t{}", fmt_id(db.id), db.name);
@@ -352,10 +350,10 @@ pub async fn backup_list(
                 println!("{table}");
             }
         }
-        OutputFormat::Json => {
-            let json = serde_json::to_string_pretty(&resp.backups)
-                .map_err(|e| TwcError::Api(e.to_string()))?;
-            println!("{json}");
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out =
+                crate::output::serialized(format, &resp.backups).expect("json or yaml branch")?;
+            println!("{out}");
         }
         OutputFormat::Quiet => {
             for b in &resp.backups {
@@ -419,10 +417,10 @@ pub async fn user_list(
                 println!("{table}");
             }
         }
-        OutputFormat::Json => {
-            let json = serde_json::to_string_pretty(&resp.admins)
-                .map_err(|e| TwcError::Api(e.to_string()))?;
-            println!("{json}");
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out =
+                crate::output::serialized(format, &resp.admins).expect("json or yaml branch")?;
+            println!("{out}");
         }
         OutputFormat::Quiet => {
             for u in &resp.admins {
@@ -466,10 +464,10 @@ pub async fn user_create(
                 fmt_id(admin.id)
             );
         }
-        OutputFormat::Json => {
-            let json = serde_json::to_string_pretty(&resp.admin)
-                .map_err(|e| TwcError::Api(e.to_string()))?;
-            println!("{json}");
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out =
+                crate::output::serialized(format, &resp.admin).expect("json or yaml branch")?;
+            println!("{out}");
         }
         OutputFormat::Quiet => {
             println!("{}\t{}", fmt_id(admin.id), admin.login);
@@ -551,10 +549,10 @@ pub async fn preset_list(config: &Configuration, format: OutputFormat) -> Result
                 println!("{table}");
             }
         }
-        OutputFormat::Json => {
-            let json = serde_json::to_string_pretty(&resp.databases_presets)
-                .map_err(|e| TwcError::Api(e.to_string()))?;
-            println!("{json}");
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out = crate::output::serialized(format, &resp.databases_presets)
+                .expect("json or yaml branch")?;
+            println!("{out}");
         }
         OutputFormat::Quiet => {
             for p in &resp.databases_presets {
@@ -601,10 +599,9 @@ pub async fn create(
             println!("Database '{}' created (id: {}).", db.name, fmt_id(db.id));
             println!("Password: {password}");
         }
-        OutputFormat::Json => {
-            let json = serde_json::to_string_pretty(&resp.db)
-                .map_err(|e| TwcError::Api(e.to_string()))?;
-            println!("{json}");
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out = crate::output::serialized(format, &resp.db).expect("json or yaml branch")?;
+            println!("{out}");
         }
         OutputFormat::Quiet => {
             println!("{}\t{}", fmt_id(db.id), db.name);

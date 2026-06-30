@@ -56,7 +56,7 @@ fn parse_quiet_case_insensitive() {
 fn parse_invalid_format() {
     let err = OutputFormat::parse("xml").unwrap_err();
     assert!(err.contains("unknown output format: xml"));
-    assert!(err.contains("expected table, json, or quiet"));
+    assert!(err.contains("expected table, json, yaml, or quiet"));
 }
 
 #[test]
@@ -87,4 +87,15 @@ fn equality_and_clone() {
     assert_eq!(a, b);
     let c = OutputFormat::Table;
     assert_ne!(a, c);
+}
+
+#[test]
+fn parse_yaml_format() {
+    assert_eq!(OutputFormat::parse("yaml").unwrap(), OutputFormat::Yaml);
+    assert_eq!(OutputFormat::parse("yml").unwrap(), OutputFormat::Yaml);
+}
+
+#[test]
+fn display_yaml() {
+    assert_eq!(OutputFormat::Yaml.to_string(), "yaml");
 }

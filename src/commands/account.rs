@@ -82,10 +82,9 @@ pub async fn show(config: &Configuration, format: OutputFormat) -> Result<(), Tw
             let table = crate::output::render_table(&rows);
             println!("{table}");
         }
-        OutputFormat::Json => {
-            let json = serde_json::to_string_pretty(&summary)
-                .map_err(|e| TwcError::Api(e.to_string()))?;
-            println!("{json}");
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out = crate::output::serialized(format, &summary).expect("json or yaml branch")?;
+            println!("{out}");
         }
         OutputFormat::Quiet => {
             println!(

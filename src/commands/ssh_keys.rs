@@ -95,10 +95,10 @@ pub async fn list(config: &Configuration, format: OutputFormat) -> Result<(), Tw
                 println!("{table}");
             }
         }
-        OutputFormat::Json => {
-            let json = serde_json::to_string_pretty(&resp.ssh_keys)
-                .map_err(|e| TwcError::Api(e.to_string()))?;
-            println!("{json}");
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out =
+                crate::output::serialized(format, &resp.ssh_keys).expect("json or yaml branch")?;
+            println!("{out}");
         }
         OutputFormat::Quiet => {
             for k in &resp.ssh_keys {

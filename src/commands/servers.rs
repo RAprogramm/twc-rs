@@ -83,10 +83,10 @@ pub async fn list(
                 println!("{table}");
             }
         }
-        OutputFormat::Json => {
-            let json = serde_json::to_string_pretty(&resp.servers)
-                .map_err(|e| TwcError::Api(e.to_string()))?;
-            println!("{json}");
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out =
+                crate::output::serialized(format, &resp.servers).expect("json or yaml branch")?;
+            println!("{out}");
         }
         OutputFormat::Quiet => {
             for s in &resp.servers {
@@ -132,10 +132,10 @@ pub async fn info(config: &Configuration, id: i32, format: OutputFormat) -> Resu
                 println!("Network:        {net:?}");
             }
         }
-        OutputFormat::Json => {
-            let json = serde_json::to_string_pretty(&resp.server)
-                .map_err(|e| TwcError::Api(e.to_string()))?;
-            println!("{json}");
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out =
+                crate::output::serialized(format, &resp.server).expect("json or yaml branch")?;
+            println!("{out}");
         }
         OutputFormat::Quiet => {
             println!(

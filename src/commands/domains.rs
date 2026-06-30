@@ -238,10 +238,10 @@ pub async fn list(
                 println!("{table}");
             }
         }
-        OutputFormat::Json => {
-            let json = serde_json::to_string_pretty(&resp.domains)
-                .map_err(|e| TwcError::Api(e.to_string()))?;
-            println!("{json}");
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out =
+                crate::output::serialized(format, &resp.domains).expect("json or yaml branch")?;
+            println!("{out}");
         }
         OutputFormat::Quiet => {
             for d in &resp.domains {
@@ -320,10 +320,10 @@ pub async fn info(
                 );
             }
         }
-        OutputFormat::Json => {
-            let json = serde_json::to_string_pretty(&resp.domain)
-                .map_err(|e| TwcError::Api(e.to_string()))?;
-            println!("{json}");
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out =
+                crate::output::serialized(format, &resp.domain).expect("json or yaml branch")?;
+            println!("{out}");
         }
         OutputFormat::Quiet => {
             println!("{}\t{}\t{:?}", fmt_id(d.id), d.fqdn, d.domain_status);
@@ -376,7 +376,7 @@ pub async fn add(
         OutputFormat::Table => {
             println!("Domain '{fqdn}' added successfully.");
         }
-        OutputFormat::Json => {
+        OutputFormat::Json | OutputFormat::Yaml => {
             println!("{{\"fqdn\": \"{fqdn}\", \"status\": \"added\"}}");
         }
         OutputFormat::Quiet => {
@@ -456,10 +456,10 @@ pub async fn dns_list(
                 println!("{table}");
             }
         }
-        OutputFormat::Json => {
-            let json = serde_json::to_string_pretty(&resp.dns_records)
-                .map_err(|e| TwcError::Api(e.to_string()))?;
-            println!("{json}");
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out = crate::output::serialized(format, &resp.dns_records)
+                .expect("json or yaml branch")?;
+            println!("{out}");
         }
         OutputFormat::Quiet => {
             for r in &resp.dns_records {
@@ -499,7 +499,7 @@ pub async fn dns_add(
         OutputFormat::Table => {
             println!("DNS record {record_type} added to '{fqdn}'.");
         }
-        OutputFormat::Json => {
+        OutputFormat::Json | OutputFormat::Yaml => {
             println!(
                 "{{\"fqdn\": \"{fqdn}\", \"type\": \"{record_type}\", \"status\": \"added\"}}"
             );
@@ -555,7 +555,7 @@ pub async fn dns_update(
         OutputFormat::Table => {
             println!("DNS record {record_id} updated on '{fqdn}'.");
         }
-        OutputFormat::Json => {
+        OutputFormat::Json | OutputFormat::Yaml => {
             println!(
                 "{{\"fqdn\": \"{fqdn}\", \"record_id\": {record_id}, \"status\": \"updated\"}}"
             );
@@ -607,10 +607,10 @@ pub async fn ns_list(
                 println!("{table}");
             }
         }
-        OutputFormat::Json => {
-            let json = serde_json::to_string_pretty(&resp.name_servers)
-                .map_err(|e| TwcError::Api(e.to_string()))?;
-            println!("{json}");
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out = crate::output::serialized(format, &resp.name_servers)
+                .expect("json or yaml branch")?;
+            println!("{out}");
         }
         OutputFormat::Quiet => {
             for ns in &resp.name_servers {
@@ -649,10 +649,10 @@ pub async fn ns_update(
         OutputFormat::Table => {
             println!("Name servers updated for '{fqdn}'.");
         }
-        OutputFormat::Json => {
-            let json = serde_json::to_string_pretty(&resp.name_servers)
-                .map_err(|e| TwcError::Api(e.to_string()))?;
-            println!("{json}");
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out = crate::output::serialized(format, &resp.name_servers)
+                .expect("json or yaml branch")?;
+            println!("{out}");
         }
         OutputFormat::Quiet => {
             println!("{fqdn}\t{ns1}\t{ns2}\tupdated");
@@ -698,10 +698,10 @@ pub async fn subdomain_list(
                 println!("{table}");
             }
         }
-        OutputFormat::Json => {
-            let json = serde_json::to_string_pretty(&d.subdomains)
-                .map_err(|e| TwcError::Api(e.to_string()))?;
-            println!("{json}");
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out =
+                crate::output::serialized(format, &d.subdomains).expect("json or yaml branch")?;
+            println!("{out}");
         }
         OutputFormat::Quiet => {
             for s in &d.subdomains {
@@ -733,7 +733,7 @@ pub async fn subdomain_add(
         OutputFormat::Table => {
             println!("Subdomain '{subdomain}' added to '{fqdn}'.");
         }
-        OutputFormat::Json => {
+        OutputFormat::Json | OutputFormat::Yaml => {
             println!(
                 "{{\"fqdn\": \"{fqdn}\", \"subdomain\": \"{subdomain}\", \"status\": \"added\"}}"
             );
@@ -801,10 +801,10 @@ pub async fn request_list(
                 println!("{table}");
             }
         }
-        OutputFormat::Json => {
-            let json = serde_json::to_string_pretty(&resp.requests)
-                .map_err(|e| TwcError::Api(e.to_string()))?;
-            println!("{json}");
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out =
+                crate::output::serialized(format, &resp.requests).expect("json or yaml branch")?;
+            println!("{out}");
         }
         OutputFormat::Quiet => {
             for r in &resp.requests {
@@ -854,10 +854,10 @@ pub async fn tld_list(
                 println!("{table}");
             }
         }
-        OutputFormat::Json => {
-            let json = serde_json::to_string_pretty(&resp.top_level_domains)
-                .map_err(|e| TwcError::Api(e.to_string()))?;
-            println!("{json}");
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out = crate::output::serialized(format, &resp.top_level_domains)
+                .expect("json or yaml branch")?;
+            println!("{out}");
         }
         OutputFormat::Quiet => {
             for t in &resp.top_level_domains {
@@ -901,10 +901,10 @@ pub async fn auto_prolong(
                 fmt_id(d.id)
             );
         }
-        OutputFormat::Json => {
-            let json = serde_json::to_string_pretty(&resp.domain)
-                .map_err(|e| TwcError::Api(e.to_string()))?;
-            println!("{json}");
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out =
+                crate::output::serialized(format, &resp.domain).expect("json or yaml branch")?;
+            println!("{out}");
         }
         OutputFormat::Quiet => {
             let state = if enabled { "on" } else { "off" };

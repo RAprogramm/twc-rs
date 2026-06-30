@@ -121,10 +121,10 @@ pub async fn list(
                 println!("{table}");
             }
         }
-        OutputFormat::Json => {
-            let json = serde_json::to_string_pretty(&resp.groups)
-                .map_err(|e| TwcError::Api(e.to_string()))?;
-            println!("{json}");
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out =
+                crate::output::serialized(format, &resp.groups).expect("json or yaml branch")?;
+            println!("{out}");
         }
         OutputFormat::Quiet => {
             for g in &resp.groups {
@@ -169,10 +169,10 @@ pub async fn info(
                     .to_rfc3339_opts(chrono::SecondsFormat::Secs, false)
             );
         }
-        OutputFormat::Json => {
-            let json = serde_json::to_string_pretty(&resp.group)
-                .map_err(|e| TwcError::Api(e.to_string()))?;
-            println!("{json}");
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out =
+                crate::output::serialized(format, &resp.group).expect("json or yaml branch")?;
+            println!("{out}");
         }
         OutputFormat::Quiet => {
             println!("{}\t{}\t{:?}", fmt_id(&g.id), g.name, g.policy);
@@ -207,10 +207,10 @@ pub async fn create(
                 fmt_id(&g.id)
             );
         }
-        OutputFormat::Json => {
-            let json = serde_json::to_string_pretty(&resp.group)
-                .map_err(|e| TwcError::Api(e.to_string()))?;
-            println!("{json}");
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out =
+                crate::output::serialized(format, &resp.group).expect("json or yaml branch")?;
+            println!("{out}");
         }
         OutputFormat::Quiet => {
             println!("{}\t{}", fmt_id(&g.id), g.name);
@@ -267,10 +267,10 @@ pub async fn update(
                 fmt_id(&g.id)
             );
         }
-        OutputFormat::Json => {
-            let json = serde_json::to_string_pretty(&resp.group)
-                .map_err(|e| TwcError::Api(e.to_string()))?;
-            println!("{json}");
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out =
+                crate::output::serialized(format, &resp.group).expect("json or yaml branch")?;
+            println!("{out}");
         }
         OutputFormat::Quiet => {
             println!("{}\t{}", fmt_id(&g.id), g.name);
@@ -317,10 +317,10 @@ pub async fn rule_list(
                 println!("{table}");
             }
         }
-        OutputFormat::Json => {
-            let json = serde_json::to_string_pretty(&resp.rules)
-                .map_err(|e| TwcError::Api(e.to_string()))?;
-            println!("{json}");
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out =
+                crate::output::serialized(format, &resp.rules).expect("json or yaml branch")?;
+            println!("{out}");
         }
         OutputFormat::Quiet => {
             for r in &resp.rules {
@@ -365,10 +365,10 @@ pub async fn rule_create(
                 fmt_id(&r.id)
             );
         }
-        OutputFormat::Json => {
-            let json = serde_json::to_string_pretty(&resp.rule)
-                .map_err(|e| TwcError::Api(e.to_string()))?;
-            println!("{json}");
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out =
+                crate::output::serialized(format, &resp.rule).expect("json or yaml branch")?;
+            println!("{out}");
         }
         OutputFormat::Quiet => {
             println!("{}\t{}", fmt_id(&r.id), r.direction);
@@ -431,10 +431,10 @@ pub async fn resource_list(
                 println!("{table}");
             }
         }
-        OutputFormat::Json => {
-            let json = serde_json::to_string_pretty(&resp.resources)
-                .map_err(|e| TwcError::Api(e.to_string()))?;
-            println!("{json}");
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out = crate::output::serialized(format, &resp.resources)
+                .expect("json or yaml branch")?;
+            println!("{out}");
         }
         OutputFormat::Quiet => {
             for r in &resp.resources {
