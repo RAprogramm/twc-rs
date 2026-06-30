@@ -3,7 +3,7 @@
 
 use std::fmt;
 
-use tabled::{Table, Tabled};
+use tabled::Tabled;
 use timeweb_rs::apis::{configuration::Configuration, servers_api};
 
 use crate::{error::TwcError, output::OutputFormat};
@@ -79,7 +79,7 @@ pub async fn list(
             if rows.is_empty() {
                 println!("No servers found.");
             } else {
-                let table = Table::new(&rows).to_string();
+                let table = crate::output::render_table(&rows);
                 println!("{table}");
             }
         }

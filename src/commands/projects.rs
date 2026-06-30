@@ -3,7 +3,7 @@
 
 use std::fmt;
 
-use tabled::{Table, Tabled};
+use tabled::Tabled;
 use timeweb_rs::{
     apis::{configuration::Configuration, projects_api},
     models::CreateProject
@@ -68,7 +68,7 @@ pub async fn list(config: &Configuration, format: OutputFormat) -> Result<(), Tw
             if rows.is_empty() {
                 println!("No projects found.");
             } else {
-                let table = Table::new(&rows).to_string();
+                let table = crate::output::render_table(&rows);
                 println!("{table}");
             }
         }

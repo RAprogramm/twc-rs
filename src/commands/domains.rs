@@ -3,7 +3,7 @@
 
 use std::fmt;
 
-use tabled::{Table, Tabled};
+use tabled::Tabled;
 use timeweb_rs::{apis::domains_api, models as dm};
 
 use crate::{error::TwcError, output::OutputFormat};
@@ -234,7 +234,7 @@ pub async fn list(
             if rows.is_empty() {
                 println!("No domains found.");
             } else {
-                let table = Table::new(&rows).to_string();
+                let table = crate::output::render_table(&rows);
                 println!("{table}");
             }
         }
@@ -452,7 +452,7 @@ pub async fn dns_list(
             if rows.is_empty() {
                 println!("No DNS records found.");
             } else {
-                let table = Table::new(&rows).to_string();
+                let table = crate::output::render_table(&rows);
                 println!("{table}");
             }
         }
@@ -603,7 +603,7 @@ pub async fn ns_list(
             if rows.is_empty() {
                 println!("No name servers found.");
             } else {
-                let table = Table::new(&rows).to_string();
+                let table = crate::output::render_table(&rows);
                 println!("{table}");
             }
         }
@@ -694,7 +694,7 @@ pub async fn subdomain_list(
             if rows.is_empty() {
                 println!("No subdomains found.");
             } else {
-                let table = Table::new(&rows).to_string();
+                let table = crate::output::render_table(&rows);
                 println!("{table}");
             }
         }
@@ -797,7 +797,7 @@ pub async fn request_list(
             if rows.is_empty() {
                 println!("No domain requests found.");
             } else {
-                let table = Table::new(&rows).to_string();
+                let table = crate::output::render_table(&rows);
                 println!("{table}");
             }
         }
@@ -850,7 +850,7 @@ pub async fn tld_list(
             if rows.is_empty() {
                 println!("No TLDs found.");
             } else {
-                let table = Table::new(&rows).to_string();
+                let table = crate::output::render_table(&rows);
                 println!("{table}");
             }
         }

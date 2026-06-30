@@ -3,7 +3,7 @@
 
 use std::fmt;
 
-use tabled::{Table, Tabled};
+use tabled::Tabled;
 use timeweb_rs::{
     apis::{configuration::Configuration, kubernetes_api},
     models as k8s_models
@@ -193,7 +193,7 @@ pub async fn list(
             if rows.is_empty() {
                 println!("No Kubernetes clusters found.");
             } else {
-                let table = Table::new(&rows).to_string();
+                let table = crate::output::render_table(&rows);
                 println!("{table}");
             }
         }
@@ -395,7 +395,7 @@ pub async fn nodegroup_list(
             if rows.is_empty() {
                 println!("No node groups found.");
             } else {
-                let table = Table::new(&rows).to_string();
+                let table = crate::output::render_table(&rows);
                 println!("{table}");
             }
         }
@@ -508,7 +508,7 @@ pub async fn node_list(
             if rows.is_empty() {
                 println!("No nodes found.");
             } else {
-                let table = Table::new(&rows).to_string();
+                let table = crate::output::render_table(&rows);
                 println!("{table}");
             }
         }
@@ -560,7 +560,7 @@ pub async fn addon_list(
             if rows.is_empty() {
                 println!("No addons installed.");
             } else {
-                let table = Table::new(&rows).to_string();
+                let table = crate::output::render_table(&rows);
                 println!("{table}");
             }
         }
@@ -672,7 +672,7 @@ pub async fn preset_list(config: &Configuration, format: OutputFormat) -> Result
             if rows.is_empty() {
                 println!("No presets found.");
             } else {
-                let table = Table::new(&rows).to_string();
+                let table = crate::output::render_table(&rows);
                 println!("{table}");
             }
         }
@@ -727,7 +727,7 @@ pub async fn version_list(config: &Configuration, format: OutputFormat) -> Resul
                         version: v.clone()
                     })
                     .collect();
-                let table = Table::new(&rows).to_string();
+                let table = crate::output::render_table(&rows);
                 println!("{table}");
             }
         }

@@ -3,7 +3,7 @@
 
 use std::fmt;
 
-use tabled::{Table, Tabled};
+use tabled::Tabled;
 use timeweb_rs::{
     apis::{configuration::Configuration, databases_api},
     models as db_models
@@ -172,7 +172,7 @@ pub async fn list(
             if rows.is_empty() {
                 println!("No databases found.");
             } else {
-                let table = Table::new(&rows).to_string();
+                let table = crate::output::render_table(&rows);
                 println!("{table}");
             }
         }
@@ -348,7 +348,7 @@ pub async fn backup_list(
             if rows.is_empty() {
                 println!("No backups found.");
             } else {
-                let table = Table::new(&rows).to_string();
+                let table = crate::output::render_table(&rows);
                 println!("{table}");
             }
         }
@@ -415,7 +415,7 @@ pub async fn user_list(
             if rows.is_empty() {
                 println!("No users found.");
             } else {
-                let table = Table::new(&rows).to_string();
+                let table = crate::output::render_table(&rows);
                 println!("{table}");
             }
         }
@@ -547,7 +547,7 @@ pub async fn preset_list(config: &Configuration, format: OutputFormat) -> Result
             if rows.is_empty() {
                 println!("No presets found.");
             } else {
-                let table = Table::new(&rows).to_string();
+                let table = crate::output::render_table(&rows);
                 println!("{table}");
             }
         }

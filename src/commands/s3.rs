@@ -3,7 +3,7 @@
 
 use std::fmt;
 
-use tabled::{Table, Tabled};
+use tabled::Tabled;
 use timeweb_rs::{
     apis::s3_api, models as s3_models, models::create_storage_request::Type as StorageType
 };
@@ -145,7 +145,7 @@ pub async fn list(
             if rows.is_empty() {
                 println!("No storages found.");
             } else {
-                let table = Table::new(&rows).to_string();
+                let table = crate::output::render_table(&rows);
                 println!("{table}");
             }
         }
@@ -362,7 +362,7 @@ pub async fn user_list(
             if rows.is_empty() {
                 println!("No users found.");
             } else {
-                let table = Table::new(&rows).to_string();
+                let table = crate::output::render_table(&rows);
                 println!("{table}");
             }
         }
@@ -486,7 +486,7 @@ pub async fn subdomain_list(
             if rows.is_empty() {
                 println!("No subdomains found.");
             } else {
-                let table = Table::new(&rows).to_string();
+                let table = crate::output::render_table(&rows);
                 println!("{table}");
             }
         }
@@ -578,7 +578,7 @@ pub async fn preset_list(
             if rows.is_empty() {
                 println!("No presets found.");
             } else {
-                let table = Table::new(&rows).to_string();
+                let table = crate::output::render_table(&rows);
                 println!("{table}");
             }
         }

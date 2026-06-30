@@ -3,6 +3,16 @@
 
 use std::fmt;
 
+use tabled::{Table, Tabled, settings::Style};
+
+/// Renders rows as a clean, modern table (rounded borders, a single header
+/// rule, no noisy inter-row separators).
+///
+/// All CLI list commands use this so the output style stays consistent.
+pub fn render_table<T: Tabled>(rows: &[T]) -> String {
+    Table::new(rows).with(Style::rounded()).to_string()
+}
+
 /// Output format for CLI results.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum OutputFormat {

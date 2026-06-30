@@ -3,7 +3,7 @@
 
 use std::fmt;
 
-use tabled::{Table, Tabled};
+use tabled::Tabled;
 use timeweb_rs::{apis::firewall_api, models as fw};
 
 use crate::{error::TwcError, output::OutputFormat};
@@ -117,7 +117,7 @@ pub async fn list(
             if rows.is_empty() {
                 println!("No firewall groups found.");
             } else {
-                let table = Table::new(&rows).to_string();
+                let table = crate::output::render_table(&rows);
                 println!("{table}");
             }
         }
@@ -313,7 +313,7 @@ pub async fn rule_list(
             if rows.is_empty() {
                 println!("No rules found.");
             } else {
-                let table = Table::new(&rows).to_string();
+                let table = crate::output::render_table(&rows);
                 println!("{table}");
             }
         }
@@ -427,7 +427,7 @@ pub async fn resource_list(
             if rows.is_empty() {
                 println!("No resources found.");
             } else {
-                let table = Table::new(&rows).to_string();
+                let table = crate::output::render_table(&rows);
                 println!("{table}");
             }
         }
