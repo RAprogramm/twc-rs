@@ -7,7 +7,7 @@ use rust_i18n::t;
 use tabled::Tabled;
 use timeweb_rs::{
     apis::{configuration::Configuration, ssh_api},
-    models::{CreateKeyRequest, UpdateKeyRequest}
+    models::{AddKeyToServerRequest, CreateKeyRequest, UpdateKeyRequest}
 };
 
 use crate::{error::TwcError, output::OutputFormat};
@@ -231,6 +231,59 @@ pub async fn edit(
     println!(
         "{}",
         t!("cli.ssh_key_updated", name => resp.ssh_key.name, id => fmt_id(resp.ssh_key.id))
+    );
+    Ok(())
+}
+
+/// Attaches one or more existing SSH keys to a cloud server.
+///
+/// # Overview
+///
+/// Copies the given SSH keys onto the server so they are authorized for
+/// root login, mirroring the official CLI's `ssh-key add` operation.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] on network or API failures.
+pub async fn attach(
+    config: &Configuration,
+    server_id: i32,
+    key_ids: &[i32]
+) -> Result<(), TwcError> {
+    let ids: Vec<f64> = key_ids.iter().map(|id| f64::from(*id)).collect();
+    let req = AddKeyToServerRequest::new(ids);
+    ssh_api::add_key_to_server(config, server_id, req).await?;
+
+    let keys = key_ids
+        .iter()
+        .map(ToString::to_string)
+        .collect::<Vec<_>>()
+        .join(", ");
+    println!(
+        "{}",
+        t!("cli.ssh_key_attached", keys => keys, server => server_id)
+    );
+    Ok(())
+}
+
+/// Detaches an SSH key from a cloud server.
+///
+/// # Overview
+///
+/// Removes a previously attached SSH key from the server's authorized keys.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] on network or API failures.
+pub async fn detach(
+    config: &Configuration,
+    server_id: i32,
+    key_id: i32
+) -> Result<(), TwcError> {
+    ssh_api::delete_key_from_server(config, server_id, key_id).await?;
+    println!(
+        "{}",
+        t!("cli.ssh_key_detached", key => key_id, server => server_id)
     );
     Ok(())
 }

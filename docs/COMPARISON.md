@@ -77,7 +77,7 @@ Near-complete parity with the official CLI across all resource groups
 | kubernetes | full — clusters, node groups, nodes, addons, presets, versions, network drivers |
 | project | full — list, create, set, delete, resources |
 | server | list, info, create, set, clone, delete, reboot, start, shutdown, reset-password, resize, reinstall, disk, ip, history, backup-list, backup-create, set-nat-mode, set-boot-mode, list-presets/os/software/configurators |
-| ssh-key | list, add, info, edit, delete |
+| ssh-key | full — list, add (upload), info, edit, delete, attach/detach key to a server |
 | storage (s3) | full — buckets, users, subdomains, transfer, presets, genconfig |
 | vpc | full — list, info, create, set, delete, ports |
 

@@ -528,7 +528,15 @@ async fn run() -> Result<(), TwcError> {
                     id,
                     name,
                     default
-                } => commands::ssh_keys::edit(&config, id, name.as_deref(), default).await
+                } => commands::ssh_keys::edit(&config, id, name.as_deref(), default).await,
+                SshCommands::Attach {
+                    server,
+                    key
+                } => commands::ssh_keys::attach(&config, server, &key).await,
+                SshCommands::Detach {
+                    server,
+                    key
+                } => commands::ssh_keys::detach(&config, server, key).await
             }
         }
         Commands::Project(cmd) => {

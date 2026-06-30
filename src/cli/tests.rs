@@ -181,6 +181,36 @@ fn ssh_delete_subcommand() {
 }
 
 #[test]
+fn ssh_attach_subcommand() {
+    let cli = parse(&["ssh", "attach", "--server", "12", "--key", "5", "--key", "7"]);
+    match &cli.command {
+        Commands::Ssh(SshCommands::Attach {
+            server,
+            key
+        }) => {
+            assert_eq!(*server, 12);
+            assert_eq!(key, &[5, 7]);
+        }
+        _ => panic!("expected SshCommands::Attach")
+    }
+}
+
+#[test]
+fn ssh_detach_subcommand() {
+    let cli = parse(&["ssh", "detach", "--server", "12", "--key", "5"]);
+    match &cli.command {
+        Commands::Ssh(SshCommands::Detach {
+            server,
+            key
+        }) => {
+            assert_eq!(*server, 12);
+            assert_eq!(*key, 5);
+        }
+        _ => panic!("expected SshCommands::Detach")
+    }
+}
+
+#[test]
 fn project_list_subcommand() {
     let cli = parse(&["project", "list"]);
     assert!(matches!(
