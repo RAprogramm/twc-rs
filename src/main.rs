@@ -124,7 +124,8 @@ fn prompt_paste_token() -> Result<String, TwcError> {
     if token.is_empty() {
         return Err(TwcError::Api("empty token".to_string()));
     }
-    println!("  \u{2713} {} characters received.", token.len());
+    let masked = mask_token(&token);
+    println!("  \u{2713} Token received: {masked}");
     Ok(token)
 }
 
@@ -739,22 +740,21 @@ async fn perform_action(
     pending: tui::app::PendingAction
 ) {
     use timeweb_rs::apis::{
-        balancers_api, container_registry_api, databases_api, kubernetes_api, s3_api,
-        servers_api
+        balancers_api, container_registry_api, databases_api, kubernetes_api, s3_api, servers_api
     };
     use tui::app::{ActionKind, ResourceTab};
 
     let id = pending.resource_id;
     let result = match (pending.tab, pending.kind) {
-        (ResourceTab::Servers, ActionKind::Start) => {
-            servers_api::start_server(config, id).await.map_err(|e| e.to_string())
-        }
-        (ResourceTab::Servers, ActionKind::Shutdown) => {
-            servers_api::shutdown_server(config, id).await.map_err(|e| e.to_string())
-        }
-        (ResourceTab::Servers, ActionKind::Reboot) => {
-            servers_api::reboot_server(config, id).await.map_err(|e| e.to_string())
-        }
+        (ResourceTab::Servers, ActionKind::Start) => servers_api::start_server(config, id)
+            .await
+            .map_err(|e| e.to_string()),
+        (ResourceTab::Servers, ActionKind::Shutdown) => servers_api::shutdown_server(config, id)
+            .await
+            .map_err(|e| e.to_string()),
+        (ResourceTab::Servers, ActionKind::Reboot) => servers_api::reboot_server(config, id)
+            .await
+            .map_err(|e| e.to_string()),
         (ResourceTab::Servers, ActionKind::Clone) => servers_api::clone_server(config, id)
             .await
             .map(|_| ())
@@ -771,12 +771,10 @@ async fn perform_action(
                 .map(|_| ())
                 .map_err(|e| e.to_string())
         }
-        (ResourceTab::S3, ActionKind::Delete) => {
-            s3_api::delete_storage(config, id, None, None)
-                .await
-                .map(|_| ())
-                .map_err(|e| e.to_string())
-        }
+        (ResourceTab::S3, ActionKind::Delete) => s3_api::delete_storage(config, id, None, None)
+            .await
+            .map(|_| ())
+            .map_err(|e| e.to_string()),
         (ResourceTab::Kubernetes, ActionKind::Delete) => {
             kubernetes_api::delete_cluster(config, id, None, None)
                 .await

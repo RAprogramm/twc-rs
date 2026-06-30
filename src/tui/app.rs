@@ -442,11 +442,9 @@ impl ResourceTab {
         use ActionKind::{Clone, Delete, Reboot, Shutdown, Start};
         match self {
             Self::Servers => &[Start, Shutdown, Reboot, Clone, Delete],
-            Self::Databases
-            | Self::S3
-            | Self::Kubernetes
-            | Self::Balancers
-            | Self::Registry => &[Delete],
+            Self::Databases | Self::S3 | Self::Kubernetes | Self::Balancers | Self::Registry => {
+                &[Delete]
+            }
             _ => &[]
         }
     }
@@ -878,24 +876,30 @@ impl App {
     #[must_use]
     pub fn selected_resource(&self) -> Option<(i32, String)> {
         match self.active_tab {
-            ResourceTab::Servers => {
-                self.servers.get(self.selected).map(|s| (s.id, s.name.clone()))
-            }
-            ResourceTab::Databases => {
-                self.databases.get(self.selected).map(|d| (d.id, d.name.clone()))
-            }
-            ResourceTab::S3 => {
-                self.s3_storages.get(self.selected).map(|s| (s.id, s.name.clone()))
-            }
-            ResourceTab::Kubernetes => {
-                self.k8s_clusters.get(self.selected).map(|c| (c.id, c.name.clone()))
-            }
-            ResourceTab::Balancers => {
-                self.balancers.get(self.selected).map(|b| (b.id, b.name.clone()))
-            }
-            ResourceTab::Registry => {
-                self.registries.get(self.selected).map(|r| (r.id, r.name.clone()))
-            }
+            ResourceTab::Servers => self
+                .servers
+                .get(self.selected)
+                .map(|s| (s.id, s.name.clone())),
+            ResourceTab::Databases => self
+                .databases
+                .get(self.selected)
+                .map(|d| (d.id, d.name.clone())),
+            ResourceTab::S3 => self
+                .s3_storages
+                .get(self.selected)
+                .map(|s| (s.id, s.name.clone())),
+            ResourceTab::Kubernetes => self
+                .k8s_clusters
+                .get(self.selected)
+                .map(|c| (c.id, c.name.clone())),
+            ResourceTab::Balancers => self
+                .balancers
+                .get(self.selected)
+                .map(|b| (b.id, b.name.clone())),
+            ResourceTab::Registry => self
+                .registries
+                .get(self.selected)
+                .map(|r| (r.id, r.name.clone())),
             _ => None
         }
     }
@@ -965,9 +969,9 @@ impl App {
             return;
         };
         let pending = PendingAction {
-            tab: menu.tab,
-            kind: action,
-            resource_id: menu.resource_id,
+            tab:           menu.tab,
+            kind:          action,
+            resource_id:   menu.resource_id,
             resource_name: menu.resource_name
         };
         if action.is_destructive() {

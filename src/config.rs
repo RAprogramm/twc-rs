@@ -55,11 +55,11 @@ const fn default_refresh_interval() -> u64 {
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
-            token:            None,
+            token: None,
             #[cfg(feature = "tui")]
-            theme:            crate::tui::themes::Theme::default(),
-            output:           OutputPreference::Table,
-            default_region:   None,
+            theme: crate::tui::themes::Theme::default(),
+            output: OutputPreference::Table,
+            default_region: None,
             refresh_interval: 5
         }
     }

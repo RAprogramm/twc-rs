@@ -202,10 +202,10 @@ const fn empty() -> JwtPayload {
 
 /// Convert a Unix timestamp (float seconds) to a timezone-aware datetime.
 #[expect(
-        clippy::cast_possible_truncation,
-        clippy::cast_sign_loss,
-        clippy::cast_precision_loss
-    )]
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss
+)]
 fn timestamp_to_datetime(ts: f64) -> Option<DateTime<FixedOffset>> {
     let secs = ts as i64;
     let nanos = ((ts - secs as f64) * 1_000_000_000.0) as u32;

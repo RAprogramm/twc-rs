@@ -98,10 +98,7 @@ fn render_action_menu(frame: &mut Frame, area: Rect, app: &App, palette: &Palett
                 Span::styled(format!("{:<10}", action.label()), style),
             ];
             if action.is_destructive() {
-                spans.push(Span::styled(
-                    "\u{26A0}",
-                    Style::default().fg(palette.error)
-                ));
+                spans.push(Span::styled("\u{26A0}", Style::default().fg(palette.error)));
             }
             Line::from(spans)
         })
@@ -120,8 +117,8 @@ fn render_action_menu(frame: &mut Frame, area: Rect, app: &App, palette: &Palett
         .clamp(28, area.width.saturating_sub(4));
     let height = u16::try_from(menu.actions.len()).unwrap_or(5) + 2;
     let popup = Rect {
-        x:      area.width.saturating_sub(width) / 2,
-        y:      area.height.saturating_sub(height) / 2,
+        x: area.width.saturating_sub(width) / 2,
+        y: area.height.saturating_sub(height) / 2,
         width,
         height
     };
@@ -168,9 +165,7 @@ fn render_confirm(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
                 pending.resource_name,
                 pending.resource_id
             ),
-            Style::default()
-                .fg(palette.fg)
-                .add_modifier(Modifier::BOLD)
+            Style::default().fg(palette.fg).add_modifier(Modifier::BOLD)
         )),
         Line::from(""),
     ];
@@ -189,9 +184,7 @@ fn render_confirm(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
         Span::styled("confirm    ", Style::default().fg(palette.dim)),
         Span::styled(
             "[n] ",
-            Style::default()
-                .fg(palette.fg)
-                .add_modifier(Modifier::BOLD)
+            Style::default().fg(palette.fg).add_modifier(Modifier::BOLD)
         ),
         Span::styled("cancel", Style::default().fg(palette.dim)),
     ]));
@@ -199,8 +192,8 @@ fn render_confirm(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
     let width = 54u16.min(area.width.saturating_sub(4));
     let height = u16::try_from(lines.len()).unwrap_or(4) + 2;
     let popup = Rect {
-        x:      area.width.saturating_sub(width) / 2,
-        y:      area.height.saturating_sub(height) / 2,
+        x: area.width.saturating_sub(width) / 2,
+        y: area.height.saturating_sub(height) / 2,
         width,
         height
     };

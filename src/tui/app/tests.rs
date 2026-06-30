@@ -462,7 +462,10 @@ fn menu_navigation_wraps() {
     app.servers = vec![make_server(7, "web", "On")];
     app.open_action_menu();
     app.menu_previous();
-    assert_eq!(app.action_menu().unwrap().selected, ResourceTab::Servers.actions().len() - 1);
+    assert_eq!(
+        app.action_menu().unwrap().selected,
+        ResourceTab::Servers.actions().len() - 1
+    );
     app.menu_next();
     assert_eq!(app.action_menu().unwrap().selected, 0);
 }

@@ -27,12 +27,8 @@ fn server_status_view(status: &str, palette: &Palette) -> (&'static str, Color, 
         "Off" => ("\u{25CB}", palette.error, "stopped".to_string()),
         "Removed" | "Blocked" => ("\u{25CB}", palette.error, status.to_lowercase()),
         "TurningOn" => ("\u{25D0}", palette.warning, "starting".to_string()),
-        "TurningOff" | "HardTurningOff" => {
-            ("\u{25D0}", palette.warning, "stopping".to_string())
-        }
-        "Rebooting" | "HardRebooting" => {
-            ("\u{25D0}", palette.warning, "rebooting".to_string())
-        }
+        "TurningOff" | "HardTurningOff" => ("\u{25D0}", palette.warning, "stopping".to_string()),
+        "Rebooting" | "HardRebooting" => ("\u{25D0}", palette.warning, "rebooting".to_string()),
         "Installing" | "SoftwareInstall" | "Reinstalling" => {
             ("\u{25D0}", palette.warning, "installing".to_string())
         }
