@@ -70,7 +70,7 @@ Near-complete parity with the official CLI across all resource groups
 | database | full — list/info/create/update/delete, backups, users, presets, types, instances |
 | domain | full — list/info/add/delete, DNS records, subdomains, name servers |
 | firewall | full — groups, rules, resource link/unlink |
-| image | list, info, create, set, delete (`upload` deferred — multipart streaming) |
+| image | full — list, info, create, set, delete, upload |
 | ip | full — list, info, create, attach, detach, set, delete |
 | kubernetes | full — clusters, node groups, nodes, addons, presets, versions, network drivers |
 | project | full — list, create, set, delete, resources |
@@ -79,12 +79,14 @@ Near-complete parity with the official CLI across all resource groups
 | storage (s3) | full — buckets, users, subdomains, transfer, presets, genconfig |
 | vpc | full — list, info, create, set, delete, ports |
 
-The only uncovered commands are `server vnc` and `image upload` — neither has
-a usable endpoint in the Timeweb SDK (there is no VNC endpoint at all, and the
-generated `upload_image` attaches no request body), so they are documented
-rather than faked. Custom server configurators (CPU/RAM/disk arrays) are also
-deferred behind the common preset path. The TUI dashboard additionally exposes
-delete / power / clone management for every integer-id resource.
+The single uncovered command is `server vnc` — Timeweb's API has no VNC
+endpoint at all (it is absent from the OpenAPI spec), so there is nothing to
+call. `image upload` was missing only because the upstream spec omitted the
+request body; that defect was fixed in the [`timeweb-rs`](https://crates.io/crates/timeweb-rs)
+normalizer (0.3.0) and the command now works. Custom server configurators
+(CPU/RAM/disk arrays) remain behind the common preset path. The TUI dashboard
+additionally exposes delete / power / clone management for every integer-id
+resource.
 
 ## Engineering quality
 
