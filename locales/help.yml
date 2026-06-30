@@ -36,3 +36,6 @@ help.shortcut_toggle_help:
 help.shortcut_quit:
   en: Quit
   ru: Выход
+help.shortcut_new:
+  en: "Create a new resource (where supported)"
+  ru: "Создать ресурс (где поддерживается)"

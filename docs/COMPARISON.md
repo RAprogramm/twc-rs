@@ -52,6 +52,8 @@ so the same invocation completes in single-digit milliseconds.
 |---|---|---|
 | Interactive TUI dashboard (k9s-style) | yes | no |
 | Live per-resource metrics (CPU / RAM / network) | yes | no |
+| Create / delete resources from the dashboard | yes | no |
+| Switch account profile from the dashboard | yes | no |
 | Localization — English + Russian (CLI & TUI) | yes | English only |
 | Named profiles (`--profile`) | yes | yes |
 | Shell completions | bash, zsh, fish, powershell, elvish, **nushell** | bash, zsh, fish, powershell |

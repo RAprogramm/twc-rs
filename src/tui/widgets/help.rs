@@ -74,6 +74,7 @@ impl HelpWidget {
             ("j/k", t!("help.shortcut_move")),
             ("g/G", t!("help.shortcut_jump")),
             ("Enter", t!("help.shortcut_enter")),
+            ("n", t!("help.shortcut_new")),
             ("/", t!("help.shortcut_filter")),
             ("Ctrl+K", t!("help.shortcut_palette")),
             ("r", t!("help.shortcut_refresh")),
