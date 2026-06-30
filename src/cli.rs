@@ -89,6 +89,26 @@ pub enum Commands {
     #[command(subcommand)]
     Firewall(FirewallCommands),
 
+    /// Manage cloud apps.
+    #[command(subcommand)]
+    Apps(AppsCommands),
+
+    /// Manage disk images.
+    #[command(subcommand)]
+    Image(ImageCommands),
+
+    /// Manage floating IPs.
+    #[command(subcommand)]
+    Ip(IpCommands),
+
+    /// Manage virtual networks (VPC).
+    #[command(subcommand)]
+    Vpc(VpcCommands),
+
+    /// Show account information.
+    #[command(subcommand)]
+    Account(AccountCommands),
+
     /// Configure twc-rs settings.
     #[command(subcommand)]
     Config(ConfigCommands),
@@ -929,3 +949,56 @@ pub enum FirewallCommands {
 
 #[cfg(test)]
 mod tests;
+
+/// Cloud apps subcommands.
+#[derive(Subcommand, Debug)]
+pub enum AppsCommands {
+    /// List all cloud apps.
+    List
+}
+
+/// Disk image subcommands.
+#[derive(Subcommand, Debug)]
+pub enum ImageCommands {
+    /// List all disk images.
+    List,
+    /// Delete an image by ID.
+    Delete {
+        /// Image ID.
+        #[arg(long)]
+        id: String
+    }
+}
+
+/// Floating IP subcommands.
+#[derive(Subcommand, Debug)]
+pub enum IpCommands {
+    /// List all floating IPs.
+    List,
+    /// Delete a floating IP by ID.
+    Delete {
+        /// Floating IP ID.
+        #[arg(long)]
+        id: String
+    }
+}
+
+/// VPC subcommands.
+#[derive(Subcommand, Debug)]
+pub enum VpcCommands {
+    /// List all virtual networks.
+    List,
+    /// Delete a VPC by ID.
+    Delete {
+        /// VPC ID.
+        #[arg(long)]
+        id: String
+    }
+}
+
+/// Account subcommands.
+#[derive(Subcommand, Debug)]
+pub enum AccountCommands {
+    /// Show account login, company and balance.
+    Show
+}

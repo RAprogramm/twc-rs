@@ -14,9 +14,10 @@ mod tui;
 
 use clap::Parser;
 use cli::{
-    AuthCommands, BalancerCommands, Cli, Commands, ConfigCommands, DatabaseCommands,
-    DomainCommands, FirewallCommands, KubernetesCommands, ProjectCommands, RegistryCommands,
-    S3Commands, ServerCommands, SshCommands
+    AccountCommands, AppsCommands, AuthCommands, BalancerCommands, Cli, Commands, ConfigCommands,
+    DatabaseCommands, DomainCommands, FirewallCommands, ImageCommands, IpCommands,
+    KubernetesCommands, ProjectCommands, RegistryCommands, S3Commands, ServerCommands,
+    SshCommands, VpcCommands
 };
 use config::AppConfig;
 use error::TwcError;
@@ -633,6 +634,50 @@ async fn run() -> Result<(), TwcError> {
                     id,
                     resource_id
                 } => commands::firewall::resource_remove(&config, &id, &resource_id).await
+            }
+        }
+        Commands::Apps(cmd) => {
+            let token = ensure_token(cli.token.as_deref())?;
+            let config = authenticated(token);
+            match cmd {
+                AppsCommands::List => commands::apps::list(&config, format).await
+            }
+        }
+        Commands::Image(cmd) => {
+            let token = ensure_token(cli.token.as_deref())?;
+            let config = authenticated(token);
+            match cmd {
+                ImageCommands::List => commands::images::list(&config, format).await,
+                ImageCommands::Delete {
+                    id
+                } => commands::images::delete(&config, &id).await
+            }
+        }
+        Commands::Ip(cmd) => {
+            let token = ensure_token(cli.token.as_deref())?;
+            let config = authenticated(token);
+            match cmd {
+                IpCommands::List => commands::floating_ips::list(&config, format).await,
+                IpCommands::Delete {
+                    id
+                } => commands::floating_ips::delete(&config, &id).await
+            }
+        }
+        Commands::Vpc(cmd) => {
+            let token = ensure_token(cli.token.as_deref())?;
+            let config = authenticated(token);
+            match cmd {
+                VpcCommands::List => commands::vpc::list(&config, format).await,
+                VpcCommands::Delete {
+                    id
+                } => commands::vpc::delete(&config, &id).await
+            }
+        }
+        Commands::Account(cmd) => {
+            let token = ensure_token(cli.token.as_deref())?;
+            let config = authenticated(token);
+            match cmd {
+                AccountCommands::Show => commands::account::show(&config, format).await
             }
         }
         #[cfg(feature = "auth")]
