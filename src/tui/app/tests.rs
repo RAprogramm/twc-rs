@@ -524,8 +524,10 @@ fn per_tab_action_sets() {
     assert_eq!(ResourceTab::Servers.actions().len(), 5);
     assert_eq!(ResourceTab::Databases.actions(), &[ActionKind::Delete]);
     assert_eq!(ResourceTab::Kubernetes.actions(), &[ActionKind::Delete]);
-    assert!(ResourceTab::Projects.actions().is_empty());
+    assert_eq!(ResourceTab::Projects.actions(), &[ActionKind::Delete]);
+    assert_eq!(ResourceTab::AiAgents.actions(), &[ActionKind::Delete]);
     assert!(ResourceTab::Finances.actions().is_empty());
+    assert!(ResourceTab::Domains.actions().is_empty());
 }
 
 #[test]
