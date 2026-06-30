@@ -261,6 +261,18 @@ async fn handle_server(
             )
             .await
         }
+        ServerCommands::Set {
+            id,
+            name,
+            comment
+        } => commands::servers::set(config, id, name.as_deref(), comment.as_deref()).await,
+        ServerCommands::BackupList {
+            id
+        } => commands::servers::backup_list(config, id, format).await,
+        ServerCommands::BackupCreate {
+            id,
+            comment
+        } => commands::servers::backup_create(config, id, comment.as_deref()).await
     }
 }
 
@@ -1365,7 +1377,7 @@ async fn perform_action(
     pending: tui::app::PendingAction
 ) {
     use timeweb_rs::apis::{
-        ai_agents_api, balancers_api, container_registry_api, databases_api,
+        ai_agents_api, apps_api, balancers_api, container_registry_api, databases_api,
         dedicated_servers_api, knowledge_bases_api, kubernetes_api, projects_api, s3_api,
         servers_api
     };
@@ -1435,6 +1447,9 @@ async fn perform_action(
                 .await
                 .map_err(|e| e.to_string())
         }
+        (ResourceTab::Apps, ActionKind::Delete) => apps_api::delete_app(config, &id.to_string())
+            .await
+            .map_err(|e| e.to_string()),
         _ => Err("action not supported for this resource".to_string())
     };
 

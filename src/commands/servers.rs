@@ -899,5 +899,150 @@ pub async fn reinstall(config: &Configuration, id: i32, os_id: i32) -> Result<()
     Ok(())
 }
 
+/// Updates a server's name and/or comment.
+///
+/// # Overview
+///
+/// Sends a partial [`models::UpdateServer`] that touches only the provided
+/// `name` and `comment`, leaving every other attribute unchanged.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] on network or API failures.
+pub async fn set(
+    config: &Configuration,
+    id: i32,
+    name: Option<&str>,
+    comment: Option<&str>
+) -> Result<(), TwcError> {
+    let body = models::UpdateServer {
+        name: name.map(String::from),
+        comment: comment.map(String::from),
+        ..Default::default()
+    };
+    servers_api::update_server(config, id, body).await?;
+    println!("{}", t!("cli.server_updated", id => id));
+    Ok(())
+}
+
+/// Compact row for the server disk-backup list table.
+#[derive(Tabled, serde::Serialize)]
+struct BackupRow {
+    #[tabled(rename = "ID")]
+    id:         String,
+    #[tabled(rename = "Disk ID")]
+    disk_id:    String,
+    #[tabled(rename = "Status")]
+    status:     String,
+    #[tabled(rename = "Created At")]
+    created_at: String,
+    #[tabled(rename = "Size (MB)")]
+    size:       String
+}
+
+impl fmt::Display for BackupRow {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{} {} {} {} {}",
+            self.id, self.disk_id, self.status, self.created_at, self.size
+        )
+    }
+}
+
+/// Lists the disk backups of a server.
+///
+/// # Overview
+///
+/// Server backups are stored per disk. This resolves the server's disks via
+/// [`servers_api::get_server_disks`] and then fetches each disk's backups via
+/// [`servers_api::get_server_disk_backups`], flattening them into a single
+/// table that pairs every backup with its owning disk id.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] if a disk id does not fit in 32 bits or on
+/// network and API failures.
+pub async fn backup_list(
+    config: &Configuration,
+    id: i32,
+    format: OutputFormat
+) -> Result<(), TwcError> {
+    let disks = servers_api::get_server_disks(config, id).await?;
+
+    let mut rows: Vec<BackupRow> = Vec::new();
+    for disk in &disks.server_disks {
+        let disk_id = i32::try_from(disk.id).map_err(|e| TwcError::Api(e.to_string()))?;
+        let resp = servers_api::get_server_disk_backups(config, id, disk_id).await?;
+        for b in &resp.backups {
+            rows.push(BackupRow {
+                id:         fmt_id(b.id),
+                disk_id:    fmt_id(disk.id),
+                status:     format!("{:?}", b.status),
+                created_at: b.created_at.clone(),
+                size:       fmt_id(b.size)
+            });
+        }
+    }
+
+    match format {
+        OutputFormat::Table => {
+            if rows.is_empty() {
+                println!("{}", t!("cli.no_server_backups_found"));
+            } else {
+                println!("{}", crate::output::render_table(&rows));
+            }
+        }
+        OutputFormat::Json | OutputFormat::Yaml => {
+            if let Some(out) = crate::output::serialized(format, &rows) {
+                println!("{}", out?);
+            }
+        }
+        OutputFormat::Quiet => {
+            for row in &rows {
+                println!("{}", row.id);
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Creates a disk backup for a server's primary disk.
+///
+/// # Overview
+///
+/// Resolves the server's disks via [`servers_api::get_server_disks`] and picks
+/// the system disk (falling back to the first disk), then submits a
+/// [`models::CreateServerDiskBackupRequest`] via
+/// [`servers_api::create_server_disk_backup`]. The new backup id is printed on
+/// success.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] if the server has no disks, if a disk id does not
+/// fit in 32 bits, or on network and API failures.
+pub async fn backup_create(
+    config: &Configuration,
+    id: i32,
+    comment: Option<&str>
+) -> Result<(), TwcError> {
+    let disks = servers_api::get_server_disks(config, id).await?;
+    let disk = disks
+        .server_disks
+        .iter()
+        .find(|d| d.is_system)
+        .or_else(|| disks.server_disks.first())
+        .ok_or_else(|| TwcError::Api(t!("cli.server_no_disks", id => id).to_string()))?;
+    let disk_id = i32::try_from(disk.id).map_err(|e| TwcError::Api(e.to_string()))?;
+
+    let mut body = models::CreateServerDiskBackupRequest::new();
+    body.comment = comment.map(String::from);
+
+    let resp = servers_api::create_server_disk_backup(config, id, disk_id, Some(body)).await?;
+    let backup_id = resp.backup.map(|b| fmt_id(b.id)).unwrap_or_default();
+    println!("{}", t!("cli.server_backup_created", id => backup_id));
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests;

@@ -285,6 +285,33 @@ pub enum ServerCommands {
         /// Availability zone (e.g. spb-1, msk-1, ams-1).
         #[arg(long)]
         availability_zone: Option<String>
+    },
+    /// Update a server's name and/or comment.
+    Set {
+        /// Server ID.
+        #[arg(long)]
+        id:      i32,
+        /// New name.
+        #[arg(long)]
+        name:    Option<String>,
+        /// New comment.
+        #[arg(long)]
+        comment: Option<String>
+    },
+    /// List disk backups of a server.
+    BackupList {
+        /// Server ID.
+        #[arg(long)]
+        id: i32
+    },
+    /// Create a disk backup of a server's system disk.
+    BackupCreate {
+        /// Server ID.
+        #[arg(long)]
+        id:      i32,
+        /// Optional backup comment.
+        #[arg(long)]
+        comment: Option<String>
     }
 }
 

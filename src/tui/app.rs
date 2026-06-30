@@ -501,7 +501,8 @@ impl ResourceTab {
             | Self::Projects
             | Self::DedicatedServers
             | Self::AiAgents
-            | Self::KnowledgeBases => &[Delete],
+            | Self::KnowledgeBases
+            | Self::Apps => &[Delete],
             _ => &[]
         }
     }
@@ -1190,6 +1191,7 @@ impl App {
                 .get(real)
                 .map(|d| (d.id, d.name.clone())),
             ResourceTab::AiAgents => self.ai_agents.get(real).map(|a| (a.id, a.name.clone())),
+            ResourceTab::Apps => self.apps.get(real).map(|a| (a.id, a.name.clone())),
             ResourceTab::KnowledgeBases => self
                 .knowledge_bases
                 .get(real)
