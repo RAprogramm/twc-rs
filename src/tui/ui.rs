@@ -8,11 +8,11 @@ use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, BorderType, Borders, Clear, Paragraph}
+    widgets::{Block, BorderType, Borders, Clear, List, ListItem, ListState, Paragraph}
 };
 
 use crate::tui::{
-    app::{App, Focus, ResourceTab},
+    app::{App, DrillView, Focus, ResourceTab},
     themes::Palette,
     widgets::{
         Widget, account::AccountWidget, help::HelpWidget, resource_tabs::ResourceTabsWidget
@@ -253,6 +253,11 @@ fn render_confirm(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
 /// * `app` - The application state.
 /// * `palette` - The theme color palette.
 fn render_content(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
+    if let Some(view) = app.drill_view() {
+        render_drill(frame, area, view, palette);
+        return;
+    }
+
     let list_pct = app.list_width_pct.clamp(20, 70);
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
@@ -365,7 +370,7 @@ fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, palette: &Palette
         key("j/k"),
         lbl(" move   "),
         key("⏎"),
-        lbl(" actions   "),
+        lbl(" open   "),
         key("^K"),
         lbl(" cmds   "),
         key("?"),
@@ -392,4 +397,59 @@ fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, palette: &Palette
             .border_style(Style::default().fg(palette.border))
     );
     frame.render_widget(paragraph, area);
+}
+
+/// Renders the drill-in view listing the resources contained in a parent.
+fn render_drill(frame: &mut Frame, area: Rect, view: &DrillView, palette: &Palette) {
+    let items: Vec<ListItem> = if view.items.is_empty() {
+        vec![ListItem::new(Line::from(Span::styled(
+            "  (empty — no resources in this project)",
+            Style::default().fg(palette.dim)
+        )))]
+    } else {
+        view.items
+            .iter()
+            .map(|item| {
+                ListItem::new(Line::from(vec![
+                    Span::styled(
+                        format!("{:<11}", item.kind),
+                        Style::default().fg(palette.dim)
+                    ),
+                    Span::styled(
+                        item.name.clone(),
+                        Style::default()
+                            .fg(palette.fg)
+                            .add_modifier(Modifier::BOLD)
+                    ),
+                    Span::raw("   "),
+                    Span::styled(item.detail.clone(), Style::default().fg(palette.accent)),
+                ]))
+            })
+            .collect()
+    };
+
+    let list = List::new(items)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(palette.accent))
+                .title(Line::from(Span::styled(
+                    format!(" {}  —  Esc back ", view.title),
+                    Style::default()
+                        .fg(palette.title)
+                        .add_modifier(Modifier::BOLD)
+                )))
+        )
+        .highlight_style(
+            Style::default()
+                .fg(palette.bg)
+                .bg(palette.accent)
+                .add_modifier(Modifier::BOLD)
+        )
+        .highlight_symbol("\u{2503} ");
+
+    let mut state = ListState::default();
+    state.select(Some(view.selected));
+    frame.render_stateful_widget(list, area, &mut state);
 }

@@ -107,6 +107,20 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
         return true;
     }
 
+    if app.drill_open() {
+        match key.code {
+            KeyCode::Char('Q') => {
+                app.quit();
+                return false;
+            }
+            KeyCode::Esc | KeyCode::Char('q' | 'h') | KeyCode::Left => app.close_drill(),
+            KeyCode::Char('j') | KeyCode::Down => app.drill_next(),
+            KeyCode::Char('k') | KeyCode::Up => app.drill_previous(),
+            _ => {}
+        }
+        return true;
+    }
+
     match key.code {
         KeyCode::Char('Q') => {
             app.quit();
@@ -148,7 +162,11 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
             true
         }
         KeyCode::Enter => {
-            app.open_action_menu();
+            if app.can_drill() {
+                app.request_drill();
+            } else {
+                app.open_action_menu();
+            }
             true
         }
         _ => true

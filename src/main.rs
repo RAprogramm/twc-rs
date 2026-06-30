@@ -775,6 +775,20 @@ async fn run_dashboard(
             spawn_one_shot_refresh(tx.clone(), token.clone(), theme, interval);
         }
 
+        if let Some((drill_tab, drill_id, drill_name)) = app.take_drill_request() {
+            use tui::app::LogLevel;
+            let config = authenticated(token.clone());
+            match fetch_drill(&config, drill_tab, drill_id, &drill_name).await {
+                Ok(view) => {
+                    app.log(LogLevel::Info, format!("opened {drill_name}"));
+                    app.open_drill(view);
+                }
+                Err(e) => {
+                    app.log(LogLevel::Error, format!("open {drill_name} failed: {e}"));
+                }
+            }
+        }
+
         if let Some(action) = app.take_dispatch() {
             use tui::app::LogLevel;
             app.log(
@@ -796,6 +810,73 @@ async fn run_dashboard(
         .show_cursor()
         .map_err(|e| TwcError::Io(e.to_string()))?;
     Ok(())
+}
+
+#[cfg(feature = "tui")]
+async fn fetch_drill(
+    config: &timeweb_rs::apis::configuration::Configuration,
+    tab: tui::app::ResourceTab,
+    id: i32,
+    name: &str
+) -> Result<tui::app::DrillView, String> {
+    use tui::app::{DrillItem, DrillView, ResourceTab};
+
+    match tab {
+        ResourceTab::Projects => {
+            let resp = timeweb_rs::apis::projects_api::get_all_project_resources(config, id)
+                .await
+                .map_err(|e| e.to_string())?;
+            let mut items = Vec::new();
+            for s in &resp.servers {
+                items.push(DrillItem {
+                    kind:   "Server".to_string(),
+                    name:   s.name.clone(),
+                    detail: format!("{:?}", s.status)
+                });
+            }
+            for d in &resp.databases {
+                items.push(DrillItem {
+                    kind:   "Database".to_string(),
+                    name:   d.name.clone(),
+                    detail: d.r#type.clone()
+                });
+            }
+            for b in &resp.buckets {
+                items.push(DrillItem {
+                    kind:   "S3 bucket".to_string(),
+                    name:   b.name.clone(),
+                    detail: String::new()
+                });
+            }
+            for c in &resp.clusters {
+                items.push(DrillItem {
+                    kind:   "Kubernetes".to_string(),
+                    name:   c.name.clone(),
+                    detail: format!("{:?}", c.status)
+                });
+            }
+            for b in &resp.balancers {
+                items.push(DrillItem {
+                    kind:   "Balancer".to_string(),
+                    name:   b.name.clone(),
+                    detail: format!("{:?}", b.status)
+                });
+            }
+            for d in &resp.dedicated_servers {
+                items.push(DrillItem {
+                    kind:   "Dedicated".to_string(),
+                    name:   d.name.clone(),
+                    detail: String::new()
+                });
+            }
+            Ok(DrillView {
+                title: format!("Project '{name}'  ({} resources)", items.len()),
+                items,
+                selected: 0
+            })
+        }
+        _ => Err("this resource cannot be entered".to_string())
+    }
 }
 
 #[cfg(feature = "tui")]

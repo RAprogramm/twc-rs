@@ -634,6 +634,52 @@ fn palette_run_delete_requires_confirm() {
 }
 
 #[test]
+fn drill_request_only_on_projects() {
+    let mut app = App::new(5);
+    app.servers = vec![make_server(7, "web", "On")];
+    app.request_drill();
+    assert!(app.take_drill_request().is_none());
+
+    app.active_tab = ResourceTab::Projects;
+    app.projects = vec![make_project(3, "ratma")];
+    assert!(app.can_drill());
+    app.request_drill();
+    let req = app.take_drill_request().expect("drill requested");
+    assert_eq!(req, (ResourceTab::Projects, 3, "ratma".to_string()));
+}
+
+#[test]
+fn drill_view_navigation() {
+    use crate::tui::app::{DrillItem, DrillView};
+    let mut app = App::new(5);
+    app.open_drill(DrillView {
+        title:    "Project 'x'".to_string(),
+        items:    vec![
+            DrillItem {
+                kind:   "Server".to_string(),
+                name:   "a".to_string(),
+                detail: String::new()
+            },
+            DrillItem {
+                kind:   "Database".to_string(),
+                name:   "b".to_string(),
+                detail: String::new()
+            },
+        ],
+        selected: 0
+    });
+    assert!(app.drill_open());
+    app.drill_next();
+    assert_eq!(app.drill_view().unwrap().selected, 1);
+    app.drill_next();
+    assert_eq!(app.drill_view().unwrap().selected, 1);
+    app.drill_previous();
+    assert_eq!(app.drill_view().unwrap().selected, 0);
+    app.close_drill();
+    assert!(!app.drill_open());
+}
+
+#[test]
 fn log_caps_at_200_entries() {
     let mut app = App::new(5);
     for i in 0..250 {
