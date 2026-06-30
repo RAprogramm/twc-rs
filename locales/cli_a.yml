@@ -153,3 +153,24 @@ cli.registry_updated:
 cli.no_repositories_found:
   en: "No repositories found."
   ru: "Репозитории не найдены."
+cli.server_starting:
+  en: "Server %{id} is starting."
+  ru: "Сервер %{id} запускается."
+cli.server_shutting_down:
+  en: "Server %{id} is shutting down."
+  ru: "Сервер %{id} выключается."
+cli.server_cloned:
+  en: "Server cloned (new id: %{id})."
+  ru: "Сервер склонирован (новый id: %{id})."
+cli.server_password_reset:
+  en: "Root password reset for server %{id}; new password sent by the provider."
+  ru: "Пароль root для сервера %{id} сброшен; новый пароль отправлен провайдером."
+cli.no_os_found:
+  en: "No OS images found."
+  ru: "Образы ОС не найдены."
+cli.no_software_found:
+  en: "No software found."
+  ru: "Софт не найден."
+cli.no_configurators_found:
+  en: "No configurators found."
+  ru: "Конфигураторы не найдены."

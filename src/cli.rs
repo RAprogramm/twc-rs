@@ -175,7 +175,39 @@ pub enum ServerCommands {
         /// Server ID.
         #[arg(long)]
         id: i32
-    }
+    },
+    /// Power a server on.
+    Start {
+        /// Server ID.
+        #[arg(long)]
+        id: i32
+    },
+    /// Gracefully shut a server down.
+    Shutdown {
+        /// Server ID.
+        #[arg(long)]
+        id: i32
+    },
+    /// Clone a server by ID.
+    Clone {
+        /// Server ID.
+        #[arg(long)]
+        id: i32
+    },
+    /// Reset a server's root password.
+    ResetPassword {
+        /// Server ID.
+        #[arg(long)]
+        id: i32
+    },
+    /// List available server presets.
+    ListPresets,
+    /// List installable OS images.
+    ListOs,
+    /// List available pre-installable software.
+    ListSoftware,
+    /// List server configurators (custom builds).
+    ListConfigurators
 }
 
 /// SSH key subcommands.

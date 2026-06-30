@@ -176,6 +176,48 @@ fn save_token_to_config(token: &str) -> Result<(), TwcError> {
     Ok(())
 }
 
+/// Dispatches a server subcommand. Kept separate so its future is boxed at the
+/// call site, keeping the main `run` stack frame small.
+async fn handle_server(
+    cmd: ServerCommands,
+    config: &timeweb_rs::apis::configuration::Configuration,
+    format: OutputFormat
+) -> Result<(), TwcError> {
+    match cmd {
+        ServerCommands::List {
+            limit,
+            offset
+        } => commands::servers::list(config, limit, offset, format).await,
+        ServerCommands::Info {
+            id
+        } => commands::servers::info(config, id, format).await,
+        ServerCommands::Delete {
+            id
+        } => commands::servers::delete(config, id).await,
+        ServerCommands::Reboot {
+            id
+        } => commands::servers::reboot(config, id).await,
+        ServerCommands::Start {
+            id
+        } => commands::servers::start(config, id).await,
+        ServerCommands::Shutdown {
+            id
+        } => commands::servers::shutdown(config, id).await,
+        ServerCommands::Clone {
+            id
+        } => commands::servers::clone(config, id).await,
+        ServerCommands::ResetPassword {
+            id
+        } => commands::servers::reset_password(config, id).await,
+        ServerCommands::ListPresets => commands::servers::list_presets(config, format).await,
+        ServerCommands::ListOs => commands::servers::list_os(config, format).await,
+        ServerCommands::ListSoftware => commands::servers::list_software(config, format).await,
+        ServerCommands::ListConfigurators => {
+            commands::servers::list_configurators(config, format).await
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() {
     if let Err(e) = run().await {
@@ -273,21 +315,7 @@ async fn run() -> Result<(), TwcError> {
         Commands::Server(cmd) => {
             let token = ensure_token(cli.token.as_deref(), cli.profile.as_deref())?;
             let config = authenticated(token);
-            match cmd {
-                ServerCommands::List {
-                    limit,
-                    offset
-                } => commands::servers::list(&config, limit, offset, format).await,
-                ServerCommands::Info {
-                    id
-                } => commands::servers::info(&config, id, format).await,
-                ServerCommands::Delete {
-                    id
-                } => commands::servers::delete(&config, id).await,
-                ServerCommands::Reboot {
-                    id
-                } => commands::servers::reboot(&config, id).await
-            }
+            Box::pin(handle_server(cmd, &config, format)).await
         }
         Commands::Ssh(cmd) => {
             let token = ensure_token(cli.token.as_deref(), cli.profile.as_deref())?;
