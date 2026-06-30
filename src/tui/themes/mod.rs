@@ -73,18 +73,18 @@ impl Theme {
         match self {
             Self::GruvboxDark => Palette {
                 bg:           Color::Rgb(40, 40, 40),
-                fg:           Color::Rgb(250, 241, 242),
-                border:       Color::Rgb(101, 123, 131),
-                title:        Color::Rgb(196, 160, 109),
-                header:       Color::Rgb(250, 241, 242),
-                selected:     Color::Rgb(250, 241, 242),
-                accent:       Color::Rgb(137, 180, 250),
-                success:      Color::Rgb(166, 227, 161),
-                warning:      Color::Rgb(249, 226, 175),
-                error:        Color::Rgb(243, 113, 113),
+                fg:           Color::Rgb(235, 219, 178),
+                border:       Color::Rgb(102, 92, 84),
+                title:        Color::Rgb(250, 189, 47),
+                header:       Color::Rgb(254, 128, 25),
+                selected:     Color::Rgb(235, 219, 178),
+                accent:       Color::Rgb(131, 165, 152),
+                success:      Color::Rgb(184, 187, 38),
+                warning:      Color::Rgb(250, 189, 47),
+                error:        Color::Rgb(251, 73, 52),
                 dim:          Color::Rgb(146, 131, 116),
-                tab_active:   Color::Rgb(250, 241, 242),
-                tab_inactive: Color::Rgb(146, 131, 116)
+                tab_active:   Color::Rgb(250, 189, 47),
+                tab_inactive: Color::Rgb(168, 153, 132)
             },
             Self::GruvboxLight => Palette {
                 bg:           Color::Rgb(251, 241, 210),
