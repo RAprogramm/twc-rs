@@ -1337,11 +1337,12 @@ impl App {
                 .filter(|r| !data.load_errors.contains(r))
                 .cloned()
                 .collect();
-            for resource in &data.load_errors {
-                self.log(LogLevel::Error, format!("failed to load {resource}"));
+            for entry in &data.load_errors {
+                self.log(LogLevel::Error, format!("load failed — {entry}"));
             }
-            for resource in recovered {
-                self.log(LogLevel::Success, format!("{resource} recovered"));
+            for entry in recovered {
+                let name = entry.split(':').next().unwrap_or(&entry);
+                self.log(LogLevel::Success, format!("{name} recovered"));
             }
             self.last_load_errors = data.load_errors.clone();
         }

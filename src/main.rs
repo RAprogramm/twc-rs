@@ -1030,32 +1030,32 @@ async fn refresh_all(
         timeweb_rs::apis::payments_api::get_finances(&c)
     );
 
+    let err_of = |e: Option<String>, name: &str| e.map(|msg| format!("{name}: {msg}"));
     app.last_load_errors = [
-        ("account", account_res.is_err()),
-        ("servers", servers_res.is_err()),
-        ("databases", dbs_res.is_err()),
-        ("s3", s3_res.is_err()),
-        ("kubernetes", k8s_res.is_err()),
-        ("projects", projects_res.is_err()),
-        ("balancers", balancers_res.is_err()),
-        ("registries", registries_res.is_err()),
-        ("domains", domains_res.is_err()),
-        ("firewall", firewalls_res.is_err()),
-        ("floating IPs", floating_ips_res.is_err()),
-        ("images", images_res.is_err()),
-        ("network drives", network_drives_res.is_err()),
-        ("VPCs", vpcs_res.is_err()),
-        ("dedicated servers", dedicated_servers_res.is_err()),
-        ("mail", mails_res.is_err()),
-        ("apps", apps_res.is_err()),
-        ("AI agents", ai_agents_res.is_err()),
-        ("knowledge bases", knowledge_bases_res.is_err()),
-        ("SSH keys", ssh_keys_res.is_err()),
-        ("finances", finances_res.is_err())
+        err_of(account_res.as_ref().err().map(ToString::to_string), "account"),
+        err_of(servers_res.as_ref().err().map(ToString::to_string), "servers"),
+        err_of(dbs_res.as_ref().err().map(ToString::to_string), "databases"),
+        err_of(s3_res.as_ref().err().map(ToString::to_string), "s3"),
+        err_of(k8s_res.as_ref().err().map(ToString::to_string), "kubernetes"),
+        err_of(projects_res.as_ref().err().map(ToString::to_string), "projects"),
+        err_of(balancers_res.as_ref().err().map(ToString::to_string), "balancers"),
+        err_of(registries_res.as_ref().err().map(ToString::to_string), "registries"),
+        err_of(domains_res.as_ref().err().map(ToString::to_string), "domains"),
+        err_of(firewalls_res.as_ref().err().map(ToString::to_string), "firewall"),
+        err_of(floating_ips_res.as_ref().err().map(ToString::to_string), "floating IPs"),
+        err_of(images_res.as_ref().err().map(ToString::to_string), "images"),
+        err_of(network_drives_res.as_ref().err().map(ToString::to_string), "network drives"),
+        err_of(vpcs_res.as_ref().err().map(ToString::to_string), "VPCs"),
+        err_of(dedicated_servers_res.as_ref().err().map(ToString::to_string), "dedicated servers"),
+        err_of(mails_res.as_ref().err().map(ToString::to_string), "mail"),
+        err_of(apps_res.as_ref().err().map(ToString::to_string), "apps"),
+        err_of(ai_agents_res.as_ref().err().map(ToString::to_string), "AI agents"),
+        err_of(knowledge_bases_res.as_ref().err().map(ToString::to_string), "knowledge bases"),
+        err_of(ssh_keys_res.as_ref().err().map(ToString::to_string), "SSH keys"),
+        err_of(finances_res.as_ref().err().map(ToString::to_string), "finances")
     ]
     .into_iter()
-    .filter(|(_, failed)| *failed)
-    .map(|(name, _)| name.to_string())
+    .flatten()
     .collect();
 
     let mut account_id = 0.0;
