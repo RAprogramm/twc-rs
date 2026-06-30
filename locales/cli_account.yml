@@ -1,0 +1,17 @@
+_version: 2
+
+cli.account_access_ip_restrictions:
+  en: IP restrictions enabled
+  ru: Ограничения по IP включены
+cli.account_access_country_restrictions:
+  en: Country restrictions enabled
+  ru: Ограничения по странам включены
+cli.account_access_allowed_ips:
+  en: Allowed IPs
+  ru: Разрешённые IP
+cli.account_access_allowed_countries:
+  en: Allowed countries
+  ru: Разрешённые страны
+cli.account_access_none:
+  en: "—"
+  ru: "—"

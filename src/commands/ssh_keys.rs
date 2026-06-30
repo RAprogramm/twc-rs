@@ -7,7 +7,7 @@ use rust_i18n::t;
 use tabled::Tabled;
 use timeweb_rs::{
     apis::{configuration::Configuration, ssh_api},
-    models::CreateKeyRequest
+    models::{CreateKeyRequest, UpdateKeyRequest}
 };
 
 use crate::{error::TwcError, output::OutputFormat};
@@ -165,6 +165,73 @@ pub async fn add(
 pub async fn delete(config: &Configuration, id: i32) -> Result<(), TwcError> {
     ssh_api::delete_key(config, id).await?;
     println!("{}", t!("cli.ssh_key_deleted", id => id));
+    Ok(())
+}
+
+/// Shows detailed information about a single SSH key.
+///
+/// # Overview
+///
+/// Fetches one SSH key by ID and renders it in the requested format.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] on network or API failures.
+pub async fn info(config: &Configuration, id: i32, format: OutputFormat) -> Result<(), TwcError> {
+    let resp = ssh_api::get_key(config, id).await?;
+    let key = &resp.ssh_key;
+
+    match format {
+        OutputFormat::Table => {
+            println!("ID:            {}", fmt_id(key.id));
+            println!("Name:          {}", key.name);
+            println!(
+                "Default:       {}",
+                key.is_default
+                    .map_or_else(|| "-".to_string(), |d| d.to_string())
+            );
+            println!("Fingerprint:   {}", fingerprint(&key.body));
+            println!("Created:       {}", key.created_at.to_rfc3339());
+            println!("Used by:       {}", fmt_id(key.used_by.len()));
+            println!("Body:          {}", key.body);
+        }
+        OutputFormat::Json | OutputFormat::Yaml => {
+            if let Some(out) = crate::output::serialized(format, key.as_ref()) {
+                println!("{}", out?);
+            }
+        }
+        OutputFormat::Quiet => {
+            println!("{}\t{}", fmt_id(key.id), key.name);
+        }
+    }
+    Ok(())
+}
+
+/// Edits an SSH key's name and/or default flag.
+///
+/// # Overview
+///
+/// Sends a partial update for the specified SSH key. Only the provided
+/// fields are changed; omitted fields are left untouched.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] on network or API failures.
+pub async fn edit(
+    config: &Configuration,
+    id: i32,
+    name: Option<&str>,
+    is_default: Option<bool>
+) -> Result<(), TwcError> {
+    let mut req = UpdateKeyRequest::new();
+    req.name = name.map(ToString::to_string);
+    req.is_default = is_default;
+
+    let resp = ssh_api::update_key(config, id, req).await?;
+    println!(
+        "{}",
+        t!("cli.ssh_key_updated", name => resp.ssh_key.name, id => fmt_id(resp.ssh_key.id))
+    );
     Ok(())
 }
 

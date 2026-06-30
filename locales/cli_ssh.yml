@@ -1,0 +1,5 @@
+_version: 2
+
+cli.ssh_key_updated:
+  en: "SSH key %{name} updated (id: %{id})."
+  ru: "SSH-ключ %{name} обновлён (id: %{id})."

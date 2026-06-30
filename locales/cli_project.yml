@@ -1,0 +1,8 @@
+_version: 2
+
+cli.project_updated:
+  en: "Project '%{name}' updated (id: %{id})."
+  ru: "Проект «%{name}» обновлён (id: %{id})."
+cli.no_project_resources:
+  en: "No resources found in this project."
+  ru: "В этом проекте нет ресурсов."

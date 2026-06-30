@@ -7,7 +7,7 @@ use rust_i18n::t;
 use tabled::Tabled;
 use timeweb_rs::{
     apis::{configuration::Configuration, projects_api},
-    models::CreateProject
+    models::{CreateProject, UpdateProject}
 };
 
 use crate::{error::TwcError, output::OutputFormat};
@@ -37,6 +37,25 @@ impl fmt::Display for ProjectRow {
             "{} {} {} {}",
             self.id, self.name, self.description, self.is_default
         )
+    }
+}
+
+/// Compact row for the project resources table.
+#[derive(Tabled)]
+struct ResourceRow {
+    #[tabled(rename = "Kind")]
+    kind:   String,
+    #[tabled(rename = "ID")]
+    id:     String,
+    #[tabled(rename = "Name")]
+    name:   String,
+    #[tabled(rename = "Status")]
+    status: String
+}
+
+impl fmt::Display for ResourceRow {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} {} {} {}", self.kind, self.id, self.name, self.status)
     }
 }
 
@@ -126,6 +145,144 @@ pub async fn create(
 pub async fn delete(config: &Configuration, id: i32) -> Result<(), TwcError> {
     projects_api::delete_project(config, id).await?;
     println!("{}", t!("cli.project_deleted", id => id));
+    Ok(())
+}
+
+/// Updates a project's metadata.
+///
+/// # Overview
+///
+/// Sends a partial update for the specified project. Only the name and
+/// description are changed when provided; omitted fields are left as-is.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] on network or API failures.
+pub async fn set(
+    config: &Configuration,
+    id: i32,
+    name: Option<&str>,
+    description: Option<&str>,
+    format: OutputFormat
+) -> Result<(), TwcError> {
+    let mut req = UpdateProject::new();
+    req.name = name.map(String::from);
+    if let Some(desc) = description {
+        req.description = Some(Some(desc.to_string()));
+    }
+
+    let resp = projects_api::update_project(config, id, req).await?;
+    let project = &resp.project;
+
+    match format {
+        OutputFormat::Table => {
+            println!(
+                "{}",
+                t!("cli.project_updated", name => project.name, id => fmt_id(project.id))
+            );
+        }
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out = crate::output::serialized(format, project)
+                .transpose()?
+                .unwrap_or_default();
+            println!("{out}");
+        }
+        OutputFormat::Quiet => {
+            println!("{}\t{}", fmt_id(project.id), project.name);
+        }
+    }
+    Ok(())
+}
+
+/// Lists all resources belonging to a project.
+///
+/// # Overview
+///
+/// Fetches every resource attached to the project and flattens the
+/// per-type vectors (servers, databases, buckets, clusters, balancers,
+/// dedicated servers) into a single table with a `Kind` column.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] on network or API failures.
+pub async fn resources(
+    config: &Configuration,
+    id: i32,
+    format: OutputFormat
+) -> Result<(), TwcError> {
+    let resp = projects_api::get_all_project_resources(config, id).await?;
+
+    let mut rows: Vec<ResourceRow> = Vec::new();
+    for s in &resp.servers {
+        rows.push(ResourceRow {
+            kind:   "Server".to_string(),
+            id:     fmt_id(s.id),
+            name:   s.name.clone(),
+            status: format!("{:?}", s.status)
+        });
+    }
+    for d in &resp.databases {
+        rows.push(ResourceRow {
+            kind:   "Database".to_string(),
+            id:     fmt_id(d.id),
+            name:   d.name.clone(),
+            status: format!("{:?}", d.status)
+        });
+    }
+    for b in &resp.buckets {
+        rows.push(ResourceRow {
+            kind:   "S3 bucket".to_string(),
+            id:     fmt_id(b.id),
+            name:   b.name.clone(),
+            status: format!("{:?}", b.status)
+        });
+    }
+    for c in &resp.clusters {
+        rows.push(ResourceRow {
+            kind:   "Kubernetes".to_string(),
+            id:     fmt_id(c.id),
+            name:   c.name.clone(),
+            status: format!("{:?}", c.status)
+        });
+    }
+    for b in &resp.balancers {
+        rows.push(ResourceRow {
+            kind:   "Balancer".to_string(),
+            id:     fmt_id(b.id),
+            name:   b.name.clone(),
+            status: format!("{:?}", b.status)
+        });
+    }
+    for d in &resp.dedicated_servers {
+        rows.push(ResourceRow {
+            kind:   "Dedicated".to_string(),
+            id:     fmt_id(d.id),
+            name:   d.name.clone(),
+            status: format!("{:?}", d.status)
+        });
+    }
+
+    match format {
+        OutputFormat::Table => {
+            if rows.is_empty() {
+                println!("{}", t!("cli.no_project_resources"));
+            } else {
+                let table = crate::output::render_table(&rows);
+                println!("{table}");
+            }
+        }
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out = crate::output::serialized(format, &resp)
+                .transpose()?
+                .unwrap_or_default();
+            println!("{out}");
+        }
+        OutputFormat::Quiet => {
+            for row in &rows {
+                println!("{}\t{}\t{}", row.kind, row.id, row.name);
+            }
+        }
+    }
     Ok(())
 }
 

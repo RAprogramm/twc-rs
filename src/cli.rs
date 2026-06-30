@@ -234,6 +234,24 @@ pub enum SshCommands {
         /// SSH key ID.
         #[arg(long)]
         id: i32
+    },
+    /// Show detailed information about an SSH key.
+    Info {
+        /// SSH key ID.
+        #[arg(long)]
+        id: i32
+    },
+    /// Edit an SSH key's name and/or default flag.
+    Edit {
+        /// SSH key ID.
+        #[arg(long)]
+        id:      i32,
+        /// New name for the key.
+        #[arg(long)]
+        name:    Option<String>,
+        /// Mark this key as default for new servers.
+        #[arg(long)]
+        default: Option<bool>
     }
 }
 
@@ -254,6 +272,24 @@ pub enum ProjectCommands {
     },
     /// Delete a project by ID.
     Delete {
+        /// Project ID.
+        #[arg(long)]
+        id: i32
+    },
+    /// Update a project's name and/or description.
+    Set {
+        /// Project ID.
+        #[arg(long)]
+        id:          i32,
+        /// New project name (max 255 chars).
+        #[arg(long)]
+        name:        Option<String>,
+        /// New project description (max 255 chars).
+        #[arg(long)]
+        description: Option<String>
+    },
+    /// List all resources in a project.
+    Resources {
         /// Project ID.
         #[arg(long)]
         id: i32
@@ -1175,5 +1211,7 @@ pub enum VpcCommands {
 #[derive(Subcommand, Debug)]
 pub enum AccountCommands {
     /// Show account login, company and balance.
-    Show
+    Show,
+    /// Show account auth access restrictions (IP/country allow lists).
+    Access
 }

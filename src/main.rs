@@ -437,7 +437,15 @@ async fn run() -> Result<(), TwcError> {
                 } => commands::ssh_keys::add(&config, &name, file.as_deref(), default).await,
                 SshCommands::Delete {
                     id
-                } => commands::ssh_keys::delete(&config, id).await
+                } => commands::ssh_keys::delete(&config, id).await,
+                SshCommands::Info {
+                    id
+                } => commands::ssh_keys::info(&config, id, format).await,
+                SshCommands::Edit {
+                    id,
+                    name,
+                    default
+                } => commands::ssh_keys::edit(&config, id, name.as_deref(), default).await
             }
         }
         Commands::Project(cmd) => {
@@ -451,7 +459,24 @@ async fn run() -> Result<(), TwcError> {
                 } => commands::projects::create(&config, &name, description.as_deref()).await,
                 ProjectCommands::Delete {
                     id
-                } => commands::projects::delete(&config, id).await
+                } => commands::projects::delete(&config, id).await,
+                ProjectCommands::Set {
+                    id,
+                    name,
+                    description
+                } => {
+                    commands::projects::set(
+                        &config,
+                        id,
+                        name.as_deref(),
+                        description.as_deref(),
+                        format
+                    )
+                    .await
+                }
+                ProjectCommands::Resources {
+                    id
+                } => commands::projects::resources(&config, id, format).await
             }
         }
         Commands::Database(cmd) => {
@@ -833,7 +858,8 @@ async fn run() -> Result<(), TwcError> {
             let token = ensure_token(cli.token.as_deref(), cli.profile.as_deref())?;
             let config = authenticated(token);
             match cmd {
-                AccountCommands::Show => commands::account::show(&config, format).await
+                AccountCommands::Show => commands::account::show(&config, format).await,
+                AccountCommands::Access => commands::account::access(&config, format).await
             }
         }
         #[cfg(feature = "auth")]
