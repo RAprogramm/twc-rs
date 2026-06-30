@@ -58,7 +58,18 @@ fn resolve_token(cli_token: Option<&str>) -> Result<String, TwcError> {
 ///
 /// Only returns error if config file operations fail catastrophically.
 fn ensure_token(cli_token: Option<&str>) -> Result<String, TwcError> {
-    resolve_token(cli_token).or_else(|_| prompt_and_save_token())
+    if let Ok(token) = resolve_token(cli_token) {
+        return Ok(token);
+    }
+
+    #[cfg(feature = "auth")]
+    if let Ok(config_path) = AppConfig::path()
+        && let Ok(token) = auth::load_token(&config_path)
+    {
+        return Ok(token);
+    }
+
+    prompt_and_save_token()
 }
 
 /// Shows an interactive prompt to get a token, then saves it.
@@ -103,20 +114,17 @@ fn prompt_and_save_token() -> Result<String, TwcError> {
 
 /// Prompts user to paste a token (reads full stdin, shows masked preview).
 fn prompt_paste_token() -> Result<String, TwcError> {
-    use std::io::Read;
-
-    eprint!("Paste your API token and press Ctrl+D: ");
-    let mut buf = String::new();
-    std::io::stdin()
-        .read_to_string(&mut buf)
+    let token: String = dialoguer::Password::new()
+        .with_prompt("Paste your API token")
+        .allow_empty_password(false)
+        .interact()
         .map_err(|e| TwcError::Io(e.to_string()))?;
 
-    let token = buf.trim().to_string();
+    let token = token.trim().to_string();
     if token.is_empty() {
         return Err(TwcError::Api("empty token".to_string()));
     }
-    let masked = mask_token(&token);
-    println!("  ✓ Token received: {masked}");
+    println!("  \u{2713} {} characters received.", token.len());
     Ok(token)
 }
 
