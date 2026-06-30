@@ -5,9 +5,17 @@ use std::fmt;
 
 use rust_i18n::t;
 use tabled::Tabled;
-use timeweb_rs::apis::{configuration::Configuration, images_api};
+use timeweb_rs::{
+    apis::{configuration::Configuration, images_api},
+    models
+};
 
 use crate::{error::TwcError, output::OutputFormat};
+
+/// Formats an integer identifier for display without numeric casts.
+fn fmt_id<T: std::fmt::Display>(v: T) -> String {
+    v.to_string()
+}
 
 /// Compact row for the image list table.
 #[derive(Tabled)]
@@ -95,5 +103,106 @@ pub async fn list(config: &Configuration, format: OutputFormat) -> Result<(), Tw
 pub async fn delete(config: &Configuration, id: &str) -> Result<(), TwcError> {
     images_api::delete_image(config, id).await?;
     println!("{}", t!("cli.image_deleted", id => id));
+    Ok(())
+}
+
+/// Shows detailed information about a single image.
+///
+/// # Overview
+///
+/// Fetches one image by ID and displays its core attributes in the
+/// requested output format.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] on network or API failures.
+pub async fn info(config: &Configuration, id: &str, format: OutputFormat) -> Result<(), TwcError> {
+    let resp = images_api::get_image(config, id).await?;
+    let image = &resp.image;
+
+    match format {
+        OutputFormat::Table => {
+            println!("ID:          {}", image.id);
+            println!("Name:        {}", image.name);
+            println!("Status:      {:?}", image.status);
+            println!("Size:        {} MB", image.size);
+            println!("Location:    {}", image.location);
+            println!("Disk ID:     {}", fmt_id(image.disk_id));
+            println!("Created At:  {}", image.created_at);
+        }
+        OutputFormat::Json | OutputFormat::Yaml => {
+            if let Some(out) = crate::output::serialized(format, &resp.image) {
+                println!("{}", out?);
+            }
+        }
+        OutputFormat::Quiet => {
+            println!("{}\t{}\t{:?}", image.id, image.name, image.status);
+        }
+    }
+    Ok(())
+}
+
+/// Creates a new image in the given location.
+///
+/// # Overview
+///
+/// Builds an [`models::ImageInApi`] request with the supplied name and
+/// location and creates the image via the Timeweb Cloud API. The operating
+/// system is set to [`models::Os::CustomOs`] for a user-provided image.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] on network or API failures.
+pub async fn create(
+    config: &Configuration,
+    name: &str,
+    location: &str,
+    format: OutputFormat
+) -> Result<(), TwcError> {
+    let mut req = models::ImageInApi::new(location.to_string(), models::Os::CustomOs);
+    req.name = Some(name.to_string());
+
+    let resp = images_api::create_image(config, req).await?;
+    let image = &resp.image;
+
+    match format {
+        OutputFormat::Table => {
+            println!(
+                "{}",
+                t!("cli.image_created", name => image.name, id => image.id)
+            );
+        }
+        OutputFormat::Json | OutputFormat::Yaml => {
+            if let Some(out) = crate::output::serialized(format, &resp.image) {
+                println!("{}", out?);
+            }
+        }
+        OutputFormat::Quiet => {
+            println!("{}\t{}", image.id, image.name);
+        }
+    }
+    Ok(())
+}
+
+/// Updates an image's name.
+///
+/// # Overview
+///
+/// Sends a partial update for the specified image. Only the name is
+/// changed when provided.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] on network or API failures.
+pub async fn set(config: &Configuration, id: &str, name: Option<&str>) -> Result<(), TwcError> {
+    let mut req = models::ImageUpdateApi::new();
+    req.name = name.map(String::from);
+
+    let resp = images_api::update_image(config, id, req).await?;
+    let image = &resp.image;
+    println!(
+        "{}",
+        t!("cli.image_updated", name => image.name, id => image.id)
+    );
     Ok(())
 }

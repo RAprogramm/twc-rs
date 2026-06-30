@@ -1,0 +1,11 @@
+_version: 2
+
+cli.vpc_created:
+  en: "VPC '%{name}' created (id: %{id})."
+  ru: "Сеть VPC «%{name}» создана (id: %{id})."
+cli.vpc_updated:
+  en: "VPC '%{name}' updated (id: %{id})."
+  ru: "Сеть VPC «%{name}» обновлена (id: %{id})."
+cli.no_vpc_ports:
+  en: "No VPC ports found."
+  ru: "Порты сети VPC не найдены."

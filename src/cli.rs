@@ -1011,7 +1011,29 @@ mod tests;
 #[derive(Subcommand, Debug)]
 pub enum AppsCommands {
     /// List all cloud apps.
-    List
+    List,
+    /// Show detailed info for a single app.
+    Info {
+        /// App ID.
+        #[arg(long)]
+        id: String
+    },
+    /// Delete an app by ID.
+    Delete {
+        /// App ID.
+        #[arg(long)]
+        id: String
+    },
+    /// List available app presets (tariffs).
+    ListPresets,
+    /// List configured VCS providers.
+    ListVcsProviders,
+    /// List repositories of a VCS provider.
+    ListRepositories {
+        /// VCS provider ID.
+        #[arg(long)]
+        provider_id: String
+    }
 }
 
 /// Disk image subcommands.
@@ -1019,6 +1041,30 @@ pub enum AppsCommands {
 pub enum ImageCommands {
     /// List all disk images.
     List,
+    /// Show detailed info for an image.
+    Info {
+        /// Image ID.
+        #[arg(long)]
+        id: String
+    },
+    /// Create a new image.
+    Create {
+        /// Image name.
+        #[arg(long)]
+        name:     String,
+        /// Location where the image is created.
+        #[arg(long)]
+        location: String
+    },
+    /// Update an image's name.
+    Set {
+        /// Image ID.
+        #[arg(long)]
+        id:   String,
+        /// New image name.
+        #[arg(long)]
+        name: Option<String>
+    },
     /// Delete an image by ID.
     Delete {
         /// Image ID.
@@ -1032,6 +1078,42 @@ pub enum ImageCommands {
 pub enum IpCommands {
     /// List all floating IPs.
     List,
+    /// Show detailed info about a floating IP.
+    Info {
+        /// Floating IP ID.
+        #[arg(long)]
+        id: String
+    },
+    /// Create a new floating IP in an availability zone.
+    Create {
+        /// Availability zone (e.g. spb-1, msk-1, ams-1).
+        #[arg(long)]
+        availability_zone: String
+    },
+    /// Attach a floating IP to a resource.
+    Attach {
+        /// Floating IP ID.
+        #[arg(long)]
+        id:          String,
+        /// Resource ID to bind to.
+        #[arg(long)]
+        resource_id: i32
+    },
+    /// Detach a floating IP from its resource.
+    Detach {
+        /// Floating IP ID.
+        #[arg(long)]
+        id: String
+    },
+    /// Update a floating IP's comment.
+    Set {
+        /// Floating IP ID.
+        #[arg(long)]
+        id:      String,
+        /// New comment.
+        #[arg(long)]
+        comment: Option<String>
+    },
     /// Delete a floating IP by ID.
     Delete {
         /// Floating IP ID.
@@ -1045,6 +1127,42 @@ pub enum IpCommands {
 pub enum VpcCommands {
     /// List all virtual networks.
     List,
+    /// Show detailed information about a VPC.
+    Info {
+        /// VPC ID.
+        #[arg(long)]
+        id: String
+    },
+    /// Create a new VPC.
+    Create {
+        /// VPC name.
+        #[arg(long)]
+        name:      String,
+        /// IPv4 subnet mask (e.g. 192.168.0.0/24).
+        #[arg(long)]
+        subnet_v4: String,
+        /// Location (e.g. ru-1).
+        #[arg(long)]
+        location:  String
+    },
+    /// Update a VPC's name and/or description.
+    Set {
+        /// VPC ID.
+        #[arg(long)]
+        id:          String,
+        /// New name.
+        #[arg(long)]
+        name:        Option<String>,
+        /// New description.
+        #[arg(long)]
+        description: Option<String>
+    },
+    /// List network ports of a VPC.
+    Ports {
+        /// VPC ID.
+        #[arg(long)]
+        id: String
+    },
     /// Delete a VPC by ID.
     Delete {
         /// VPC ID.

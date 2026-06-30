@@ -1,0 +1,14 @@
+_version: 2
+
+cli.floating_ip_created:
+  en: "Floating IP %{ip} created (id: %{id})."
+  ru: "Плавающий IP %{ip} создан (id: %{id})."
+cli.floating_ip_attached:
+  en: "Floating IP %{id} attached to resource %{resource_id}."
+  ru: "Плавающий IP %{id} привязан к ресурсу %{resource_id}."
+cli.floating_ip_detached:
+  en: "Floating IP %{id} detached."
+  ru: "Плавающий IP %{id} отвязан."
+cli.floating_ip_updated:
+  en: "Floating IP %{id} updated."
+  ru: "Плавающий IP %{id} обновлён."

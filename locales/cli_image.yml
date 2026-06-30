@@ -1,0 +1,8 @@
+_version: 2
+
+cli.image_created:
+  en: "Image '%{name}' created (id: %{id})."
+  ru: "Образ «%{name}» создан (id: %{id})."
+cli.image_updated:
+  en: "Image '%{name}' updated (id: %{id})."
+  ru: "Образ «%{name}» обновлён (id: %{id})."

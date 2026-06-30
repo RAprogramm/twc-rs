@@ -1,0 +1,14 @@
+_version: 2
+
+cli.app_deleted:
+  en: "App %{id} deleted."
+  ru: "Приложение %{id} удалено."
+cli.no_app_presets:
+  en: "No app presets found."
+  ru: "Тарифы приложений не найдены."
+cli.no_vcs_providers:
+  en: "No VCS providers found."
+  ru: "VCS-провайдеры не найдены."
+cli.no_repositories:
+  en: "No repositories found."
+  ru: "Репозитории не найдены."
