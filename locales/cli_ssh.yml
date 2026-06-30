@@ -3,3 +3,11 @@ _version: 2
 cli.ssh_key_updated:
   en: "SSH key %{name} updated (id: %{id})."
   ru: "SSH-ключ %{name} обновлён (id: %{id})."
+
+cli.ssh_key_attached:
+  en: "Attached SSH key(s) %{keys} to server %{server}."
+  ru: "SSH-ключ(и) %{keys} прикреплены к серверу %{server}."
+
+cli.ssh_key_detached:
+  en: "Detached SSH key %{key} from server %{server}."
+  ru: "SSH-ключ %{key} откреплён от сервера %{server}."
