@@ -74,16 +74,17 @@ Near-complete parity with the official CLI across all resource groups
 | ip | full — list, info, create, attach, detach, set, delete |
 | kubernetes | full — clusters, node groups, nodes, addons, presets, versions, network drivers |
 | project | full — list, create, set, delete, resources |
-| server | list, info, create, clone, delete, reboot, start, shutdown, reset-password, resize, reinstall, disk, ip, history, set-nat-mode, set-boot-mode, list-presets/os/software/configurators (`vnc`, `backup` deferred — interactive) |
+| server | list, info, create, set, clone, delete, reboot, start, shutdown, reset-password, resize, reinstall, disk, ip, history, backup-list, backup-create, set-nat-mode, set-boot-mode, list-presets/os/software/configurators |
 | ssh-key | list, add, info, edit, delete |
 | storage (s3) | full — buckets, users, subdomains, transfer, presets, genconfig |
 | vpc | full — list, info, create, set, delete, ports |
 
-Deferred items are interactive (`server vnc`) or need streaming/large request
-bodies (`image upload`, custom server configurators); they are the only gaps
-and are documented rather than silently dropped. The TUI dashboard additionally
-exposes parameterless management (delete / power / clone / restart) for every
-integer-id resource.
+The only uncovered commands are `server vnc` and `image upload` — neither has
+a usable endpoint in the Timeweb SDK (there is no VNC endpoint at all, and the
+generated `upload_image` attaches no request body), so they are documented
+rather than faked. Custom server configurators (CPU/RAM/disk arrays) are also
+deferred behind the common preset path. The TUI dashboard additionally exposes
+delete / power / clone management for every integer-id resource.
 
 ## Engineering quality
 
