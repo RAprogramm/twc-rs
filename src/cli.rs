@@ -357,6 +357,24 @@ pub enum SshCommands {
         /// Mark this key as default for new servers.
         #[arg(long)]
         default: Option<bool>
+    },
+    /// Attach existing SSH key(s) to a cloud server.
+    Attach {
+        /// Target server ID.
+        #[arg(long)]
+        server: i32,
+        /// SSH key ID to attach. Repeat to attach several at once.
+        #[arg(long = "key")]
+        key:    Vec<i32>
+    },
+    /// Detach an SSH key from a cloud server.
+    Detach {
+        /// Target server ID.
+        #[arg(long)]
+        server: i32,
+        /// SSH key ID to detach.
+        #[arg(long = "key")]
+        key:    i32
     }
 }
 
