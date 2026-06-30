@@ -165,7 +165,8 @@ pub async fn list(
             engine:   format!("{}", d.r#type),
             location: d
                 .location
-                .map_or_else(|| "-".to_string(), |l| format!("{l:?}"))
+                .clone()
+                .unwrap_or_else(|| "-".to_string())
         })
         .collect();
 
@@ -538,7 +539,8 @@ pub async fn preset_list(config: &Configuration, format: OutputFormat) -> Result
                 .map_or_else(|| "-".to_string(), |pr| format!("{pr}")),
             location:    p
                 .location
-                .map_or_else(|| "-".to_string(), |l| format!("{l:?}")),
+                .clone()
+                .unwrap_or_else(|| "-".to_string()),
             description: p
                 .description_short
                 .as_deref()
