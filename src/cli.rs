@@ -537,6 +537,7 @@ pub enum KubernetesCommands {
     },
 
     /// Show cluster resources (deprecated).
+    #[command(hide = true)]
     Resources {
         /// Cluster ID.
         #[arg(long)]
