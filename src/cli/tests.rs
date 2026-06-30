@@ -66,7 +66,7 @@ fn server_list_subcommand() {
 
 #[test]
 fn server_list_with_limit_offset() {
-    let cli = parse(&["server", "list", "-l", "10", "-o", "5"]);
+    let cli = parse(&["server", "list", "--limit", "10", "--offset", "5"]);
     match &cli.command {
         Commands::Server(ServerCommands::List {
             limit,
@@ -81,7 +81,7 @@ fn server_list_with_limit_offset() {
 
 #[test]
 fn server_list_with_only_limit() {
-    let cli = parse(&["server", "list", "-l", "20"]);
+    let cli = parse(&["server", "list", "--limit", "20"]);
     match &cli.command {
         Commands::Server(ServerCommands::List {
             limit,
@@ -96,7 +96,7 @@ fn server_list_with_only_limit() {
 
 #[test]
 fn server_list_with_only_offset() {
-    let cli = parse(&["server", "list", "-o", "10"]);
+    let cli = parse(&["server", "list", "--offset", "10"]);
     match &cli.command {
         Commands::Server(ServerCommands::List {
             limit,
@@ -123,8 +123,8 @@ fn server_info_subcommand() {
 }
 
 #[test]
-fn server_info_short_id() {
-    let cli = parse(&["server", "info", "-i", "99"]);
+fn server_info_id() {
+    let cli = parse(&["server", "info", "--id", "99"]);
     match &cli.command {
         Commands::Server(ServerCommands::Info {
             id
@@ -150,7 +150,7 @@ fn server_delete_subcommand() {
 
 #[test]
 fn server_reboot_subcommand() {
-    let cli = parse(&["server", "reboot", "-i", "3"]);
+    let cli = parse(&["server", "reboot", "--id", "3"]);
     match &cli.command {
         Commands::Server(ServerCommands::Reboot {
             id
@@ -206,7 +206,14 @@ fn project_create_subcommand() {
 
 #[test]
 fn project_create_with_description() {
-    let cli = parse(&["project", "create", "-n", "web", "-d", "Production web app"]);
+    let cli = parse(&[
+        "project",
+        "create",
+        "--name",
+        "web",
+        "--description",
+        "Production web app"
+    ]);
     match &cli.command {
         Commands::Project(ProjectCommands::Create {
             name,
@@ -255,8 +262,8 @@ fn config_set_token_subcommand() {
 }
 
 #[test]
-fn config_set_token_short_flag() {
-    let cli = parse(&["config", "set-token", "-t", "abc"]);
+fn config_set_token_flag() {
+    let cli = parse(&["config", "set-token", "--token", "abc"]);
     match &cli.command {
         Commands::Config(ConfigCommands::SetToken {
             token

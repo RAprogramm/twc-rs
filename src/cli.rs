@@ -1,7 +1,24 @@
 // SPDX-FileCopyrightText: 2026 RAprogramm <andrey.rozanov.vl@gmail.com>
 // SPDX-License-Identifier: MIT
 
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
+
+/// Shell to generate a completion script for.
+#[derive(ValueEnum, Clone, Copy, Debug)]
+pub enum ShellArg {
+    /// Bash.
+    Bash,
+    /// Zsh.
+    Zsh,
+    /// Fish.
+    Fish,
+    /// PowerShell.
+    Powershell,
+    /// Elvish.
+    Elvish,
+    /// Nushell.
+    Nushell
+}
 
 /// Professional CLI tool for managing Timeweb Cloud infrastructure.
 #[derive(Parser, Debug)]
@@ -85,6 +102,13 @@ pub enum Commands {
         /// Refresh interval in seconds.
         #[arg(short, long, default_value_t = 5)]
         interval: u64
+    },
+
+    /// Generate a shell completion script (print to stdout).
+    Completions {
+        /// Target shell.
+        #[arg(value_enum)]
+        shell: ShellArg
     }
 }
 
@@ -94,29 +118,29 @@ pub enum ServerCommands {
     /// List all cloud servers.
     List {
         /// Maximum number of servers to return.
-        #[arg(short, long)]
+        #[arg(long)]
         limit: Option<i32>,
 
         /// Number of servers to skip.
-        #[arg(short, long)]
+        #[arg(long)]
         offset: Option<i32>
     },
     /// Show detailed info for a server.
     Info {
         /// Server ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32
     },
     /// Delete a server by ID.
     Delete {
         /// Server ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32
     },
     /// Reboot a server by ID.
     Reboot {
         /// Server ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32
     }
 }
@@ -129,11 +153,11 @@ pub enum SshCommands {
     /// Add an SSH key from a file or stdin.
     Add {
         /// Human-readable name for the key.
-        #[arg(short, long)]
+        #[arg(long)]
         name: String,
 
         /// Path to the public key file. Reads from stdin if omitted.
-        #[arg(short, long)]
+        #[arg(long)]
         file: Option<String>,
 
         /// Mark this key as default for new servers.
@@ -143,7 +167,7 @@ pub enum SshCommands {
     /// Delete an SSH key by ID.
     Delete {
         /// SSH key ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32
     }
 }
@@ -156,17 +180,17 @@ pub enum ProjectCommands {
     /// Create a new project.
     Create {
         /// Project name (max 255 chars).
-        #[arg(short, long)]
+        #[arg(long)]
         name: String,
 
         /// Project description (max 255 chars).
-        #[arg(short, long)]
+        #[arg(long)]
         description: Option<String>
     },
     /// Delete a project by ID.
     Delete {
         /// Project ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32
     }
 }
@@ -177,28 +201,28 @@ pub enum DatabaseCommands {
     /// List all databases.
     List {
         /// Maximum number of databases to return.
-        #[arg(short, long)]
+        #[arg(long)]
         limit: Option<i32>,
 
         /// Number of databases to skip.
-        #[arg(short, long)]
+        #[arg(long)]
         offset: Option<i32>
     },
     /// Show detailed info for a database.
     Info {
         /// Database ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32
     },
     /// Create a new database.
     Create {
         /// Database name.
-        #[arg(short, long)]
+        #[arg(long)]
         name: String,
 
         /// Database engine type (mysql, postgres, redis, mongodb, opensearch,
         /// clickhouse, kafka, rabbitmq).
-        #[arg(short, long)]
+        #[arg(long)]
         type_: String,
 
         /// Preset ID for the database.
@@ -208,65 +232,65 @@ pub enum DatabaseCommands {
     /// Delete a database by ID.
     Delete {
         /// Database ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32
     },
     /// Update database settings.
     Update {
         /// Database ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32,
 
         /// New database name.
-        #[arg(short, long)]
+        #[arg(long)]
         name: Option<String>
     },
     /// Restart a database by ID.
     Restart {
         /// Database ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32
     },
     /// List backups for a database.
     BackupList {
         /// Database ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32
     },
     /// Create a backup for a database.
     BackupCreate {
         /// Database ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32
     },
     /// List users for a database.
     UserList {
         /// Database ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32
     },
     /// Create a user for a database.
     UserCreate {
         /// Database ID.
-        #[arg(short, long)]
+        #[arg(long)]
         db_id: i32,
 
         /// Database user login name.
-        #[arg(short, long)]
+        #[arg(long)]
         login: String,
 
         /// Database user password.
-        #[arg(short, long)]
+        #[arg(long)]
         password: String
     },
     /// Delete a user from a database.
     UserDelete {
         /// Database ID.
-        #[arg(short, long)]
+        #[arg(long)]
         db_id: i32,
 
         /// Database user login name.
-        #[arg(short, long)]
+        #[arg(long)]
         user_name: String
     },
     /// List available database presets.
@@ -281,7 +305,7 @@ pub enum ConfigCommands {
     /// Set the API token.
     SetToken {
         /// The Timeweb Cloud API token.
-        #[arg(short, long)]
+        #[arg(long)]
         token: String
     }
 }
@@ -298,7 +322,7 @@ pub enum AuthCommands {
     /// Accept a token directly (for CI/CD).
     Token {
         /// The API token to store.
-        #[arg(short, long)]
+        #[arg(long)]
         token: String
     }
 }
@@ -309,23 +333,23 @@ pub enum S3Commands {
     /// List all S3 storages.
     List {
         /// Maximum number of storages to return.
-        #[arg(short, long)]
+        #[arg(long)]
         limit: Option<i32>,
 
         /// Number of storages to skip.
-        #[arg(short, long)]
+        #[arg(long)]
         offset: Option<i32>
     },
     /// Show detailed info for a storage.
     Info {
         /// Storage ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32
     },
     /// Create a new S3 storage.
     Create {
         /// Storage name.
-        #[arg(short, long)]
+        #[arg(long)]
         name: String,
 
         /// Preset ID for the storage.
@@ -335,61 +359,61 @@ pub enum S3Commands {
     /// Delete a storage by ID.
     Delete {
         /// Storage ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32
     },
     /// Update storage settings.
     Update {
         /// Storage ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32,
 
         /// New storage description.
-        #[arg(short, long)]
+        #[arg(long)]
         description: Option<String>
     },
     /// List users for a storage.
     UserList {
         /// Storage ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32
     },
     /// Update a storage user.
     UserUpdate {
         /// Storage user ID.
-        #[arg(short, long)]
+        #[arg(long)]
         user_id: i32
     },
     /// Transfer a storage.
     Transfer {
         /// Target storage ID (reserved for future use).
-        #[arg(short, long)]
+        #[arg(long)]
         target_id: Option<i32>
     },
     /// List subdomains for a storage.
     SubdomainList {
         /// Storage ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32
     },
     /// Add a subdomain to a storage.
     SubdomainAdd {
         /// Storage ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32,
 
         /// Subdomain name.
-        #[arg(short, long)]
+        #[arg(long)]
         subdomain: String
     },
     /// Delete a subdomain from a storage.
     SubdomainDelete {
         /// Storage ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32,
 
         /// Subdomain name.
-        #[arg(short, long)]
+        #[arg(long)]
         subdomain: String
     },
     /// List available storage presets.
@@ -402,101 +426,101 @@ pub enum KubernetesCommands {
     /// List all Kubernetes clusters.
     List {
         /// Maximum number of clusters to return.
-        #[arg(short, long)]
+        #[arg(long)]
         limit: Option<i32>,
 
         /// Number of clusters to skip.
-        #[arg(short, long)]
+        #[arg(long)]
         offset: Option<i32>
     },
     /// Show detailed info for a cluster.
     Info {
         /// Cluster ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32
     },
     /// Create a new Kubernetes cluster.
     Create {
         /// Cluster name.
-        #[arg(short, long)]
+        #[arg(long)]
         name: String,
 
         /// Kubernetes version (e.g., 1.30).
-        #[arg(short, long)]
+        #[arg(long)]
         type_: String
     },
     /// Delete a cluster by ID.
     Delete {
         /// Cluster ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32
     },
     /// Update cluster settings.
     Update {
         /// Cluster ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32,
 
         /// New cluster name.
-        #[arg(short, long)]
+        #[arg(long)]
         name: Option<String>
     },
     /// List node groups for a cluster.
     NodegroupList {
         /// Cluster ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32
     },
     /// Create a node group for a cluster.
     NodegroupCreate {
         /// Cluster ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32,
 
         /// Node group name.
-        #[arg(short, long)]
+        #[arg(long)]
         name: String
     },
     /// Delete a node group from a cluster.
     NodegroupDelete {
         /// Cluster ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32,
 
         /// Node group ID.
-        #[arg(short, long)]
+        #[arg(long)]
         group_id: i32
     },
     /// List nodes for a cluster.
     NodeList {
         /// Cluster ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32
     },
     /// List installed addons for a cluster.
     AddonList {
         /// Cluster ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32
     },
     /// Install an addon on a cluster.
     AddonInstall {
         /// Cluster ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32,
 
         /// Addon name (e.g., calico, metrics-server).
-        #[arg(short, long)]
+        #[arg(long)]
         addon_name: String
     },
     /// Delete an addon from a cluster.
     AddonDelete {
         /// Cluster ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32,
 
         /// Addon name to delete.
-        #[arg(short, long)]
+        #[arg(long)]
         addon_name: String
     },
     /// List available Kubernetes presets.
@@ -508,14 +532,14 @@ pub enum KubernetesCommands {
     /// Get kubeconfig for a cluster.
     Kubeconfig {
         /// Cluster ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32
     },
 
     /// Show cluster resources (deprecated).
     Resources {
         /// Cluster ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32
     }
 }
@@ -526,45 +550,45 @@ pub enum RegistryCommands {
     /// List all container registries.
     List {
         /// Maximum number of registries to return (not supported by API).
-        #[arg(short, long)]
+        #[arg(long)]
         limit: Option<i32>,
 
         /// Number of registries to skip (not supported by API).
-        #[arg(short, long)]
+        #[arg(long)]
         offset: Option<i32>
     },
     /// Show detailed info for a registry.
     Info {
         /// Registry ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32
     },
     /// Create a new container registry.
     Create {
         /// Registry name (3-48 chars, lowercase alphanumeric and hyphens).
-        #[arg(short, long)]
+        #[arg(long)]
         name: String
     },
     /// Delete a registry by ID.
     Delete {
         /// Registry ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32
     },
     /// Update registry settings.
     Update {
         /// Registry ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32,
 
         /// New registry description.
-        #[arg(short, long)]
+        #[arg(long)]
         description: Option<String>
     },
     /// List repositories for a registry.
     RepoList {
         /// Registry ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32
     },
     /// List available registry presets.
@@ -577,87 +601,87 @@ pub enum BalancerCommands {
     /// List all balancers.
     List {
         /// Maximum number of balancers to return.
-        #[arg(short, long)]
+        #[arg(long)]
         limit: Option<i32>,
 
         /// Number of balancers to skip.
-        #[arg(short, long)]
+        #[arg(long)]
         offset: Option<i32>
     },
     /// Show detailed info for a balancer.
     Info {
         /// Balancer ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32
     },
     /// Create a new balancer.
     Create {
         /// Balancer name.
-        #[arg(short, long)]
+        #[arg(long)]
         name: String
     },
     /// Delete a balancer by ID.
     Delete {
         /// Balancer ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32
     },
     /// Update balancer settings.
     Update {
         /// Balancer ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32,
 
         /// New balancer name.
-        #[arg(short, long)]
+        #[arg(long)]
         name: Option<String>
     },
     /// List rules for a balancer.
     RuleList {
         /// Balancer ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32
     },
     /// Create a rule for a balancer.
     RuleCreate {
         /// Balancer ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32
     },
     /// Delete a rule from a balancer.
     RuleDelete {
         /// Balancer ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32,
 
         /// Rule ID to delete.
-        #[arg(short, long)]
+        #[arg(long)]
         rule_id: i32
     },
     /// List IPs for a balancer.
     IpList {
         /// Balancer ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32
     },
     /// Add an IP to a balancer.
     IpAdd {
         /// Balancer ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32,
 
         /// IP address to add.
-        #[arg(short, long)]
+        #[arg(long)]
         ip: String
     },
     /// Remove an IP from a balancer.
     IpRemove {
         /// Balancer ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: i32,
 
         /// IP address to remove.
-        #[arg(short, long)]
+        #[arg(long)]
         ip: String
     },
     /// List available balancer presets.
@@ -670,95 +694,95 @@ pub enum DomainCommands {
     /// List all domains on the account.
     List {
         /// Maximum number of domains to return.
-        #[arg(short, long)]
+        #[arg(long)]
         limit: Option<i32>,
 
         /// Number of domains to skip.
-        #[arg(short, long)]
+        #[arg(long)]
         offset: Option<i32>
     },
     /// Show detailed info for a domain.
     Info {
         /// Domain FQDN (e.g., example.com).
-        #[arg(short, long)]
+        #[arg(long)]
         id: String
     },
     /// Check if a domain is available for registration.
     Check {
         /// Domain name to check (e.g., example.com).
-        #[arg(short, long)]
+        #[arg(long)]
         domain: String
     },
     /// Add a domain to the account.
     Add {
         /// Domain FQDN to add (e.g., example.com).
-        #[arg(short, long)]
+        #[arg(long)]
         domain: String
     },
     /// Delete a domain from the account.
     Delete {
         /// Domain FQDN to delete (e.g., example.com).
-        #[arg(short, long)]
+        #[arg(long)]
         id: String
     },
     /// List DNS records for a domain.
     DnsList {
         /// Domain FQDN (e.g., example.com).
-        #[arg(short, long)]
+        #[arg(long)]
         id: String
     },
     /// Add a DNS record to a domain.
     DnsAdd {
         /// Domain FQDN (e.g., example.com).
-        #[arg(short, long)]
+        #[arg(long)]
         id: String,
 
         /// DNS record type (A, AAAA, CNAME, MX, TXT, SRV).
-        #[arg(short, long)]
+        #[arg(long)]
         record_type: String,
 
         /// DNS record value (e.g., IP address for A record).
-        #[arg(short, long)]
+        #[arg(long)]
         value: String
     },
     /// Delete a DNS record from a domain.
     DnsDelete {
         /// Domain FQDN (e.g., example.com).
-        #[arg(short, long)]
+        #[arg(long)]
         id: String,
 
         /// DNS record ID to delete.
-        #[arg(short, long)]
+        #[arg(long)]
         record_id: i32
     },
     /// Update a DNS record on a domain.
     DnsUpdate {
         /// Domain FQDN (e.g., example.com).
-        #[arg(short, long)]
+        #[arg(long)]
         id: String,
 
         /// DNS record ID to update.
-        #[arg(short, long)]
+        #[arg(long)]
         record_id: i32,
 
         /// New DNS record type (A, AAAA, CNAME, MX, TXT, SRV).
-        #[arg(short, long)]
+        #[arg(long)]
         record_type: String,
 
         /// New DNS record value.
-        #[arg(short, long)]
+        #[arg(long)]
         value: String
     },
     /// List name servers for a domain.
     NsList {
         /// Domain FQDN (e.g., example.com).
-        #[arg(short, long)]
+        #[arg(long)]
         id: String
     },
     /// Update name servers for a domain.
     NsUpdate {
         /// Domain FQDN (e.g., example.com).
-        #[arg(short, long)]
+        #[arg(long)]
         id: String,
 
         /// First name server (e.g., ns1.example.com).
@@ -772,27 +796,27 @@ pub enum DomainCommands {
     /// List subdomains for a domain.
     SubdomainList {
         /// Domain FQDN (e.g., example.com).
-        #[arg(short, long)]
+        #[arg(long)]
         id: String
     },
     /// Add a subdomain to a domain.
     SubdomainAdd {
         /// Domain FQDN (e.g., example.com).
-        #[arg(short, long)]
+        #[arg(long)]
         id: String,
 
         /// Subdomain name (e.g., www).
-        #[arg(short, long)]
+        #[arg(long)]
         name: String
     },
     /// Delete a subdomain from a domain.
     SubdomainDelete {
         /// Domain FQDN (e.g., example.com).
-        #[arg(short, long)]
+        #[arg(long)]
         id: String,
 
         /// Subdomain name to delete (e.g., www).
-        #[arg(short, long)]
+        #[arg(long)]
         name: String
     },
     /// List domain registration/transfer/prolongation requests.
@@ -802,11 +826,11 @@ pub enum DomainCommands {
     /// Toggle auto-prolongation for a domain.
     AutoProlong {
         /// Domain FQDN (e.g., example.com).
-        #[arg(short, long)]
+        #[arg(long)]
         id: String,
 
         /// Enable (true) or disable (false) auto-prolongation.
-        #[arg(short, long)]
+        #[arg(long)]
         enabled: bool
     }
 }
@@ -817,87 +841,87 @@ pub enum FirewallCommands {
     /// List all firewall groups.
     List {
         /// Maximum number of groups to return.
-        #[arg(short, long)]
+        #[arg(long)]
         limit: Option<i32>,
 
         /// Number of groups to skip.
-        #[arg(short, long)]
+        #[arg(long)]
         offset: Option<i32>
     },
     /// Show detailed info for a firewall group.
     Info {
         /// Firewall group ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: String
     },
     /// Create a new firewall group.
     Create {
         /// Group name.
-        #[arg(short, long)]
+        #[arg(long)]
         name: String
     },
     /// Delete a firewall group by ID.
     Delete {
         /// Firewall group ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: String
     },
     /// Update firewall group settings.
     Update {
         /// Firewall group ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: String,
 
         /// New group name.
-        #[arg(short, long)]
+        #[arg(long)]
         name: Option<String>
     },
     /// List rules for a firewall group.
     RuleList {
         /// Firewall group ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: String
     },
     /// Create a rule for a firewall group.
     RuleCreate {
         /// Firewall group ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: String
     },
     /// Delete a rule from a firewall group.
     RuleDelete {
         /// Firewall group ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: String,
 
         /// Rule ID to delete.
-        #[arg(short, long)]
+        #[arg(long)]
         rule_id: String
     },
     /// List resources for a firewall group.
     ResourceList {
         /// Firewall group ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: String
     },
     /// Add a resource to a firewall group.
     ResourceAdd {
         /// Firewall group ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: String,
 
         /// Resource ID to add.
-        #[arg(short, long)]
+        #[arg(long)]
         resource_id: String
     },
     /// Remove a resource from a firewall group.
     ResourceRemove {
         /// Firewall group ID.
-        #[arg(short, long)]
+        #[arg(long)]
         id: String,
 
         /// Resource ID to remove.
-        #[arg(short, long)]
+        #[arg(long)]
         resource_id: String
     }
 }

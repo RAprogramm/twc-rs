@@ -93,7 +93,7 @@ fn config_set_token_shows_saved() {
     let dir = tempfile::tempdir().unwrap();
     let output = twc()
         .env("XDG_CONFIG_HOME", dir.path())
-        .args(["config", "set-token", "-t", "abc"])
+        .args(["config", "set-token", "--token", "abc"])
         .output()
         .unwrap();
     let stdout = String::from_utf8(output.stdout).unwrap();

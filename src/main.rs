@@ -188,6 +188,27 @@ async fn run() -> Result<(), TwcError> {
     let format = OutputFormat::parse(&cli.format).map_err(TwcError::Api)?;
 
     match cli.command {
+        Commands::Completions {
+            shell
+        } => {
+            use clap::CommandFactory;
+            use clap_complete::{Shell, generate};
+
+            let mut cmd = Cli::command();
+            let name = cmd.get_name().to_string();
+            let out = &mut std::io::stdout();
+            match shell {
+                cli::ShellArg::Bash => generate(Shell::Bash, &mut cmd, name, out),
+                cli::ShellArg::Zsh => generate(Shell::Zsh, &mut cmd, name, out),
+                cli::ShellArg::Fish => generate(Shell::Fish, &mut cmd, name, out),
+                cli::ShellArg::Powershell => generate(Shell::PowerShell, &mut cmd, name, out),
+                cli::ShellArg::Elvish => generate(Shell::Elvish, &mut cmd, name, out),
+                cli::ShellArg::Nushell => {
+                    generate(clap_complete_nushell::Nushell, &mut cmd, name, out);
+                }
+            }
+            Ok(())
+        }
         Commands::Config(cmd) => match cmd {
             ConfigCommands::Show => {
                 let cfg = AppConfig::load()?;
