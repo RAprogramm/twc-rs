@@ -56,12 +56,38 @@ impl Default for DashboardPrefs {
     }
 }
 
+/// UI language for the dashboard and CLI output. English is the default.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Language {
+    /// English (default).
+    #[default]
+    En,
+    /// Russian.
+    Ru
+}
+
+impl Language {
+    /// The `rust_i18n` locale code this language resolves to.
+    #[must_use]
+    pub const fn locale(self) -> &'static str {
+        match self {
+            Self::En => "en",
+            Self::Ru => "ru"
+        }
+    }
+}
+
 /// File-based configuration stored at `~/.config/twc-rs/config.toml`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
     /// Timeweb Cloud API token for the default profile.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub token: Option<String>,
+
+    /// UI language (default English).
+    #[serde(default)]
+    pub language: Language,
 
     /// Named profiles, mapping a profile name to its API token. Selected with
     /// `--profile <name>` (or the `TWC_PROFILE` env var).
@@ -100,6 +126,7 @@ impl Default for AppConfig {
         Self {
             token: None,
             profiles: std::collections::HashMap::new(),
+            language: Language::default(),
             #[cfg(feature = "tui")]
             theme: crate::tui::themes::Theme::default(),
             output: OutputPreference::Table,

@@ -578,7 +578,8 @@ pub struct App {
     pub drill_request:     Option<(ResourceTab, i32, String)>,
     pub filter:            String,
     pub filter_editing:    bool,
-    pub hide_empty_tabs:   bool
+    pub hide_empty_tabs:   bool,
+    pub language:          crate::config::Language
 }
 
 impl App {
@@ -650,8 +651,16 @@ impl App {
             drill_request: None,
             filter: String::new(),
             filter_editing: false,
-            hide_empty_tabs: false
+            hide_empty_tabs: false,
+            language: crate::config::Language::default()
         }
+    }
+
+    /// Sets the UI language, applies it live, and marks preferences dirty.
+    pub fn set_language(&mut self, language: crate::config::Language) {
+        self.language = language;
+        rust_i18n::set_locale(language.locale());
+        self.prefs_dirty = true;
     }
 
     /// Returns the number of items currently loaded for the given tab.
@@ -1421,12 +1430,27 @@ impl App {
             hint:  "layout".to_string()
         });
 
+        commands.push(Command {
+            id:    "lang:en".to_string(),
+            title: rust_i18n::t!("palette.language_english").to_string(),
+            hint:  "language".to_string()
+        });
+        commands.push(Command {
+            id:    "lang:ru".to_string(),
+            title: rust_i18n::t!("palette.language_russian").to_string(),
+            hint:  "language".to_string()
+        });
+
         commands
     }
 
     fn run_command(&mut self, id: &str) {
         if id == "tabs:toggle_empty" {
             self.toggle_hide_empty_tabs();
+        } else if id == "lang:en" {
+            self.set_language(crate::config::Language::En);
+        } else if id == "lang:ru" {
+            self.set_language(crate::config::Language::Ru);
         } else if let Some(rest) = id.strip_prefix("theme:") {
             if let Some(theme) = super::themes::Theme::ALL
                 .into_iter()

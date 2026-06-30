@@ -1,0 +1,8 @@
+_version: 2
+
+palette.language_english:
+  en: "Language: English"
+  ru: "Язык: английский"
+palette.language_russian:
+  en: "Language: Russian"
+  ru: "Язык: русский"

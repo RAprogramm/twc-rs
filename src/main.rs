@@ -12,6 +12,8 @@ mod output;
 #[cfg(feature = "tui")]
 mod tui;
 
+rust_i18n::i18n!("locales", fallback = "en");
+
 use clap::Parser;
 use cli::{
     AccountCommands, AppsCommands, AuthCommands, BalancerCommands, Cli, Commands, ConfigCommands,
@@ -22,6 +24,7 @@ use cli::{
 use config::AppConfig;
 use error::TwcError;
 use output::OutputFormat;
+use rust_i18n::t;
 use timeweb_rs::authenticated;
 
 /// Resolves the API token from CLI flag, environment, or config file.
@@ -79,7 +82,7 @@ fn prompt_and_save_token() -> Result<String, TwcError> {
     use colored::Colorize as _;
     use dialoguer::Select;
 
-    println!("\n  {}\n", "No API token configured.".yellow().bold());
+    println!("\n  {}\n", t!("app.no_token_configured").yellow().bold());
 
     #[cfg(feature = "auth")]
     let options = vec![
@@ -169,10 +172,7 @@ fn save_token_to_config(token: &str) -> Result<(), TwcError> {
     cfg.save()?;
 
     let masked = mask_token(token);
-    println!(
-        "\n  {} ({masked})\n",
-        "Token saved. You won't be prompted again.".green().bold()
-    );
+    println!("\n  {} ({masked})\n", t!("app.token_saved").green().bold());
     Ok(())
 }
 
@@ -187,6 +187,8 @@ async fn main() {
 #[expect(clippy::too_many_lines)]
 async fn run() -> Result<(), TwcError> {
     let cli = Cli::parse();
+    let language = AppConfig::load().map(|c| c.language).unwrap_or_default();
+    rust_i18n::set_locale(language.locale());
     let format = OutputFormat::parse(&cli.format).map_err(TwcError::Api)?;
 
     match cli.command {
@@ -757,6 +759,7 @@ fn persist_dashboard_prefs(app: &tui::app::App) {
         return;
     };
     cfg.theme = app.theme;
+    cfg.language = app.language;
     cfg.dashboard.hidden_widgets = app.hidden_widget_ids();
     cfg.dashboard.list_width_pct = app.list_width_pct;
     cfg.dashboard.hide_empty_tabs = app.hide_empty_tabs;
@@ -836,6 +839,7 @@ async fn run_dashboard(
         prefs.list_width_pct,
         prefs.hide_empty_tabs
     );
+    app.language = AppConfig::load().map(|c| c.language).unwrap_or_default();
     app.is_loading = true;
     draw_splash(&mut terminal);
 
