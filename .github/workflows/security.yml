@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4 # checkout repository
+      - uses: actions/checkout@v7 # checkout repository
       - name: Install cargo-deny
         uses: taiki-e/install-action@v2 # prebuilt tool installer
         with:

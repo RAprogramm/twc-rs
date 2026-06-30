@@ -30,7 +30,7 @@ jobs:
           - target: x86_64-pc-windows-msvc
             os: windows-latest
     steps:
-      - uses: actions/checkout@v4 # checkout repository
+      - uses: actions/checkout@v7 # checkout repository
       # taiki-e/upload-rust-binary-action builds with --release, strips the
       # binary, archives (.tar.gz on unix / .zip on windows), generates the
       # checksum and uploads everything to the existing release for this tag.
@@ -48,7 +48,7 @@ jobs:
     name: Build .deb package
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4 # checkout repository
+      - uses: actions/checkout@v7 # checkout repository
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable # stable toolchain
       - name: Install cargo-deb
