@@ -34,8 +34,8 @@ pub fn draw(frame: &mut Frame, app: &App) {
     let size = frame.area();
     let palette = app.theme.palette();
 
-    let show_account = app.is_widget_enabled("account");
-    let show_events = app.is_widget_enabled("events");
+    let show_account = app.is_widget_enabled("account") && size.height >= 16;
+    let show_events = app.is_widget_enabled("events") && size.height >= 24;
 
     let mut constraints = Vec::with_capacity(5);
     if show_account {
@@ -376,8 +376,14 @@ fn render_content(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
         palette.border
     };
 
-    let show_stats = app.is_widget_enabled("stats");
-    let show_token = app.is_widget_enabled("token_info");
+    if area.width < 56 {
+        crate::tui::widgets::resource_list::render(frame, area, app, list_border_color);
+        return;
+    }
+
+    let wide = area.width >= 100;
+    let show_stats = wide && app.is_widget_enabled("stats");
+    let show_token = wide && app.is_widget_enabled("token_info");
 
     crate::tui::widgets::resource_list::render(frame, chunks[0], app, list_border_color);
 
