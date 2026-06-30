@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+  RUST_BACKTRACE: "1"
+
+jobs:
+  fmt:
+    name: Formatting
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4 # checkout repository
+      - name: Install nightly rustfmt
+        uses: dtolnay/rust-toolchain@nightly # nightly toolchain
+        with:
+          components: rustfmt
+      - uses: Swatinem/rust-cache@v2 # shared cargo cache
+      - run: cargo +nightly fmt --all --check
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4 # checkout repository
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@stable # stable toolchain
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2 # shared cargo cache
+      - run: cargo clippy --all-features --all-targets -- -D warnings
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4 # checkout repository
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@stable # stable toolchain
+      - uses: Swatinem/rust-cache@v2 # shared cargo cache
+      - run: cargo test --all-features
+
+  msrv:
+    name: MSRV (1.96)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4 # checkout repository
+      - name: Install Rust 1.96.0
+        uses: dtolnay/rust-toolchain@1.96.0 # declared MSRV
+      - uses: Swatinem/rust-cache@v2 # shared cargo cache
+      - run: cargo check --all-features

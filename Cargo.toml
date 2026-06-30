@@ -3,13 +3,30 @@ name = "twc-rs"
 version = "0.2.0"
 edition = "2024"
 rust-version = "1.96"
-description = "Professional CLI tool for managing Timeweb Cloud infrastructure"
+authors = ["RAprogramm <andrey.rozanov.vl@gmail.com>"]
+description = "Fast single-binary CLI and interactive TUI dashboard for Timeweb Cloud"
 license = "MIT"
 repository = "https://github.com/RAprogramm/twc-rs"
 homepage = "https://github.com/RAprogramm/twc-rs"
+documentation = "https://github.com/RAprogramm/twc-rs"
 readme = "README.md"
-keywords = ["timeweb", "cloud", "cli"]
+keywords = ["timeweb", "cloud", "cli", "tui", "devops"]
 categories = ["command-line-utilities"]
+
+[package.metadata.deb]
+maintainer = "RAprogramm <andrey.rozanov.vl@gmail.com>"
+copyright = "2026 RAprogramm <andrey.rozanov.vl@gmail.com>"
+section = "utils"
+priority = "optional"
+extended-description = """\
+A fast, single-binary CLI and interactive TUI dashboard for managing \
+Timeweb Cloud infrastructure: servers, databases, S3, Kubernetes, \
+balancers, domains, firewalls and more. Written in Rust, no runtime \
+dependencies beyond the system libc."""
+assets = [
+    ["target/release/twc-rs", "usr/bin/", "755"],
+    ["README.md", "usr/share/doc/twc-rs/README.md", "644"],
+]
 
 [[bin]]
 name = "twc-rs"

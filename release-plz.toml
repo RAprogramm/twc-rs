@@ -1,0 +1,60 @@
+# release-plz configuration — https://release-plz.dev/docs/config
+#
+# The crate now uses Conventional Commits (`feat:`/`fix:`/`chore:`/`ci:`/
+# `docs:`/`refactor:`/`test:`, with `!` for breaking changes). release-plz still
+# verifies the actual public-API surface with `cargo-semver-checks`, but the
+# commit type drives both the changelog grouping below and the version bump.
+
+[changelog]
+# Keep the existing Keep a Changelog + SemVer preamble verbatim so a regenerated
+# file is byte-identical to the curated one.
+header = """# Changelog
+
+All notable changes to this project are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+"""
+
+# Tera template for each released version block. Produces:
+#   ## [x.y.z](compare/vA...vB) - DATE
+#   ### Added / Fixed / Changed / Performance / Documentation
+#   - message ([#PR](pull/PR))   (or a commit link when there is no PR)
+# The `<!-- n -->` group prefixes force a stable section order and are stripped
+# from the rendered title.
+body = """
+
+## [{{ version | trim_start_matches(pat="v") }}]\
+{% if release_link %}({{ release_link }}){% endif %} - {{ timestamp | date(format="%Y-%m-%d") }}
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | striptags | trim | upper_first }}
+{% for commit in commits %}
+- {% if commit.scope %}*({{ commit.scope }})* {% endif %}\
+{% if commit.breaking %}**BREAKING:** {% endif %}\
+{{ commit.message | upper_first }}\
+{% if commit.remote.pr_number %} ([#{{ commit.remote.pr_number }}](https://github.com/RAprogramm/twc-rs/pull/{{ commit.remote.pr_number }}))\
+{% else %} ([{{ commit.id | truncate(length=7, end="") }}](https://github.com/RAprogramm/twc-rs/commit/{{ commit.id }}))\
+{% endif %}
+{% endfor %}
+{% endfor %}
+"""
+
+# Keep breaking changes in the changelog even if their type would be skipped.
+protect_breaking_commits = true
+sort_commits = "newest"
+
+commit_parsers = [
+  { message = "^feat", group = "<!-- 0 -->Added" },
+  { message = "^fix", group = "<!-- 1 -->Fixed" },
+  { message = "^perf", group = "<!-- 2 -->Performance" },
+  { message = "^refactor", group = "<!-- 3 -->Changed" },
+  { message = "^docs", group = "<!-- 4 -->Documentation" },
+  { message = "^test", group = "<!-- 5 -->Testing" },
+  { message = "^revert", group = "<!-- 6 -->Reverted" },
+  { message = "^chore\\(release\\)", skip = true },
+  { message = "^chore", skip = true },
+  { message = "^ci", skip = true },
+  { message = "^build", skip = true },
+  { message = "^style", skip = true },
+  { message = ".*", group = "<!-- 9 -->Other" },
+]

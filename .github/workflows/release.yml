@@ -1,0 +1,77 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    steps:
+      # softprops/action-gh-release@v2 creates (or reuses) the Release for the tag.
+      - name: Create release
+        uses: softprops/action-gh-release@v2 # pinned to major tag
+        with:
+          generate_release_notes: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  upload-assets:
+    name: Build ${{ matrix.target }}
+    needs: create-release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: x86_64-apple-darwin
+            os: macos-latest
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+    steps:
+      - uses: actions/checkout@v4 # pinned to major tag
+      # taiki-e/upload-rust-binary-action builds with --release, strips the
+      # binary, archives (.tar.gz on unix / .zip on windows), generates the
+      # checksum and uploads everything to the Release for this tag.
+      - name: Build and upload binary
+        uses: taiki-e/upload-rust-binary-action@v1 # pinned to major tag
+        with:
+          bin: twc-rs
+          features: tui
+          target: ${{ matrix.target }}
+          # Version-stamped archive name: twc-rs-vX.Y.Z-<target>.tar.gz
+          archive: $bin-$tag-$target
+          checksum: sha256
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  deb:
+    name: Build .deb package
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4 # pinned to major tag
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable # pinned to branch tag
+      - name: Install cargo-deb
+        uses: taiki-e/install-action@v2 # pinned to major tag
+        with:
+          tool: cargo-deb
+      # `cargo deb -- --features tui` forwards --features tui to the cargo
+      # build invoked by cargo-deb, producing a .deb with the TUI enabled.
+      - name: Build .deb
+        run: cargo deb -- --features tui
+      - name: Upload .deb to release
+        uses: softprops/action-gh-release@v2 # pinned to major tag
+        with:
+          files: target/debian/*.deb
+          token: ${{ secrets.GITHUB_TOKEN }}
