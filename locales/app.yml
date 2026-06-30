@@ -1,0 +1,11 @@
+_version: 2
+
+app.no_token_configured:
+  en: No API token configured.
+  ru: API-токен не настроен.
+app.token_saved:
+  en: Token saved. You won't be prompted again.
+  ru: Токен сохранён. Больше спрашивать не будем.
+app.language_saved:
+  en: Language updated.
+  ru: Язык изменён.

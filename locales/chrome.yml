@@ -1,0 +1,120 @@
+_version: 2
+
+app.action_start:
+  en: Start
+  ru: Запустить
+app.action_shutdown:
+  en: Shutdown
+  ru: Выключить
+app.action_reboot:
+  en: Reboot
+  ru: Перезагрузить
+app.action_clone:
+  en: Clone
+  ru: Клонировать
+app.action_delete:
+  en: Delete
+  ru: Удалить
+app.widget_account:
+  en: Account header
+  ru: Шапка аккаунта
+app.widget_stats:
+  en: Stats panel
+  ru: Панель статистики
+app.widget_token_info:
+  en: Token info panel
+  ru: Панель токена
+app.widget_events:
+  en: Events log
+  ru: Журнал событий
+app.palette_show:
+  en: Show
+  ru: Показать
+app.palette_hide:
+  en: Hide
+  ru: Скрыть
+app.palette_show_empty_tabs:
+  en: Show empty tabs
+  ru: Показать пустые вкладки
+app.palette_hide_empty_tabs:
+  en: Hide empty tabs
+  ru: Скрыть пустые вкладки
+app.hint_action:
+  en: action
+  ru: действие
+app.hint_layout:
+  en: layout
+  ru: макет
+app.hint_theme:
+  en: theme
+  ru: тема
+app.hint_language:
+  en: language
+  ru: язык
+app.log_manual_refresh:
+  en: manual refresh requested
+  ru: запрошено ручное обновление
+app.log_load_failed:
+  en: "load failed — %{entry}"
+  ru: "ошибка загрузки — %{entry}"
+app.log_recovered:
+  en: "%{name} recovered"
+  ru: "%{name} восстановлен"
+
+ui.action_menu_title:
+  en: " Actions: %{kind} '%{name}' (id %{id}) "
+  ru: " Действия: %{kind} «%{name}» (id %{id}) "
+ui.action_menu_kind_fallback:
+  en: resource
+  ru: ресурс
+ui.confirm_prompt:
+  en: " %{verb} '%{name}' (id %{id})?"
+  ru: " %{verb} «%{name}» (id %{id})?"
+ui.confirm_irreversible:
+  en: " This action cannot be undone."
+  ru: " Это действие необратимо."
+ui.confirm_yes:
+  en: confirm
+  ru: подтвердить
+ui.confirm_no:
+  en: cancel
+  ru: отмена
+ui.confirm_title:
+  en: " Confirm "
+  ru: " Подтверждение "
+ui.skeleton_resources:
+  en: " Resources "
+  ru: " Ресурсы "
+ui.skeleton_details:
+  en: " Details "
+  ru: " Детали "
+ui.status_resources_fallback:
+  en: Resources
+  ru: Ресурсы
+ui.status_tabs:
+  en: tabs
+  ru: вкладки
+ui.status_move:
+  en: move
+  ru: навигация
+ui.status_open:
+  en: open
+  ru: открыть
+ui.status_filter:
+  en: filter
+  ru: фильтр
+ui.status_cmds:
+  en: cmds
+  ru: команды
+ui.status_help:
+  en: help
+  ru: справка
+ui.status_quit:
+  en: quit
+  ru: выход
+ui.drill_empty:
+  en: "  (empty — no resources in this project)"
+  ru: "  (пусто — в проекте нет ресурсов)"
+ui.drill_title:
+  en: " %{title}  —  Esc back "
+  ru: " %{title}  —  Esc назад "

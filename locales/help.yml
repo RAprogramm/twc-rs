@@ -1,0 +1,38 @@
+_version: 2
+
+help.title:
+  en: " Help "
+  ru: " Справка "
+help.widgets_header:
+  en: " Widgets (press number to toggle): "
+  ru: " Виджеты (нажмите цифру для переключения): "
+help.shortcut_tab:
+  en: Previous / next tab
+  ru: Предыдущая / следующая вкладка
+help.shortcut_move:
+  en: Move selection up / down
+  ru: Переместить выбор вверх / вниз
+help.shortcut_jump:
+  en: Jump to first / last item
+  ru: Перейти к первому / последнему элементу
+help.shortcut_enter:
+  en: Open actions / drill into selection
+  ru: Открыть действия / перейти к выбранному
+help.shortcut_filter:
+  en: Filter the current list
+  ru: Фильтровать текущий список
+help.shortcut_palette:
+  en: Command palette
+  ru: Палитра команд
+help.shortcut_refresh:
+  en: Refresh now
+  ru: Обновить сейчас
+help.shortcut_esc:
+  en: Close / clear filter
+  ru: Закрыть / очистить фильтр
+help.shortcut_toggle_help:
+  en: Toggle this help
+  ru: Показать / скрыть справку
+help.shortcut_quit:
+  en: Quit
+  ru: Выход

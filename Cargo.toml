@@ -1,6 +1,85 @@
 [package]
 name = "twc-rs"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
+rust-version = "1.96"
+description = "Professional CLI tool for managing Timeweb Cloud infrastructure"
+license = "MIT"
+repository = "https://github.com/RAprogramm/twc-rs"
+homepage = "https://github.com/RAprogramm/twc-rs"
+readme = "README.md"
+keywords = ["timeweb", "cloud", "cli"]
+categories = ["command-line-utilities"]
+
+[[bin]]
+name = "twc-rs"
+path = "src/main.rs"
+
+[features]
+default = ["auth"]
+auth = ["dep:open", "dep:tiny_http", "dep:keyring"]
+tui = ["dep:ratatui", "dep:crossterm", "dep:tokio-stream"]
 
 [dependencies]
+timeweb-rs = { path = "../timeweb-rs" }
+clap = { version = "4", features = ["derive", "env", "string"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "1"
+dirs = "6"
+tabled = "0.21"
+indicatif = "0.18"
+colored = "3"
+dialoguer = "0.12"
+base64 = "0.22"
+chrono = { version = "0.4", features = ["serde"] }
+
+# Auth feature deps
+open = { version = "5", optional = true }
+tiny_http = { version = "0.12", optional = true }
+keyring = { version = "4", optional = true }
+
+# TUI feature deps
+ratatui = { version = "0.30", optional = true }
+crossterm = { version = "0.29", optional = true }
+tokio-stream = { version = "0.1", optional = true }
+clap_complete = "4"
+clap_complete_nushell = "4.6.0"
+serde_yml = "0.0.13"
+rust-i18n = "4.1.0"
+
+[dev-dependencies]
+assert_cmd = "2"
+predicates = "3"
+tempfile = "3"
+reqwest = "0.13"
+serial_test = "3"
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+missing-const-for-fn = "allow"
+too-many-arguments = "allow"
+too-many-lines = "allow"
+cast-possible-truncation = "allow"
+cast-sign-loss = "allow"
+cast-precision-loss = "allow"
+match-same-arms = "allow"
+similar-names = "allow"
+option-if-let-else = "allow"
+uninlined-format-args = "allow"
+unchecked-time-subtraction = "allow"
+needless-pass-by-value = "allow"
+duration-suboptimal-units = "allow"
+unnested-or-patterns = "allow"
+redundant-pub-crate = "allow"
+float-cmp = "allow"
+redundant-clone = "allow"
+single-char-pattern = "allow"
+must-use-candidate = "allow"
+module-name-repetitions = "allow"
+missing-errors-doc = "allow"
+missing-panics-doc = "allow"
+doc-markdown = "allow"
+unused-async = "allow"

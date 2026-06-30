@@ -1,0 +1,135 @@
+_version: 2
+
+account.title:
+  en: Account
+  ru: Аккаунт
+account.balance:
+  en: Balance
+  ru: Баланс
+account.status_unknown:
+  en: unknown
+  ru: неизвестно
+
+stats.title:
+  en: Stats
+  ru: Статистика
+stats.cpu:
+  en: CPU
+  ru: ЦП
+stats.ram:
+  en: RAM
+  ru: ОЗУ
+stats.net_in:
+  en: "Net↓"
+  ru: "Сеть↓"
+stats.net_out:
+  en: "Net↑"
+  ru: "Сеть↑"
+
+token_info.title:
+  en: Token Info
+  ru: Сведения о токене
+token_info.no_token:
+  en: No token configured
+  ru: Токен не настроен
+token_info.api_key:
+  en: API key
+  ru: API-ключ
+token_info.no_jwt_expiry:
+  en: no JWT expiry info
+  ru: нет данных об истечении JWT
+token_info.expires:
+  en: "Expires: %{date} UTC"
+  ru: "Истекает: %{date} UTC"
+token_info.expires_unknown:
+  en: "Expires: unknown"
+  ru: "Истекает: неизвестно"
+token_info.days_left:
+  en: "Days left: %{days}"
+  ru: "Осталось дней: %{days}"
+token_info.days_left_na:
+  en: "Days left: N/A"
+  ru: "Осталось дней: —"
+token_info.status:
+  en: Status
+  ru: Статус
+token_info.status_expired:
+  en: Expired
+  ru: Истёк
+token_info.status_expiring:
+  en: Expiring Soon
+  ru: Скоро истечёт
+token_info.status_valid:
+  en: Valid
+  ru: Действителен
+
+events.title:
+  en: Events
+  ru: События
+
+resource_list.title_fallback:
+  en: Resources
+  ru: Ресурсы
+resource_list.status_running:
+  en: running
+  ru: работает
+resource_list.status_stopped:
+  en: stopped
+  ru: остановлен
+resource_list.status_starting:
+  en: starting
+  ru: запуск
+resource_list.status_stopping:
+  en: stopping
+  ru: остановка
+resource_list.status_rebooting:
+  en: rebooting
+  ru: перезагрузка
+resource_list.status_installing:
+  en: installing
+  ru: установка
+resource_list.status_removing:
+  en: removing
+  ru: удаление
+resource_list.count_servers:
+  en: "%{n} servers"
+  ru: "%{n} серверов"
+resource_list.count_repos:
+  en: "%{n} repos"
+  ru: "%{n} репозиториев"
+resource_list.count_rules:
+  en: "%{n} rules"
+  ru: "%{n} правил"
+resource_list.count_subnets:
+  en: "%{n} subnets"
+  ru: "%{n} подсетей"
+resource_list.count_deploys:
+  en: "%{n} deploys"
+  ru: "%{n} развёртываний"
+resource_list.count_mailboxes:
+  en: "%{n} mailboxes"
+  ru: "%{n} ящиков"
+resource_list.count_docs:
+  en: "%{n} docs"
+  ru: "%{n} документов"
+account.status_active:
+  en: "active"
+  ru: "активен"
+account.status_running:
+  en: "running"
+  ru: "работает"
+account.status_enabled:
+  en: "enabled"
+  ru: "включён"
+account.status_inactive:
+  en: "inactive"
+  ru: "неактивен"
+account.status_suspended:
+  en: "suspended"
+  ru: "приостановлен"
+account.status_error:
+  en: "error"
+  ru: "ошибка"
+account.status_failed:
+  en: "failed"
+  ru: "сбой"
