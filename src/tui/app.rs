@@ -628,7 +628,10 @@ pub struct App {
     pub stats_subject:     Option<String>,
     pub stats_loaded_for:  Option<String>,
     pub create_form:       Option<CreateForm>,
-    pub create_request:    Option<CreateForm>
+    pub create_request:    Option<CreateForm>,
+    pub profiles:          Vec<String>,
+    pub active_profile:    String,
+    pub switch_profile:    Option<String>
 }
 
 impl App {
@@ -705,8 +708,16 @@ impl App {
             stats_subject: None,
             stats_loaded_for: None,
             create_form: None,
-            create_request: None
+            create_request: None,
+            profiles: Vec::new(),
+            active_profile: "default".to_string(),
+            switch_profile: None
         }
+    }
+
+    /// Takes a pending profile-switch request (the dashboard loop re-auths).
+    pub fn take_switch_profile(&mut self) -> Option<String> {
+        self.switch_profile.take()
     }
 
     /// Returns true when the create form overlay is open.
@@ -1676,6 +1687,17 @@ impl App {
             hint:  t!("app.hint_language").to_string()
         });
 
+        for profile in &self.profiles {
+            if *profile == self.active_profile {
+                continue;
+            }
+            commands.push(Command {
+                id:    format!("profile:{profile}"),
+                title: t!("palette.switch_profile", name => profile).to_string(),
+                hint:  t!("app.hint_account").to_string()
+            });
+        }
+
         commands
     }
 
@@ -1686,6 +1708,8 @@ impl App {
             self.set_language(crate::config::Language::En);
         } else if id == "lang:ru" {
             self.set_language(crate::config::Language::Ru);
+        } else if let Some(profile) = id.strip_prefix("profile:") {
+            self.switch_profile = Some(profile.to_string());
         } else if let Some(rest) = id.strip_prefix("theme:") {
             if let Some(theme) = super::themes::Theme::ALL
                 .into_iter()

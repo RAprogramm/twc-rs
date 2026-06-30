@@ -118,3 +118,6 @@ ui.drill_empty:
 ui.drill_title:
   en: " %{title}  —  Esc back "
   ru: " %{title}  —  Esc назад "
+app.hint_account:
+  en: "account"
+  ru: "аккаунт"

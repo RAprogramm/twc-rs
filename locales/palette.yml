@@ -6,3 +6,6 @@ palette.language_english:
 palette.language_russian:
   en: "Language: Russian"
   ru: "Язык: русский"
+palette.switch_profile:
+  en: "Profile: switch to %{name}"
+  ru: "Профиль: переключить на %{name}"

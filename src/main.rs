@@ -992,7 +992,14 @@ async fn run() -> Result<(), TwcError> {
             let token = ensure_token(cli.token.as_deref(), cli.profile.as_deref())?;
             let theme = config.theme;
             let prefs = config.dashboard.clone();
-            Box::pin(run_dashboard(token, interval, theme, prefs)).await
+            Box::pin(run_dashboard(
+                token,
+                interval,
+                theme,
+                prefs,
+                cli.profile.clone()
+            ))
+            .await
         }
         #[cfg(not(feature = "tui"))]
         Commands::Dashboard {
@@ -1039,7 +1046,7 @@ fn spawn_refresh_loop(
     token: String,
     theme: crate::tui::themes::Theme,
     interval: u64
-) {
+) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
         let period = tokio::time::Duration::from_secs(interval.max(2));
         loop {
@@ -1049,7 +1056,7 @@ fn spawn_refresh_loop(
             }
             tokio::time::sleep(period).await;
         }
-    });
+    })
 }
 
 #[cfg(feature = "tui")]
@@ -1067,10 +1074,11 @@ fn spawn_one_shot_refresh(
 
 #[cfg(feature = "tui")]
 async fn run_dashboard(
-    token: String,
+    mut token: String,
     interval: u64,
     theme: crate::tui::themes::Theme,
-    prefs: crate::config::DashboardPrefs
+    prefs: crate::config::DashboardPrefs,
+    profile: Option<String>
 ) -> Result<(), TwcError> {
     use crossterm::{
         execute,
@@ -1093,7 +1101,15 @@ async fn run_dashboard(
         prefs.list_width_pct,
         prefs.hide_empty_tabs
     );
-    app.language = AppConfig::load().map(|c| c.language).unwrap_or_default();
+    if let Ok(cfg) = AppConfig::load() {
+        app.language = cfg.language;
+        let mut names = vec!["default".to_string()];
+        let mut profile_names: Vec<String> = cfg.profiles.keys().cloned().collect();
+        profile_names.sort();
+        names.extend(profile_names);
+        app.profiles = names;
+    }
+    app.active_profile = profile.unwrap_or_else(|| "default".to_string());
     app.is_loading = true;
     draw_splash(&mut terminal);
 
@@ -1104,7 +1120,7 @@ async fn run_dashboard(
         tui::event::run_event_loop(event_tx).await;
     });
 
-    spawn_refresh_loop(tx.clone(), token.clone(), theme, interval);
+    let mut refresh_handle = spawn_refresh_loop(tx.clone(), token.clone(), theme, interval);
 
     while let Some(event) = rx.recv().await {
         if !tui::event::handle_event(&mut app, event) {
@@ -1154,6 +1170,32 @@ async fn run_dashboard(
             let config = authenticated(token.clone());
             perform_create(&config, &mut app, form).await;
             spawn_one_shot_refresh(tx.clone(), token.clone(), theme, interval);
+        }
+
+        if let Some(profile) = app.take_switch_profile() {
+            use tui::app::LogLevel;
+            let lookup = (profile != "default").then_some(profile.as_str());
+            match AppConfig::load().and_then(|c| c.token_for(lookup)) {
+                Ok(Some(new_token)) => {
+                    token = new_token;
+                    refresh_handle.abort();
+                    refresh_handle =
+                        spawn_refresh_loop(tx.clone(), token.clone(), theme, interval);
+                    app.active_profile.clone_from(&profile);
+                    app.is_loading = true;
+                    app.log(
+                        LogLevel::Success,
+                        format!("switched to profile '{profile}'")
+                    );
+                    app.status_message = Some(format!("Profile: {profile}"));
+                }
+                _ => {
+                    app.log(
+                        LogLevel::Error,
+                        format!("profile '{profile}' has no token configured")
+                    );
+                }
+            }
         }
 
         if let Some(req) = app.poll_stats_request() {
