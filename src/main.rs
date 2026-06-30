@@ -1323,7 +1323,9 @@ async fn perform_action(
     pending: tui::app::PendingAction
 ) {
     use timeweb_rs::apis::{
-        balancers_api, container_registry_api, databases_api, kubernetes_api, s3_api, servers_api
+        ai_agents_api, balancers_api, container_registry_api, databases_api,
+        dedicated_servers_api, knowledge_bases_api, kubernetes_api, projects_api, s3_api,
+        servers_api
     };
     use tui::app::{ActionKind, ResourceTab};
 
@@ -1372,6 +1374,22 @@ async fn perform_action(
         }
         (ResourceTab::Registry, ActionKind::Delete) => {
             container_registry_api::delete_registry(config, id)
+                .await
+                .map_err(|e| e.to_string())
+        }
+        (ResourceTab::Projects, ActionKind::Delete) => projects_api::delete_project(config, id)
+            .await
+            .map_err(|e| e.to_string()),
+        (ResourceTab::DedicatedServers, ActionKind::Delete) => {
+            dedicated_servers_api::delete_dedicated_server(config, id)
+                .await
+                .map_err(|e| e.to_string())
+        }
+        (ResourceTab::AiAgents, ActionKind::Delete) => ai_agents_api::delete_agent(config, id)
+            .await
+            .map_err(|e| e.to_string()),
+        (ResourceTab::KnowledgeBases, ActionKind::Delete) => {
+            knowledge_bases_api::delete_knowledgebase(config, id)
                 .await
                 .map_err(|e| e.to_string())
         }

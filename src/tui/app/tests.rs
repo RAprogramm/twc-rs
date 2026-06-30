@@ -552,8 +552,7 @@ fn action_menu_works_for_databases() {
 #[test]
 fn no_menu_on_action_less_tab() {
     let mut app = App::new(5);
-    app.active_tab = ResourceTab::Projects;
-    app.projects = vec![make_project(1, "proj")];
+    app.active_tab = ResourceTab::Domains;
     app.open_action_menu();
     assert!(!app.action_menu_open());
 }

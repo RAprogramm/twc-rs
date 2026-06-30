@@ -493,9 +493,15 @@ impl ResourceTab {
         use ActionKind::{Clone, Delete, Reboot, Shutdown, Start};
         match self {
             Self::Servers => &[Start, Shutdown, Reboot, Clone, Delete],
-            Self::Databases | Self::S3 | Self::Kubernetes | Self::Balancers | Self::Registry => {
-                &[Delete]
-            }
+            Self::Databases
+            | Self::S3
+            | Self::Kubernetes
+            | Self::Balancers
+            | Self::Registry
+            | Self::Projects
+            | Self::DedicatedServers
+            | Self::AiAgents
+            | Self::KnowledgeBases => &[Delete],
             _ => &[]
         }
     }
@@ -1179,6 +1185,15 @@ impl App {
             ResourceTab::Balancers => self.balancers.get(real).map(|b| (b.id, b.name.clone())),
             ResourceTab::Registry => self.registries.get(real).map(|r| (r.id, r.name.clone())),
             ResourceTab::Projects => self.projects.get(real).map(|p| (p.id, p.name.clone())),
+            ResourceTab::DedicatedServers => self
+                .dedicated_servers
+                .get(real)
+                .map(|d| (d.id, d.name.clone())),
+            ResourceTab::AiAgents => self.ai_agents.get(real).map(|a| (a.id, a.name.clone())),
+            ResourceTab::KnowledgeBases => self
+                .knowledge_bases
+                .get(real)
+                .map(|k| (k.id, k.name.clone())),
             _ => None
         }
     }
