@@ -25,7 +25,8 @@ speed, footprint, and experience.
 | Runtime deps | system libc only | Python + click/typer/requests/pydantic/… |
 | Interactive dashboard | **yes** — full TUI | no |
 | Shell completions | bash, zsh, fish, powershell, elvish, **nushell** | bash, zsh, fish, powershell |
-| Output formats | table, json, quiet | default, raw, json, yaml |
+| Output formats | table, json, yaml, quiet | default, raw, json, yaml |
+| Profiles (multi-account) | yes (`--profile`) | yes |
 
 Startup was measured on the same machine over 20 runs; `python3 -c "import click"`
 alone takes ~180 ms before any application code runs.

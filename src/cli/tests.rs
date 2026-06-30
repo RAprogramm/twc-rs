@@ -253,7 +253,7 @@ fn config_set_token_subcommand() {
     let cli = parse(&["config", "set-token", "--token", "secret"]);
     match &cli.command {
         Commands::Config(ConfigCommands::SetToken {
-            token
+            token, ..
         }) => {
             assert_eq!(token, "secret");
         }
@@ -266,7 +266,7 @@ fn config_set_token_flag() {
     let cli = parse(&["config", "set-token", "--token", "abc"]);
     match &cli.command {
         Commands::Config(ConfigCommands::SetToken {
-            token
+            token, ..
         }) => {
             assert_eq!(token, "abc");
         }

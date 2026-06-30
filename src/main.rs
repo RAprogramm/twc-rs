@@ -34,13 +34,13 @@ use timeweb_rs::authenticated;
 /// # Errors
 ///
 /// Returns [`TwcError::TokenMissing`] when no token is found.
-fn resolve_token(cli_token: Option<&str>) -> Result<String, TwcError> {
+fn resolve_token(cli_token: Option<&str>, profile: Option<&str>) -> Result<String, TwcError> {
     if let Some(token) = cli_token {
         return Ok(token.to_string());
     }
 
     let app_config = AppConfig::load()?;
-    if let Some(token) = app_config.token {
+    if let Some(token) = app_config.token_for(profile)? {
         return Ok(token);
     }
 
@@ -58,13 +58,14 @@ fn resolve_token(cli_token: Option<&str>) -> Result<String, TwcError> {
 /// # Errors
 ///
 /// Only returns error if config file operations fail catastrophically.
-fn ensure_token(cli_token: Option<&str>) -> Result<String, TwcError> {
-    if let Ok(token) = resolve_token(cli_token) {
+fn ensure_token(cli_token: Option<&str>, profile: Option<&str>) -> Result<String, TwcError> {
+    if let Ok(token) = resolve_token(cli_token, profile) {
         return Ok(token);
     }
 
     #[cfg(feature = "auth")]
-    if let Ok(config_path) = AppConfig::path()
+    if profile.is_none()
+        && let Ok(config_path) = AppConfig::path()
         && let Ok(token) = auth::load_token(&config_path)
     {
         return Ok(token);
@@ -224,17 +225,37 @@ async fn run() -> Result<(), TwcError> {
                 Ok(())
             }
             ConfigCommands::SetToken {
-                token
+                token,
+                profile
             } => {
                 let mut cfg = AppConfig::load()?;
-                cfg.token = Some(token);
-                cfg.save()?;
-                println!("Token saved.");
+                if let Some(name) = profile {
+                    cfg.profiles.insert(name.clone(), token);
+                    cfg.save()?;
+                    println!("Token saved for profile '{name}'.");
+                } else {
+                    cfg.token = Some(token);
+                    cfg.save()?;
+                    println!("Token saved.");
+                }
+                Ok(())
+            }
+            ConfigCommands::Profiles => {
+                let cfg = AppConfig::load()?;
+                if cfg.profiles.is_empty() {
+                    println!("No profiles configured.");
+                } else {
+                    let mut names: Vec<&String> = cfg.profiles.keys().collect();
+                    names.sort();
+                    for name in names {
+                        println!("{name}");
+                    }
+                }
                 Ok(())
             }
         },
         Commands::Server(cmd) => {
-            let token = ensure_token(cli.token.as_deref())?;
+            let token = ensure_token(cli.token.as_deref(), cli.profile.as_deref())?;
             let config = authenticated(token);
             match cmd {
                 ServerCommands::List {
@@ -253,7 +274,7 @@ async fn run() -> Result<(), TwcError> {
             }
         }
         Commands::Ssh(cmd) => {
-            let token = ensure_token(cli.token.as_deref())?;
+            let token = ensure_token(cli.token.as_deref(), cli.profile.as_deref())?;
             let config = authenticated(token);
             match cmd {
                 SshCommands::List => commands::ssh_keys::list(&config, format).await,
@@ -268,7 +289,7 @@ async fn run() -> Result<(), TwcError> {
             }
         }
         Commands::Project(cmd) => {
-            let token = ensure_token(cli.token.as_deref())?;
+            let token = ensure_token(cli.token.as_deref(), cli.profile.as_deref())?;
             let config = authenticated(token);
             match cmd {
                 ProjectCommands::List => commands::projects::list(&config, format).await,
@@ -282,7 +303,7 @@ async fn run() -> Result<(), TwcError> {
             }
         }
         Commands::Database(cmd) => {
-            let token = ensure_token(cli.token.as_deref())?;
+            let token = ensure_token(cli.token.as_deref(), cli.profile.as_deref())?;
             let config = authenticated(token);
             match cmd {
                 DatabaseCommands::List {
@@ -334,7 +355,7 @@ async fn run() -> Result<(), TwcError> {
             }
         }
         Commands::S3(cmd) => {
-            let token = ensure_token(cli.token.as_deref())?;
+            let token = ensure_token(cli.token.as_deref(), cli.profile.as_deref())?;
             let config = authenticated(token);
             match cmd {
                 S3Commands::List {
@@ -379,7 +400,7 @@ async fn run() -> Result<(), TwcError> {
             }
         }
         Commands::Kubernetes(cmd) => {
-            let token = ensure_token(cli.token.as_deref())?;
+            let token = ensure_token(cli.token.as_deref(), cli.profile.as_deref())?;
             let config = authenticated(token);
             match cmd {
                 KubernetesCommands::List {
@@ -440,7 +461,7 @@ async fn run() -> Result<(), TwcError> {
             }
         }
         Commands::Registry(cmd) => {
-            let token = ensure_token(cli.token.as_deref())?;
+            let token = ensure_token(cli.token.as_deref(), cli.profile.as_deref())?;
             let config = authenticated(token);
             match cmd {
                 RegistryCommands::List {
@@ -469,7 +490,7 @@ async fn run() -> Result<(), TwcError> {
             }
         }
         Commands::Balancer(cmd) => {
-            let token = ensure_token(cli.token.as_deref())?;
+            let token = ensure_token(cli.token.as_deref(), cli.profile.as_deref())?;
             let config = authenticated(token);
             match cmd {
                 BalancerCommands::List {
@@ -516,7 +537,7 @@ async fn run() -> Result<(), TwcError> {
             }
         }
         Commands::Domain(cmd) => {
-            let token = ensure_token(cli.token.as_deref())?;
+            let token = ensure_token(cli.token.as_deref(), cli.profile.as_deref())?;
             let config = authenticated(token);
             match cmd {
                 DomainCommands::List {
@@ -593,7 +614,7 @@ async fn run() -> Result<(), TwcError> {
             }
         }
         Commands::Firewall(cmd) => {
-            let token = ensure_token(cli.token.as_deref())?;
+            let token = ensure_token(cli.token.as_deref(), cli.profile.as_deref())?;
             let config = authenticated(token);
             match cmd {
                 FirewallCommands::List {
@@ -637,14 +658,14 @@ async fn run() -> Result<(), TwcError> {
             }
         }
         Commands::Apps(cmd) => {
-            let token = ensure_token(cli.token.as_deref())?;
+            let token = ensure_token(cli.token.as_deref(), cli.profile.as_deref())?;
             let config = authenticated(token);
             match cmd {
                 AppsCommands::List => commands::apps::list(&config, format).await
             }
         }
         Commands::Image(cmd) => {
-            let token = ensure_token(cli.token.as_deref())?;
+            let token = ensure_token(cli.token.as_deref(), cli.profile.as_deref())?;
             let config = authenticated(token);
             match cmd {
                 ImageCommands::List => commands::images::list(&config, format).await,
@@ -654,7 +675,7 @@ async fn run() -> Result<(), TwcError> {
             }
         }
         Commands::Ip(cmd) => {
-            let token = ensure_token(cli.token.as_deref())?;
+            let token = ensure_token(cli.token.as_deref(), cli.profile.as_deref())?;
             let config = authenticated(token);
             match cmd {
                 IpCommands::List => commands::floating_ips::list(&config, format).await,
@@ -664,7 +685,7 @@ async fn run() -> Result<(), TwcError> {
             }
         }
         Commands::Vpc(cmd) => {
-            let token = ensure_token(cli.token.as_deref())?;
+            let token = ensure_token(cli.token.as_deref(), cli.profile.as_deref())?;
             let config = authenticated(token);
             match cmd {
                 VpcCommands::List => commands::vpc::list(&config, format).await,
@@ -674,7 +695,7 @@ async fn run() -> Result<(), TwcError> {
             }
         }
         Commands::Account(cmd) => {
-            let token = ensure_token(cli.token.as_deref())?;
+            let token = ensure_token(cli.token.as_deref(), cli.profile.as_deref())?;
             let config = authenticated(token);
             match cmd {
                 AccountCommands::Show => commands::account::show(&config, format).await
@@ -712,7 +733,7 @@ async fn run() -> Result<(), TwcError> {
             interval
         } => {
             let config = AppConfig::load()?;
-            let token = ensure_token(cli.token.as_deref())?;
+            let token = ensure_token(cli.token.as_deref(), cli.profile.as_deref())?;
             let theme = config.theme;
             let prefs = config.dashboard.clone();
             Box::pin(run_dashboard(token, interval, theme, prefs)).await
@@ -1612,7 +1633,7 @@ mod tests {
 
     #[test]
     fn resolve_token_cli_flag_takes_priority() {
-        let result = resolve_token(Some("my-token"));
+        let result = resolve_token(Some("my-token"), None);
         assert_eq!(result.unwrap(), "my-token");
     }
 
@@ -1623,7 +1644,7 @@ mod tests {
         unsafe {
             std::env::set_var("XDG_CONFIG_HOME", dir.path());
         }
-        let result = resolve_token(None);
+        let result = resolve_token(None, None);
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(err.to_string().contains("no API token configured"));

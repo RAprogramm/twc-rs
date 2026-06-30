@@ -42,6 +42,10 @@ pub struct Cli {
     #[arg(short, long, global = true, env = "TWC_TOKEN")]
     pub token: Option<String>,
 
+    /// Use a named profile's token from the config file.
+    #[arg(long, global = true, env = "TWC_PROFILE")]
+    pub profile: Option<String>,
+
     #[command(subcommand)]
     pub command: Commands
 }
@@ -322,12 +326,18 @@ pub enum DatabaseCommands {
 pub enum ConfigCommands {
     /// Show the current configuration.
     Show,
-    /// Set the API token.
+    /// Set the API token (for the default profile, or a named one).
     SetToken {
         /// The Timeweb Cloud API token.
         #[arg(long)]
-        token: String
-    }
+        token: String,
+
+        /// Store the token under this profile name instead of the default.
+        #[arg(long)]
+        profile: Option<String>
+    },
+    /// List configured profile names.
+    Profiles
 }
 
 /// Authentication subcommands.

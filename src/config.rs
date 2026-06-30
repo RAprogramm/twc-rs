@@ -54,9 +54,14 @@ impl Default for DashboardPrefs {
 /// File-based configuration stored at `~/.config/twc-rs/config.toml`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
-    /// Timeweb Cloud API token.
+    /// Timeweb Cloud API token for the default profile.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub token: Option<String>,
+
+    /// Named profiles, mapping a profile name to its API token. Selected with
+    /// `--profile <name>` (or the `TWC_PROFILE` env var).
+    #[serde(default, skip_serializing_if = "std::collections::HashMap::is_empty")]
+    pub profiles: std::collections::HashMap<String, String>,
 
     /// TUI color theme.
     #[cfg(feature = "tui")]
@@ -89,6 +94,7 @@ impl Default for AppConfig {
     fn default() -> Self {
         Self {
             token: None,
+            profiles: std::collections::HashMap::new(),
             #[cfg(feature = "tui")]
             theme: crate::tui::themes::Theme::default(),
             output: OutputPreference::Table,
@@ -101,6 +107,22 @@ impl Default for AppConfig {
 }
 
 impl AppConfig {
+    /// Returns the token for the given profile, or the default token when no
+    /// profile is named.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TwcError::ConfigNotFound`] when the named profile does not
+    /// exist.
+    pub fn token_for(&self, profile: Option<&str>) -> Result<Option<String>, TwcError> {
+        match profile {
+            Some(name) => self.profiles.get(name).cloned().map(Some).ok_or_else(|| {
+                TwcError::ConfigNotFound(format!("profile '{name}' not found in config"))
+            }),
+            None => Ok(self.token.clone())
+        }
+    }
+
     /// Returns the path to the configuration file.
     ///
     /// # Overview
