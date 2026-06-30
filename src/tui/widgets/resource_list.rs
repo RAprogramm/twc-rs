@@ -349,11 +349,22 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
             .collect()
     };
 
+    let indices = app.filtered_indices();
+    let items: Vec<ListItem> = indices
+        .iter()
+        .filter_map(|&i| items.get(i).cloned())
+        .collect();
+
     let tab_name = ResourceTab::names()
         .get(app.active_tab.index())
         .copied()
         .unwrap_or("Resources");
-    let title = format!(" {tab_name} ({}) ", items.len());
+    let title = if app.filter_active() {
+        let cursor = if app.filter_editing { "\u{2588}" } else { "" };
+        format!(" {tab_name} ({})  /{}{cursor} ", items.len(), app.filter)
+    } else {
+        format!(" {tab_name} ({}) ", items.len())
+    };
     let list = List::new(items)
         .block(
             Block::default()

@@ -549,7 +549,9 @@ pub struct App {
     pub last_load_errors:  Vec<String>,
     pub refresh_requested: bool,
     pub drill:             Option<DrillView>,
-    pub drill_request:     Option<(ResourceTab, i32, String)>
+    pub drill_request:     Option<(ResourceTab, i32, String)>,
+    pub filter:            String,
+    pub filter_editing:    bool
 }
 
 impl App {
@@ -618,8 +620,109 @@ impl App {
             last_load_errors: Vec::new(),
             refresh_requested: false,
             drill: None,
-            drill_request: None
+            drill_request: None,
+            filter: String::new(),
+            filter_editing: false
         }
+    }
+
+    /// Returns the display names of the current tab's items, in list order.
+    #[must_use]
+    pub fn current_item_names(&self) -> Vec<String> {
+        match self.active_tab {
+            ResourceTab::Servers => self.servers.iter().map(|s| s.name.clone()).collect(),
+            ResourceTab::Databases => self.databases.iter().map(|d| d.name.clone()).collect(),
+            ResourceTab::S3 => self.s3_storages.iter().map(|s| s.name.clone()).collect(),
+            ResourceTab::Kubernetes => self.k8s_clusters.iter().map(|c| c.name.clone()).collect(),
+            ResourceTab::Projects => self.projects.iter().map(|p| p.name.clone()).collect(),
+            ResourceTab::Balancers => self.balancers.iter().map(|b| b.name.clone()).collect(),
+            ResourceTab::Registry => self.registries.iter().map(|r| r.name.clone()).collect(),
+            ResourceTab::Domains => self.domains.iter().map(|d| d.name.clone()).collect(),
+            ResourceTab::Firewall => self.firewalls.iter().map(|f| f.name.clone()).collect(),
+            ResourceTab::FloatingIps => self.floating_ips.iter().map(|f| f.ip.clone()).collect(),
+            ResourceTab::Images => self.images.iter().map(|i| i.name.clone()).collect(),
+            ResourceTab::NetworkDrives => {
+                self.network_drives.iter().map(|n| n.name.clone()).collect()
+            }
+            ResourceTab::Vpc => self.vpcs.iter().map(|v| v.name.clone()).collect(),
+            ResourceTab::DedicatedServers => self
+                .dedicated_servers
+                .iter()
+                .map(|d| d.name.clone())
+                .collect(),
+            ResourceTab::Mail => self.mails.iter().map(|m| m.name.clone()).collect(),
+            ResourceTab::Apps => self.apps.iter().map(|a| a.name.clone()).collect(),
+            ResourceTab::AiAgents => self.ai_agents.iter().map(|a| a.name.clone()).collect(),
+            ResourceTab::KnowledgeBases => self
+                .knowledge_bases
+                .iter()
+                .map(|k| k.name.clone())
+                .collect(),
+            ResourceTab::SshKeys => self.ssh_keys.clone(),
+            ResourceTab::Finances => self.finances.clone()
+        }
+    }
+
+    /// Returns the indices of the current tab's items that match the filter,
+    /// in list order. With no filter, returns every index.
+    #[must_use]
+    pub fn filtered_indices(&self) -> Vec<usize> {
+        let names = self.current_item_names();
+        if self.filter.is_empty() {
+            return (0..names.len()).collect();
+        }
+        let needle = self.filter.to_lowercase();
+        names
+            .iter()
+            .enumerate()
+            .filter(|(_, name)| name.to_lowercase().contains(&needle))
+            .map(|(i, _)| i)
+            .collect()
+    }
+
+    /// Begins filter input for the current list.
+    pub fn start_filter(&mut self) {
+        self.filter_editing = true;
+        self.selected = 0;
+    }
+
+    /// Appends a character to the filter query.
+    pub fn filter_push(&mut self, c: char) {
+        self.filter.push(c);
+        self.selected = 0;
+    }
+
+    /// Removes the last filter character; clears the filter when empty.
+    pub fn filter_backspace(&mut self) {
+        self.filter.pop();
+        self.selected = 0;
+    }
+
+    /// Applies the filter and leaves input mode (keeps it active for nav).
+    pub fn filter_apply(&mut self) {
+        self.filter_editing = false;
+    }
+
+    /// Clears the filter entirely and leaves input mode.
+    pub fn filter_clear(&mut self) {
+        self.filter.clear();
+        self.filter_editing = false;
+        self.selected = 0;
+    }
+
+    /// Returns true when the filter is being typed or is applied.
+    #[must_use]
+    pub fn filter_active(&self) -> bool {
+        self.filter_editing || !self.filter.is_empty()
+    }
+
+    /// Maps the visible selection to the real index into the unfiltered list.
+    #[must_use]
+    pub fn selected_real_index(&self) -> usize {
+        self.filtered_indices()
+            .get(self.selected)
+            .copied()
+            .unwrap_or(0)
     }
 
     /// Appends an entry to the event log, trimming to the last 200 entries.
@@ -635,29 +738,8 @@ impl App {
 
     /// Returns the currently selected resource list length.
     #[must_use]
-    pub const fn current_list_len(&self) -> usize {
-        match self.active_tab {
-            ResourceTab::Servers => self.servers.len(),
-            ResourceTab::Databases => self.databases.len(),
-            ResourceTab::S3 => self.s3_storages.len(),
-            ResourceTab::Kubernetes => self.k8s_clusters.len(),
-            ResourceTab::Projects => self.projects.len(),
-            ResourceTab::Balancers => self.balancers.len(),
-            ResourceTab::Registry => self.registries.len(),
-            ResourceTab::Domains => self.domains.len(),
-            ResourceTab::Firewall => self.firewalls.len(),
-            ResourceTab::FloatingIps => self.floating_ips.len(),
-            ResourceTab::Images => self.images.len(),
-            ResourceTab::NetworkDrives => self.network_drives.len(),
-            ResourceTab::Vpc => self.vpcs.len(),
-            ResourceTab::DedicatedServers => self.dedicated_servers.len(),
-            ResourceTab::Mail => self.mails.len(),
-            ResourceTab::Apps => self.apps.len(),
-            ResourceTab::AiAgents => self.ai_agents.len(),
-            ResourceTab::KnowledgeBases => self.knowledge_bases.len(),
-            ResourceTab::SshKeys => self.ssh_keys.len(),
-            ResourceTab::Finances => self.finances.len()
-        }
+    pub fn current_list_len(&self) -> usize {
+        self.filtered_indices().len()
     }
 
     /// Moves selection up.
@@ -668,22 +750,26 @@ impl App {
     }
 
     /// Moves selection down.
-    pub const fn select_next(&mut self) {
+    pub fn select_next(&mut self) {
         if self.selected + 1 < self.current_list_len() {
             self.selected += 1;
         }
     }
 
-    /// Cycles to the next resource tab.
-    pub const fn next_tab(&mut self) {
+    /// Cycles to the next resource tab, resetting any filter.
+    pub fn next_tab(&mut self) {
         self.active_tab = self.active_tab.next();
         self.selected = 0;
+        self.filter.clear();
+        self.filter_editing = false;
     }
 
-    /// Cycles to the previous resource tab.
-    pub const fn previous_tab(&mut self) {
+    /// Cycles to the previous resource tab, resetting any filter.
+    pub fn previous_tab(&mut self) {
         self.active_tab = self.active_tab.previous();
         self.selected = 0;
+        self.filter.clear();
+        self.filter_editing = false;
     }
 
     /// Toggles the help overlay.
@@ -860,7 +946,7 @@ impl App {
         self.clamp_selection();
     }
 
-    const fn clamp_selection(&mut self) {
+    fn clamp_selection(&mut self) {
         let len = self.current_list_len();
         if len == 0 {
             self.selected = 0;
@@ -913,35 +999,15 @@ impl App {
     /// for tabs whose resources are addressable by a numeric id.
     #[must_use]
     pub fn selected_resource(&self) -> Option<(i32, String)> {
+        let real = *self.filtered_indices().get(self.selected)?;
         match self.active_tab {
-            ResourceTab::Servers => self
-                .servers
-                .get(self.selected)
-                .map(|s| (s.id, s.name.clone())),
-            ResourceTab::Databases => self
-                .databases
-                .get(self.selected)
-                .map(|d| (d.id, d.name.clone())),
-            ResourceTab::S3 => self
-                .s3_storages
-                .get(self.selected)
-                .map(|s| (s.id, s.name.clone())),
-            ResourceTab::Kubernetes => self
-                .k8s_clusters
-                .get(self.selected)
-                .map(|c| (c.id, c.name.clone())),
-            ResourceTab::Balancers => self
-                .balancers
-                .get(self.selected)
-                .map(|b| (b.id, b.name.clone())),
-            ResourceTab::Registry => self
-                .registries
-                .get(self.selected)
-                .map(|r| (r.id, r.name.clone())),
-            ResourceTab::Projects => self
-                .projects
-                .get(self.selected)
-                .map(|p| (p.id, p.name.clone())),
+            ResourceTab::Servers => self.servers.get(real).map(|s| (s.id, s.name.clone())),
+            ResourceTab::Databases => self.databases.get(real).map(|d| (d.id, d.name.clone())),
+            ResourceTab::S3 => self.s3_storages.get(real).map(|s| (s.id, s.name.clone())),
+            ResourceTab::Kubernetes => self.k8s_clusters.get(real).map(|c| (c.id, c.name.clone())),
+            ResourceTab::Balancers => self.balancers.get(real).map(|b| (b.id, b.name.clone())),
+            ResourceTab::Registry => self.registries.get(real).map(|r| (r.id, r.name.clone())),
+            ResourceTab::Projects => self.projects.get(real).map(|p| (p.id, p.name.clone())),
             _ => None
         }
     }

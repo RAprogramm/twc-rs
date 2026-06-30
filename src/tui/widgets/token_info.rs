@@ -72,9 +72,7 @@ impl TokenInfoWidget {
             return vec![
                 Line::from(Span::styled(
                     "API key",
-                    Style::default()
-                        .fg(palette.fg)
-                        .add_modifier(Modifier::BOLD)
+                    Style::default().fg(palette.fg).add_modifier(Modifier::BOLD)
                 )),
                 Line::from(Span::styled(
                     "no JWT expiry info",

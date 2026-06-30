@@ -1032,27 +1032,75 @@ async fn refresh_all(
 
     let err_of = |e: Option<String>, name: &str| e.map(|msg| format!("{name}: {msg}"));
     app.last_load_errors = [
-        err_of(account_res.as_ref().err().map(ToString::to_string), "account"),
-        err_of(servers_res.as_ref().err().map(ToString::to_string), "servers"),
+        err_of(
+            account_res.as_ref().err().map(ToString::to_string),
+            "account"
+        ),
+        err_of(
+            servers_res.as_ref().err().map(ToString::to_string),
+            "servers"
+        ),
         err_of(dbs_res.as_ref().err().map(ToString::to_string), "databases"),
         err_of(s3_res.as_ref().err().map(ToString::to_string), "s3"),
-        err_of(k8s_res.as_ref().err().map(ToString::to_string), "kubernetes"),
-        err_of(projects_res.as_ref().err().map(ToString::to_string), "projects"),
-        err_of(balancers_res.as_ref().err().map(ToString::to_string), "balancers"),
-        err_of(registries_res.as_ref().err().map(ToString::to_string), "registries"),
-        err_of(domains_res.as_ref().err().map(ToString::to_string), "domains"),
-        err_of(firewalls_res.as_ref().err().map(ToString::to_string), "firewall"),
-        err_of(floating_ips_res.as_ref().err().map(ToString::to_string), "floating IPs"),
+        err_of(
+            k8s_res.as_ref().err().map(ToString::to_string),
+            "kubernetes"
+        ),
+        err_of(
+            projects_res.as_ref().err().map(ToString::to_string),
+            "projects"
+        ),
+        err_of(
+            balancers_res.as_ref().err().map(ToString::to_string),
+            "balancers"
+        ),
+        err_of(
+            registries_res.as_ref().err().map(ToString::to_string),
+            "registries"
+        ),
+        err_of(
+            domains_res.as_ref().err().map(ToString::to_string),
+            "domains"
+        ),
+        err_of(
+            firewalls_res.as_ref().err().map(ToString::to_string),
+            "firewall"
+        ),
+        err_of(
+            floating_ips_res.as_ref().err().map(ToString::to_string),
+            "floating IPs"
+        ),
         err_of(images_res.as_ref().err().map(ToString::to_string), "images"),
-        err_of(network_drives_res.as_ref().err().map(ToString::to_string), "network drives"),
+        err_of(
+            network_drives_res.as_ref().err().map(ToString::to_string),
+            "network drives"
+        ),
         err_of(vpcs_res.as_ref().err().map(ToString::to_string), "VPCs"),
-        err_of(dedicated_servers_res.as_ref().err().map(ToString::to_string), "dedicated servers"),
+        err_of(
+            dedicated_servers_res
+                .as_ref()
+                .err()
+                .map(ToString::to_string),
+            "dedicated servers"
+        ),
         err_of(mails_res.as_ref().err().map(ToString::to_string), "mail"),
         err_of(apps_res.as_ref().err().map(ToString::to_string), "apps"),
-        err_of(ai_agents_res.as_ref().err().map(ToString::to_string), "AI agents"),
-        err_of(knowledge_bases_res.as_ref().err().map(ToString::to_string), "knowledge bases"),
-        err_of(ssh_keys_res.as_ref().err().map(ToString::to_string), "SSH keys"),
-        err_of(finances_res.as_ref().err().map(ToString::to_string), "finances")
+        err_of(
+            ai_agents_res.as_ref().err().map(ToString::to_string),
+            "AI agents"
+        ),
+        err_of(
+            knowledge_bases_res.as_ref().err().map(ToString::to_string),
+            "knowledge bases"
+        ),
+        err_of(
+            ssh_keys_res.as_ref().err().map(ToString::to_string),
+            "SSH keys"
+        ),
+        err_of(
+            finances_res.as_ref().err().map(ToString::to_string),
+            "finances"
+        )
     ]
     .into_iter()
     .flatten()

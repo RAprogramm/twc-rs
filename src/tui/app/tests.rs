@@ -638,6 +638,45 @@ fn palette_run_delete_requires_confirm() {
 }
 
 #[test]
+fn filter_narrows_list_and_maps_selection() {
+    let mut app = App::new(5);
+    app.servers = vec![
+        make_server(1, "web-prod", "On"),
+        make_server(2, "db-prod", "On"),
+        make_server(3, "web-stage", "On"),
+    ];
+    assert_eq!(app.current_list_len(), 3);
+
+    app.start_filter();
+    for c in "web".chars() {
+        app.filter_push(c);
+    }
+    assert_eq!(app.filtered_indices(), vec![0, 2]);
+    assert_eq!(app.current_list_len(), 2);
+
+    app.selected = 1;
+    let (id, name) = app.selected_resource().expect("maps filtered selection");
+    assert_eq!(id, 3);
+    assert_eq!(name, "web-stage");
+
+    app.filter_clear();
+    assert_eq!(app.current_list_len(), 3);
+    assert!(!app.filter_active());
+}
+
+#[test]
+fn filter_resets_on_tab_change() {
+    let mut app = App::new(5);
+    app.servers = vec![make_server(1, "web", "On")];
+    app.start_filter();
+    app.filter_push('x');
+    assert!(app.filter_active());
+    app.next_tab();
+    assert!(!app.filter_active());
+    assert!(app.filter.is_empty());
+}
+
+#[test]
 fn drill_request_only_on_projects() {
     let mut app = App::new(5);
     app.servers = vec![make_server(7, "web", "On")];

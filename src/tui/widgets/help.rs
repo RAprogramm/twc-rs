@@ -69,15 +69,14 @@ impl HelpWidget {
         )));
 
         let shortcuts = [
-            ("h/l", "Move focus left/right (Overview)"),
-            ("j/k", "Drill in / scroll (Overview)"),
-            ("j/k", "Select up/down (Inner)"),
-            ("Tab", "Cycle tabs"),
-            ("g", "Go to first item"),
-            ("$", "Go to last item"),
-            ("Enter", "Open action menu for selected server"),
-            ("r", "Refresh all data"),
-            ("Esc", "Close menu / go back to Overview"),
+            ("h/l", "Previous / next tab"),
+            ("j/k", "Move selection up / down"),
+            ("g/G", "Jump to first / last item"),
+            ("Enter", "Open actions / drill into selection"),
+            ("/", "Filter the current list"),
+            ("Ctrl+K", "Command palette"),
+            ("r", "Refresh now"),
+            ("Esc", "Close / clear filter"),
             ("?", "Toggle this help"),
             ("Q", "Quit")
         ];
@@ -291,7 +290,7 @@ mod tests {
             .join(" ");
 
         assert!(text.contains("Quit"));
-        assert!(text.contains("Refresh all data"));
+        assert!(text.contains("Refresh now"));
         assert!(text.contains("Toggle this help"));
     }
 

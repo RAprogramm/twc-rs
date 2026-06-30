@@ -121,10 +121,31 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
         return true;
     }
 
+    if app.filter_editing {
+        match key.code {
+            KeyCode::Esc => app.filter_clear(),
+            KeyCode::Enter => app.filter_apply(),
+            KeyCode::Backspace => app.filter_backspace(),
+            KeyCode::Char(c) => app.filter_push(c),
+            _ => {}
+        }
+        return true;
+    }
+
     match key.code {
         KeyCode::Char('Q') => {
             app.quit();
             false
+        }
+        KeyCode::Char('/') => {
+            app.start_filter();
+            true
+        }
+        KeyCode::Esc => {
+            if app.filter_active() {
+                app.filter_clear();
+            }
+            true
         }
         KeyCode::Char('?') => {
             app.toggle_help();

@@ -374,6 +374,8 @@ fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, palette: &Palette
         lbl(" move   "),
         key("⏎"),
         lbl(" open   "),
+        key("/"),
+        lbl(" filter   "),
         key("^K"),
         lbl(" cmds   "),
         key("?"),

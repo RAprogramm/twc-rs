@@ -152,7 +152,7 @@ fn render_server_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
         return empty("No servers available", palette);
     }
 
-    let server = &app.servers[app.selected.min(app.servers.len() - 1)];
+    let server = &app.servers[app.selected_real_index().min(app.servers.len() - 1)];
     let (_, color, label) = server_status_view(&server.status, &palette);
     vec![
         heading(&server.name, palette),
@@ -188,7 +188,7 @@ fn render_database_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
         return empty("No databases available", palette);
     }
 
-    let db = &app.databases[app.selected.min(app.databases.len() - 1)];
+    let db = &app.databases[app.selected_real_index().min(app.databases.len() - 1)];
     vec![
         heading(&db.name, palette),
         rule(palette),
@@ -214,7 +214,7 @@ fn render_s3_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
         return empty("No S3 storages available", palette);
     }
 
-    let storage = &app.s3_storages[app.selected.min(app.s3_storages.len() - 1)];
+    let storage = &app.s3_storages[app.selected_real_index().min(app.s3_storages.len() - 1)];
     vec![
         heading(&storage.name, palette),
         rule(palette),
@@ -240,7 +240,7 @@ fn render_k8s_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
         return empty("No Kubernetes clusters available", palette);
     }
 
-    let cluster = &app.k8s_clusters[app.selected.min(app.k8s_clusters.len() - 1)];
+    let cluster = &app.k8s_clusters[app.selected_real_index().min(app.k8s_clusters.len() - 1)];
     vec![
         heading(&cluster.name, palette),
         rule(palette),
@@ -271,7 +271,7 @@ fn render_project_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
         return empty("No projects available", palette);
     }
 
-    let project = &app.projects[app.selected.min(app.projects.len() - 1)];
+    let project = &app.projects[app.selected_real_index().min(app.projects.len() - 1)];
     vec![
         heading(&project.name, palette),
         rule(palette),
