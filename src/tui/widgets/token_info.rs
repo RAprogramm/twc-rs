@@ -68,6 +68,20 @@ impl TokenInfoWidget {
         };
 
         let payload = JwtPayload::parse(token_str);
+        if payload.exp.is_none() {
+            return vec![
+                Line::from(Span::styled(
+                    "API key",
+                    Style::default()
+                        .fg(palette.fg)
+                        .add_modifier(Modifier::BOLD)
+                )),
+                Line::from(Span::styled(
+                    "no JWT expiry info",
+                    Style::default().fg(palette.dim)
+                )),
+            ];
+        }
         let expires_line = payload.exp.map_or_else(
             || {
                 Line::from(Span::styled(
