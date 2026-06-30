@@ -275,11 +275,7 @@ pub async fn attach(
 /// # Errors
 ///
 /// Returns [`TwcError::Api`] on network or API failures.
-pub async fn detach(
-    config: &Configuration,
-    server_id: i32,
-    key_id: i32
-) -> Result<(), TwcError> {
+pub async fn detach(config: &Configuration, server_id: i32, key_id: i32) -> Result<(), TwcError> {
     ssh_api::delete_key_from_server(config, server_id, key_id).await?;
     println!(
         "{}",

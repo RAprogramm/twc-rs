@@ -182,7 +182,9 @@ fn ssh_delete_subcommand() {
 
 #[test]
 fn ssh_attach_subcommand() {
-    let cli = parse(&["ssh", "attach", "--server", "12", "--key", "5", "--key", "7"]);
+    let cli = parse(&[
+        "ssh", "attach", "--server", "12", "--key", "5", "--key", "7"
+    ]);
     match &cli.command {
         Commands::Ssh(SshCommands::Attach {
             server,
