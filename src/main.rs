@@ -239,7 +239,28 @@ async fn handle_server(
         ServerCommands::Reinstall {
             id,
             os_id
-        } => commands::servers::reinstall(config, id, os_id).await
+        } => commands::servers::reinstall(config, id, os_id).await,
+        ServerCommands::Create {
+            name,
+            preset_id,
+            os_id,
+            comment,
+            ssh_key,
+            project_id,
+            availability_zone
+        } => {
+            commands::servers::create(
+                config,
+                &name,
+                preset_id,
+                os_id,
+                comment.as_deref(),
+                &ssh_key,
+                project_id,
+                availability_zone.as_deref()
+            )
+            .await
+        }
     }
 }
 
@@ -261,7 +282,28 @@ async fn handle_apps(
         AppsCommands::ListVcsProviders => commands::apps::list_vcs_providers(config, format).await,
         AppsCommands::ListRepositories {
             provider_id
-        } => commands::apps::list_repositories(config, &provider_id, format).await
+        } => commands::apps::list_repositories(config, &provider_id, format).await,
+        AppsCommands::Create(args) => {
+            commands::apps::create(
+                config,
+                &args.name,
+                args.comment.as_deref(),
+                &args.provider_id,
+                &args.repository_id,
+                args.preset_id,
+                &args.app_type,
+                &args.framework,
+                &args.branch,
+                args.commit_sha.as_deref(),
+                args.build_cmd.as_deref(),
+                args.run_cmd.as_deref(),
+                args.index_dir.as_deref(),
+                args.auto_deploy,
+                args.project_id,
+                format
+            )
+            .await
+        }
     }
 }
 

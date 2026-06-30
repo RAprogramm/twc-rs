@@ -5,7 +5,10 @@ use std::fmt;
 
 use rust_i18n::t;
 use tabled::Tabled;
-use timeweb_rs::apis::{apps_api, configuration::Configuration};
+use timeweb_rs::{
+    apis::{apps_api, configuration::Configuration},
+    models
+};
 
 use crate::{error::TwcError, output::OutputFormat};
 
@@ -339,6 +342,174 @@ pub async fn list_repositories(
             for r in &resp.repositories {
                 println!("{}\t{}", fmt_id(r.id), r.name);
             }
+        }
+    }
+    Ok(())
+}
+
+/// Canonical wire value for the app type.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] when the value is not `backend` or `frontend`.
+fn parse_app_type(value: &str) -> Result<&'static str, TwcError> {
+    match value.to_lowercase().as_str() {
+        "backend" => Ok("backend"),
+        "frontend" => Ok("frontend"),
+        _ => Err(TwcError::Api(
+            t!("cli.app_invalid_type", value => value).into_owned()
+        ))
+    }
+}
+
+/// Canonical wire value for a supported framework.
+///
+/// Matches the user-supplied name case-insensitively against the framework
+/// identifiers accepted by the Timeweb Cloud API.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] when the framework is not recognised.
+fn parse_framework(value: &str) -> Result<&'static str, TwcError> {
+    const NAMES: [&str; 26] = [
+        "django",
+        "express",
+        "phoenix",
+        "Spring",
+        "laravel",
+        "beego",
+        "fastapi",
+        "ASP.NET Core",
+        "hapi",
+        "celery",
+        "flask",
+        "gin",
+        "docker",
+        "fastify",
+        "nest",
+        "symfony",
+        "yii",
+        "angular",
+        "ember",
+        "next.js",
+        "nuxt",
+        "preact",
+        "react",
+        "svelte",
+        "vue",
+        "another"
+    ];
+
+    let lower = value.to_lowercase();
+    NAMES
+        .into_iter()
+        .find(|name| name.to_lowercase() == lower)
+        .ok_or_else(|| TwcError::Api(t!("cli.app_invalid_framework", value => value).into_owned()))
+}
+
+/// Creates a new cloud app from a connected VCS repository.
+///
+/// # Overview
+///
+/// Builds a [`models::CreateApp`] request for either a `backend` app (built and
+/// run from a git repository) or a `frontend` app (static/SSR site), submits it
+/// to the Timeweb Cloud API, and prints the new app id and name.
+///
+/// A backend app requires `run_cmd`; a frontend app requires `index_dir`.
+/// The request body is assembled as JSON and deserialised into the SDK model so
+/// that provider/repository identifiers and the framework are validated by the
+/// SDK's own `serde` definitions without any panic-prone conversions.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] when the app type or framework is invalid, when a
+/// required field for the chosen type is missing, when the identifiers cannot
+/// be parsed, or on any network or API failure.
+pub async fn create(
+    config: &Configuration,
+    name: &str,
+    comment: Option<&str>,
+    provider_id: &str,
+    repository_id: &str,
+    preset_id: i64,
+    app_type: &str,
+    framework: &str,
+    branch: &str,
+    commit_sha: Option<&str>,
+    build_cmd: Option<&str>,
+    run_cmd: Option<&str>,
+    index_dir: Option<&str>,
+    is_auto_deploy: bool,
+    project_id: Option<i64>,
+    format: OutputFormat
+) -> Result<(), TwcError> {
+    let type_value = parse_app_type(app_type)?;
+    let framework_value = parse_framework(framework)?;
+
+    if type_value == "backend" && run_cmd.is_none() {
+        return Err(TwcError::Api(
+            t!("cli.app_backend_needs_run_cmd").into_owned()
+        ));
+    }
+    if type_value == "frontend" && index_dir.is_none() {
+        return Err(TwcError::Api(
+            t!("cli.app_frontend_needs_index_dir").into_owned()
+        ));
+    }
+
+    let mut body = serde_json::json!({
+        "provider_id": provider_id,
+        "type": type_value,
+        "repository_id": repository_id,
+        "build_cmd": build_cmd.unwrap_or_default(),
+        "branch_name": branch,
+        "is_auto_deploy": is_auto_deploy,
+        "commit_sha": commit_sha.unwrap_or_default(),
+        "name": name,
+        "comment": comment.unwrap_or_default(),
+        "preset_id": preset_id,
+        "framework": framework_value
+    });
+
+    if let Some(map) = body.as_object_mut() {
+        if let Some(cmd) = run_cmd {
+            map.insert(
+                "run_cmd".to_owned(),
+                serde_json::Value::String(cmd.to_owned())
+            );
+        }
+        if let Some(dir) = index_dir {
+            map.insert(
+                "index_dir".to_owned(),
+                serde_json::Value::String(dir.to_owned())
+            );
+        }
+        if let Some(project) = project_id {
+            map.insert("project_id".to_owned(), serde_json::Value::from(project));
+        }
+    }
+
+    let request: models::CreateApp = serde_json::from_value(body).map_err(|e| {
+        TwcError::Api(t!("cli.app_invalid_input", value => e.to_string()).into_owned())
+    })?;
+
+    let resp = apps_api::create_app(config, request).await?;
+    let app = &resp.app;
+
+    match format {
+        OutputFormat::Table => {
+            println!(
+                "{}",
+                t!("cli.app_created", id => fmt_id(app.id), name => app.name.clone())
+            );
+        }
+        OutputFormat::Json | OutputFormat::Yaml => {
+            if let Some(out) = crate::output::serialized(format, &resp.app) {
+                println!("{}", out?);
+            }
+        }
+        OutputFormat::Quiet => {
+            println!("{}\t{}", fmt_id(app.id), app.name);
         }
     }
     Ok(())

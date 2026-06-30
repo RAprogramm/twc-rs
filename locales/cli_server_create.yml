@@ -1,0 +1,8 @@
+_version: 2
+
+cli.server_created:
+  en: "Server %{id} (%{name}) is being created."
+  ru: "Сервер %{id} (%{name}) создаётся."
+cli.server_invalid_zone:
+  en: "Invalid availability zone '%{value}'. Expected one of: spb-1, spb-2, spb-3, spb-4, msk-1, nsk-1, ams-1, ala-1, fra-1."
+  ru: "Недопустимая зона доступности «%{value}». Ожидается одно из: spb-1, spb-2, spb-3, spb-4, msk-1, nsk-1, ams-1, ala-1, fra-1."

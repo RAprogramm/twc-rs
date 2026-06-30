@@ -1,0 +1,20 @@
+_version: 2
+
+cli.app_created:
+  en: "App %{id} (%{name}) is being created."
+  ru: "Приложение %{id} (%{name}) создаётся."
+cli.app_invalid_type:
+  en: "Invalid app type '%{value}'. Expected 'backend' or 'frontend'."
+  ru: "Недопустимый тип приложения «%{value}». Ожидается «backend» или «frontend»."
+cli.app_invalid_framework:
+  en: "Invalid framework '%{value}'. See `twc-rs apps list-presets` and the API docs for supported frameworks."
+  ru: "Недопустимый фреймворк «%{value}». Список поддерживаемых фреймворков см. в `twc-rs apps list-presets` и документации API."
+cli.app_backend_needs_run_cmd:
+  en: "A backend app requires --run-cmd."
+  ru: "Для backend-приложения требуется --run-cmd."
+cli.app_frontend_needs_index_dir:
+  en: "A frontend app requires --index-dir."
+  ru: "Для frontend-приложения требуется --index-dir."
+cli.app_invalid_input:
+  en: "Failed to build app request: %{value}."
+  ru: "Не удалось сформировать запрос на создание приложения: %{value}."

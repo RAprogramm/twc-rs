@@ -17,6 +17,88 @@ fn fmt_id<T: std::fmt::Display>(v: T) -> String {
     v.to_string()
 }
 
+/// Parses an availability zone code (e.g. `spb-1`) into the SDK enum.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] for an unrecognized zone code.
+fn parse_zone(s: &str) -> Result<models::AvailabilityZone, TwcError> {
+    match s.to_lowercase().as_str() {
+        "spb-1" => Ok(models::AvailabilityZone::Spb1),
+        "spb-2" => Ok(models::AvailabilityZone::Spb2),
+        "spb-3" => Ok(models::AvailabilityZone::Spb3),
+        "spb-4" => Ok(models::AvailabilityZone::Spb4),
+        "msk-1" => Ok(models::AvailabilityZone::Msk1),
+        "nsk-1" => Ok(models::AvailabilityZone::Nsk1),
+        "ams-1" => Ok(models::AvailabilityZone::Ams1),
+        "ala-1" => Ok(models::AvailabilityZone::Ala1),
+        "fra-1" => Ok(models::AvailabilityZone::Fra1),
+        other => Err(TwcError::Api(
+            t!("cli.server_invalid_zone", value => other).to_string()
+        ))
+    }
+}
+
+/// Creates a new cloud server from a preset and an OS image.
+///
+/// # Overview
+///
+/// Builds a preset-based [`models::CreateServer`] request and submits it.
+/// On success the new server's id and name are printed. The request uses a
+/// fixed bandwidth of 100 Mbps and disables `DDoS` guard by default; pass the
+/// optional arguments to attach SSH keys, a comment, a project, or pin an
+/// availability zone.
+///
+/// Rarely-used fields are intentionally deferred: custom configurator builds
+/// (CPU/RAM/disk arrays), pre-installed software, cloud-init scripts, local
+/// networks, custom network configuration, image-based installs, hostname and
+/// avatar. These can be layered on later without changing the preset path.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] for an unknown availability zone or on network
+/// and API failures.
+pub async fn create(
+    config: &Configuration,
+    name: &str,
+    preset_id: i32,
+    os_id: i32,
+    comment: Option<&str>,
+    ssh_key_ids: &[i32],
+    project_id: Option<i32>,
+    availability_zone: Option<&str>
+) -> Result<(), TwcError> {
+    let mut body = models::CreateServer::new(name.to_owned());
+    body.preset_id = Some(i64::from(preset_id));
+    body.os_id = Some(i64::from(os_id));
+    body.bandwidth = Some(100.0);
+    body.is_ddos_guard = Some(false);
+
+    if let Some(text) = comment {
+        body.comment = Some(text.to_owned());
+    }
+    if !ssh_key_ids.is_empty() {
+        body.ssh_keys_ids = Some(ssh_key_ids.iter().copied().map(f64::from).collect());
+    }
+    if let Some(project) = project_id {
+        body.project_id = Some(i64::from(project));
+    }
+    if let Some(zone) = availability_zone {
+        body.availability_zone = Some(parse_zone(zone)?);
+    }
+
+    let resp = servers_api::create_server(config, body).await?;
+    println!(
+        "{}",
+        t!(
+            "cli.server_created",
+            id => fmt_id(resp.server.id),
+            name => resp.server.name
+        )
+    );
+    Ok(())
+}
+
 /// Compact row for the server list table.
 #[derive(Tabled)]
 struct ServerRow {
