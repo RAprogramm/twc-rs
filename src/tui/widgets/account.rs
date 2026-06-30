@@ -80,10 +80,16 @@ impl AccountWidget {
         } else {
             account.balance.clone()
         };
-        let status = if account.status.is_empty() {
-            t!("account.status_unknown").to_string()
-        } else {
-            account.status.clone()
+        let status = match account.status.as_str() {
+            "" => t!("account.status_unknown").to_string(),
+            "active" => t!("account.status_active").to_string(),
+            "running" => t!("account.status_running").to_string(),
+            "enabled" => t!("account.status_enabled").to_string(),
+            "inactive" => t!("account.status_inactive").to_string(),
+            "suspended" => t!("account.status_suspended").to_string(),
+            "error" => t!("account.status_error").to_string(),
+            "failed" => t!("account.status_failed").to_string(),
+            other => other.to_string()
         };
         let sep = || Span::styled("   │   ", Style::default().fg(palette.border));
 

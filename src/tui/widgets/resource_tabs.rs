@@ -17,7 +17,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph}
 };
 
-use crate::tui::app::{App, ResourceTab};
+use crate::tui::app::App;
 
 /// Per-tab icon glyphs, indexed by [`ResourceTab::index`].
 ///
@@ -131,7 +131,6 @@ impl ResourceTabsWidget {
     ///
     /// A `Line` containing the styled tab bar.
     fn build_tab_bar(app: &App, width: u16) -> Line<'static> {
-        let names = ResourceTab::names();
         let palette = app.theme.palette();
         let tabs = app.visible_tabs();
         let len = tabs.len();
@@ -141,7 +140,7 @@ impl ResourceTabsWidget {
             .iter()
             .map(|tab| {
                 let idx = tab.index();
-                let head = format!(" {} {} ", TAB_ICONS[idx], names[idx]);
+                let head = format!(" {} {} ", TAB_ICONS[idx], tab.display_name());
                 let tail = format!("{} ", app.tab_count(*tab));
                 let w =
                     u16::try_from(head.chars().count() + tail.chars().count()).unwrap_or(u16::MAX);
@@ -242,6 +241,7 @@ impl crate::tui::widgets::Widget for ResourceTabsWidget {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::tui::app::ResourceTab;
 
     #[test]
     fn all_tabs_fit_when_budget_is_large() {

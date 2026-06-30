@@ -13,7 +13,7 @@ use ratatui::{
 use rust_i18n::t;
 
 use crate::tui::{
-    app::{App, DrillView, Focus, ResourceTab},
+    app::{App, DrillView, Focus},
     themes::Palette,
     widgets::{
         Widget, account::AccountWidget, help::HelpWidget, resource_tabs::ResourceTabsWidget
@@ -127,11 +127,7 @@ fn render_action_menu(frame: &mut Frame, area: Rect, app: &App, palette: &Palett
         })
         .collect();
 
-    let kind_fallback = t!("ui.action_menu_kind_fallback");
-    let kind = ResourceTab::names()
-        .get(menu.tab.index())
-        .copied()
-        .map_or_else(|| kind_fallback.as_ref(), |k| k);
+    let kind = menu.tab.display_name();
     let title = t!(
         "ui.action_menu_title",
         kind => kind,
@@ -356,11 +352,7 @@ fn render_info_column(frame: &mut Frame, area: Rect, app: &App, stats: bool, tok
 /// * `app` - The application state.
 /// * `palette` - The theme color palette.
 fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
-    let resources_fallback = t!("ui.status_resources_fallback");
-    let tab = ResourceTab::names()
-        .get(app.active_tab.index())
-        .copied()
-        .map_or_else(|| resources_fallback.as_ref(), |t| t);
+    let tab = app.active_tab.display_name();
 
     let key = |k: &'static str| {
         Span::styled(

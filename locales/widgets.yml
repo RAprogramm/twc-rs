@@ -112,3 +112,24 @@ resource_list.count_mailboxes:
 resource_list.count_docs:
   en: "%{n} docs"
   ru: "%{n} документов"
+account.status_active:
+  en: "active"
+  ru: "активен"
+account.status_running:
+  en: "running"
+  ru: "работает"
+account.status_enabled:
+  en: "enabled"
+  ru: "включён"
+account.status_inactive:
+  en: "inactive"
+  ru: "неактивен"
+account.status_suspended:
+  en: "suspended"
+  ru: "приостановлен"
+account.status_error:
+  en: "error"
+  ru: "ошибка"
+account.status_failed:
+  en: "failed"
+  ru: "сбой"

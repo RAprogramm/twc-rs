@@ -399,6 +399,33 @@ impl ResourceTab {
         ]
     }
 
+    /// Returns the localized display name for this tab.
+    #[must_use]
+    pub fn display_name(self) -> Cow<'static, str> {
+        match self {
+            Self::Servers => t!("tabs.servers"),
+            Self::Databases => t!("tabs.databases"),
+            Self::S3 => t!("tabs.s3"),
+            Self::Kubernetes => t!("tabs.kubernetes"),
+            Self::Projects => t!("tabs.projects"),
+            Self::Balancers => t!("tabs.balancers"),
+            Self::Registry => t!("tabs.registry"),
+            Self::Domains => t!("tabs.domains"),
+            Self::Firewall => t!("tabs.firewall"),
+            Self::FloatingIps => t!("tabs.floating_ips"),
+            Self::Images => t!("tabs.images"),
+            Self::NetworkDrives => t!("tabs.network_drives"),
+            Self::Vpc => t!("tabs.vpc"),
+            Self::DedicatedServers => t!("tabs.dedicated_servers"),
+            Self::Mail => t!("tabs.mail"),
+            Self::Apps => t!("tabs.apps"),
+            Self::AiAgents => t!("tabs.ai_agents"),
+            Self::KnowledgeBases => t!("tabs.knowledge_bases"),
+            Self::SshKeys => t!("tabs.ssh_keys"),
+            Self::Finances => t!("tabs.finances")
+        }
+    }
+
     /// Cycles to the next tab.
     #[allow(dead_code)]
     #[must_use]

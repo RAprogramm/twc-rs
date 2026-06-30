@@ -1,0 +1,62 @@
+_version: 2
+
+tabs.servers:
+  en: "Servers"
+  ru: "Серверы"
+tabs.databases:
+  en: "Databases"
+  ru: "Базы данных"
+tabs.s3:
+  en: "S3"
+  ru: "S3"
+tabs.kubernetes:
+  en: "Kubernetes"
+  ru: "Kubernetes"
+tabs.projects:
+  en: "Projects"
+  ru: "Проекты"
+tabs.balancers:
+  en: "Balancers"
+  ru: "Балансировщики"
+tabs.registry:
+  en: "Registry"
+  ru: "Реестр"
+tabs.domains:
+  en: "Domains"
+  ru: "Домены"
+tabs.firewall:
+  en: "Firewall"
+  ru: "Файрвол"
+tabs.floating_ips:
+  en: "FloatingIps"
+  ru: "Плавающие IP"
+tabs.images:
+  en: "Images"
+  ru: "Образы"
+tabs.network_drives:
+  en: "NetworkDrives"
+  ru: "Сетевые диски"
+tabs.vpc:
+  en: "Vpc"
+  ru: "VPC"
+tabs.dedicated_servers:
+  en: "DedicatedServers"
+  ru: "Выделенные серверы"
+tabs.mail:
+  en: "Mail"
+  ru: "Почта"
+tabs.apps:
+  en: "Apps"
+  ru: "Приложения"
+tabs.ai_agents:
+  en: "AiAgents"
+  ru: "ИИ-агенты"
+tabs.knowledge_bases:
+  en: "KnowledgeBases"
+  ru: "Базы знаний"
+tabs.ssh_keys:
+  en: "SshKeys"
+  ru: "SSH-ключи"
+tabs.finances:
+  en: "Finances"
+  ru: "Финансы"
