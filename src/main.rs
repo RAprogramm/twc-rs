@@ -340,7 +340,11 @@ async fn handle_image(
         } => commands::images::set(config, &id, name.as_deref()).await,
         ImageCommands::Delete {
             id
-        } => commands::images::delete(config, &id).await
+        } => commands::images::delete(config, &id).await,
+        ImageCommands::Upload {
+            id,
+            file
+        } => commands::images::upload(config, &id, &file).await
     }
 }
 

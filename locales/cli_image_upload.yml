@@ -1,0 +1,8 @@
+_version: 2
+
+cli.image_uploaded:
+  en: "Uploaded '%{file}' to image %{id}."
+  ru: "Файл «%{file}» загружен в образ %{id}."
+cli.image_invalid_file:
+  en: "Invalid file path: %{path}"
+  ru: "Некорректный путь к файлу: %{path}"

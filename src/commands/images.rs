@@ -206,3 +206,28 @@ pub async fn set(config: &Configuration, id: &str, name: Option<&str>) -> Result
     );
     Ok(())
 }
+
+/// Uploads a local image file to an existing image slot.
+///
+/// # Overview
+///
+/// Streams the file at `file` as the request body to the image-upload
+/// endpoint, setting a `Content-Disposition` header with the file name so the
+/// API stores it correctly.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] when the path has no file name or on network and
+/// API failures.
+pub async fn upload(config: &Configuration, id: &str, file: &str) -> Result<(), TwcError> {
+    let path = std::path::PathBuf::from(file);
+    let file_name = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .ok_or_else(|| TwcError::Api(t!("cli.image_invalid_file", path => file).into_owned()))?;
+    let disposition = format!("attachment; filename=\"{file_name}\"");
+
+    images_api::upload_image(config, id, path.clone(), Some(&disposition)).await?;
+    println!("{}", t!("cli.image_uploaded", file => file_name, id => id));
+    Ok(())
+}

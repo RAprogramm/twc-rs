@@ -1277,6 +1277,15 @@ pub enum ImageCommands {
         /// Image ID.
         #[arg(long)]
         id: String
+    },
+    /// Upload a local image file to an image.
+    Upload {
+        /// Image ID.
+        #[arg(long)]
+        id:   String,
+        /// Path to the local image file.
+        #[arg(long)]
+        file: String
     }
 }
 
