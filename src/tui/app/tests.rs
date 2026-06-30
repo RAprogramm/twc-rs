@@ -782,3 +782,31 @@ fn apply_data_logs_load_errors_once() {
     app.apply_data(data);
     assert_eq!(app.logs.len(), after_first);
 }
+
+#[test]
+fn create_form_opens_for_projects_and_validates() {
+    let mut app = App::new(5);
+    app.active_tab = ResourceTab::Projects;
+    app.open_create_form();
+    assert!(app.create_form_open());
+
+    // empty required name -> submit rejected, form stays open
+    assert!(!app.form_submit());
+    assert!(app.create_form_open());
+
+    for c in "web".chars() {
+        app.form_input(c);
+    }
+    assert!(app.form_submit());
+    let req = app.take_create_request().expect("submitted form queued");
+    assert_eq!(req.tab, ResourceTab::Projects);
+    assert_eq!(req.fields[0].value, "web");
+}
+
+#[test]
+fn create_form_not_for_actionless_tab() {
+    let mut app = App::new(5);
+    app.active_tab = ResourceTab::Domains;
+    app.open_create_form();
+    assert!(!app.create_form_open());
+}

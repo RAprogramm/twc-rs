@@ -89,6 +89,21 @@ fn handle_overlay_key(app: &mut App, key: KeyEvent) -> Option<bool> {
         return Some(true);
     }
 
+    if app.create_form_open() {
+        match key.code {
+            KeyCode::Esc => app.close_create_form(),
+            KeyCode::Enter => {
+                app.form_submit();
+            }
+            KeyCode::Tab | KeyCode::Down => app.form_next_field(),
+            KeyCode::BackTab | KeyCode::Up => app.form_prev_field(),
+            KeyCode::Backspace => app.form_backspace(),
+            KeyCode::Char(c) => app.form_input(c),
+            _ => {}
+        }
+        return Some(true);
+    }
+
     if app.action_menu_open() {
         match key.code {
             KeyCode::Char('k') | KeyCode::Up => app.menu_previous(),
@@ -155,6 +170,10 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
         }
         KeyCode::Char('/') => {
             app.start_filter();
+            true
+        }
+        KeyCode::Char('n') => {
+            app.open_create_form();
             true
         }
         KeyCode::Esc => {

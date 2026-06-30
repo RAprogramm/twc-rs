@@ -84,8 +84,78 @@ pub fn draw(frame: &mut Frame, app: &App) {
         render_confirm(frame, size, app, &palette);
     }
 
+    if let Some(form) = app.create_form.as_ref() {
+        render_create_form(frame, size, form, &palette);
+    }
+
     if let Some(cp) = app.palette.as_ref() {
         crate::tui::command_palette::render(frame, size, &palette, cp);
+    }
+}
+
+/// Renders the in-dashboard resource-creation form: a titled box with one
+/// labelled input per field, the focused field highlighted, and a hint line.
+fn render_create_form(
+    frame: &mut Frame,
+    area: Rect,
+    form: &crate::tui::app::CreateForm,
+    palette: &Palette
+) {
+    let width = 56u16.min(area.width.saturating_sub(4));
+    let height = u16::try_from(form.fields.len()).unwrap_or(2) + 4;
+    let popup = Rect {
+        x: (area.width.saturating_sub(width)) / 2,
+        y: (area.height.saturating_sub(height)) / 2,
+        width,
+        height
+    };
+    frame.render_widget(Clear, popup);
+
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded)
+        .border_style(Style::default().fg(palette.accent))
+        .title(Line::from(Span::styled(
+            format!(" {} ", form.title),
+            Style::default()
+                .fg(palette.title)
+                .add_modifier(Modifier::BOLD)
+        )));
+    let inner = block.inner(popup);
+    frame.render_widget(block, popup);
+
+    let mut constraints: Vec<Constraint> =
+        form.fields.iter().map(|_| Constraint::Length(1)).collect();
+    constraints.push(Constraint::Length(1));
+    let rows = Layout::vertical(constraints).split(inner);
+
+    for (i, field) in form.fields.iter().enumerate() {
+        let focused = i == form.active;
+        let marker = if focused { "▸ " } else { "  " };
+        let label = format!("{marker}{}: ", field.label);
+        let value_style = if focused {
+            Style::default()
+                .fg(palette.fg)
+                .add_modifier(Modifier::BOLD | Modifier::UNDERLINED)
+        } else {
+            Style::default().fg(palette.dim)
+        };
+        let cursor = if focused { "█" } else { "" };
+        let line = Line::from(vec![
+            Span::styled(label, Style::default().fg(palette.header)),
+            Span::styled(format!("{}{cursor}", field.value), value_style),
+        ]);
+        if let Some(row) = rows.get(i) {
+            frame.render_widget(Paragraph::new(line), *row);
+        }
+    }
+
+    if let Some(hint_row) = rows.last() {
+        let hint = Paragraph::new(Line::from(Span::styled(
+            "Tab next · Enter create · Esc cancel",
+            Style::default().fg(palette.dim)
+        )));
+        frame.render_widget(hint, *hint_row);
     }
 }
 

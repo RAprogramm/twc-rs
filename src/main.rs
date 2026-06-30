@@ -1150,6 +1150,12 @@ async fn run_dashboard(
             spawn_one_shot_refresh(tx.clone(), token.clone(), theme, interval);
         }
 
+        if let Some(form) = app.take_create_request() {
+            let config = authenticated(token.clone());
+            perform_create(&config, &mut app, form).await;
+            spawn_one_shot_refresh(tx.clone(), token.clone(), theme, interval);
+        }
+
         if let Some(req) = app.poll_stats_request() {
             spawn_stats_fetch(tx.clone(), token.clone(), req);
         }
@@ -1371,6 +1377,49 @@ async fn fetch_drill(
             })
         }
         _ => Err("this resource cannot be entered".to_string())
+    }
+}
+
+/// Performs an in-dashboard resource creation submitted from a create form,
+/// logging the outcome. Only resources with a simple create form are handled.
+#[cfg(feature = "tui")]
+async fn perform_create(
+    config: &timeweb_rs::apis::configuration::Configuration,
+    app: &mut tui::app::App,
+    form: tui::app::CreateForm
+) {
+    use timeweb_rs::{apis::projects_api, models::CreateProject};
+    use tui::app::{LogLevel, ResourceTab};
+
+    let field = |i: usize| form.fields.get(i).map(|f| f.value.trim().to_owned());
+
+    let result = match form.tab {
+        ResourceTab::Projects => {
+            let name = field(0).unwrap_or_default();
+            let mut req = CreateProject::new(name);
+            if let Some(desc) = field(1).filter(|d| !d.is_empty()) {
+                req.description = Some(Some(desc));
+            }
+            projects_api::create_project(config, req)
+                .await
+                .map(|r| r.project.name)
+                .map_err(|e| e.to_string())
+        }
+        _ => Err("creation not supported for this resource".to_string())
+    };
+
+    match result {
+        Ok(name) => {
+            let msg = format!("created '{name}'");
+            app.log(LogLevel::Success, msg.clone());
+            app.status_message = Some(msg);
+            app.error_message = None;
+        }
+        Err(e) => {
+            let msg = format!("create failed: {e}");
+            app.log(LogLevel::Error, msg.clone());
+            app.error_message = Some(msg);
+        }
     }
 }
 
