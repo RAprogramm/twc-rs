@@ -37,21 +37,21 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
         ResourceTab::S3 => render_s3_details(app, palette),
         ResourceTab::Kubernetes => render_k8s_details(app, palette),
         ResourceTab::Projects => render_project_details(app, palette),
-        ResourceTab::Balancers => render_generic_details("balancers", palette),
-        ResourceTab::Registry => render_generic_details("registries", palette),
-        ResourceTab::Domains => render_generic_details("domains", palette),
-        ResourceTab::Firewall => render_generic_details("firewalls", palette),
-        ResourceTab::FloatingIps => render_generic_details("floating_ips", palette),
-        ResourceTab::Images => render_generic_details("images", palette),
-        ResourceTab::NetworkDrives => render_generic_details("network_drives", palette),
-        ResourceTab::Vpc => render_generic_details("vpcs", palette),
-        ResourceTab::DedicatedServers => render_generic_details("dedicated_servers", palette),
-        ResourceTab::Mail => render_generic_details("mails", palette),
-        ResourceTab::Apps => render_generic_details("apps", palette),
-        ResourceTab::AiAgents => render_generic_details("ai_agents", palette),
-        ResourceTab::KnowledgeBases => render_generic_details("knowledge_bases", palette),
-        ResourceTab::SshKeys => render_generic_details("ssh_keys", palette),
-        ResourceTab::Finances => render_generic_details("finances", palette)
+        ResourceTab::Balancers => render_balancer_details(app, palette),
+        ResourceTab::Registry => render_registry_details(app, palette),
+        ResourceTab::Domains => render_domain_details(app, palette),
+        ResourceTab::Firewall => render_firewall_details(app, palette),
+        ResourceTab::FloatingIps => render_floating_ip_details(app, palette),
+        ResourceTab::Images => render_image_details(app, palette),
+        ResourceTab::NetworkDrives => render_network_drive_details(app, palette),
+        ResourceTab::Vpc => render_vpc_details(app, palette),
+        ResourceTab::DedicatedServers => render_dedicated_details(app, palette),
+        ResourceTab::Mail => render_mail_details(app, palette),
+        ResourceTab::Apps => render_app_details(app, palette),
+        ResourceTab::AiAgents => render_ai_agent_details(app, palette),
+        ResourceTab::KnowledgeBases => render_knowledge_details(app, palette),
+        ResourceTab::SshKeys => render_string_details(&app.ssh_keys, app, "SSH key", palette),
+        ResourceTab::Finances => render_string_details(&app.finances, app, "Finance", palette)
     };
 
     let paragraph = Paragraph::new(text).block(
@@ -285,8 +285,279 @@ fn render_project_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
     ]
 }
 
-fn render_generic_details(resource: &str, palette: Palette) -> Vec<Line<'static>> {
-    empty(&format!("No {resource} data available"), palette)
+fn render_string_details(
+    items: &[String],
+    app: &App,
+    label: &str,
+    palette: Palette
+) -> Vec<Line<'static>> {
+    if items.is_empty() {
+        return empty(&format!("No {label} entries"), palette);
+    }
+    let item = &items[app.selected_real_index().min(items.len() - 1)];
+    vec![
+        heading(label, palette),
+        rule(palette),
+        kv("Value", item.clone(), name_style(palette), palette),
+    ]
+}
+
+fn render_balancer_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+    if app.balancers.is_empty() {
+        return empty("No balancers available", palette);
+    }
+    let b = &app.balancers[app.selected_real_index().min(app.balancers.len() - 1)];
+    vec![
+        heading(&b.name, palette),
+        rule(palette),
+        kv("ID", format!("#{}", b.id), accent(palette), palette),
+        chip("Status", &b.status.to_lowercase(), palette.success, palette),
+        kv("IP", b.ip.clone(), warn(palette), palette),
+        kv("Location", b.location.clone(), warn(palette), palette),
+    ]
+}
+
+fn render_registry_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+    if app.registries.is_empty() {
+        return empty("No registries available", palette);
+    }
+    let r = &app.registries[app.selected_real_index().min(app.registries.len() - 1)];
+    vec![
+        heading(&r.name, palette),
+        rule(palette),
+        kv("ID", format!("#{}", r.id), accent(palette), palette),
+        kv("Region", r.region.clone(), warn(palette), palette),
+        kv(
+            "Repos",
+            r.repository_count.to_string(),
+            name_style(palette),
+            palette
+        ),
+    ]
+}
+
+fn render_domain_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+    if app.domains.is_empty() {
+        return empty("No domains available", palette);
+    }
+    let d = &app.domains[app.selected_real_index().min(app.domains.len() - 1)];
+    vec![
+        heading(&d.name, palette),
+        rule(palette),
+        kv("ID", format!("#{}", d.id), accent(palette), palette),
+        chip("Status", &d.status.to_lowercase(), palette.success, palette),
+        kv(
+            "Auto-prolong",
+            if d.auto_prolong { "yes" } else { "no" }.to_string(),
+            name_style(palette),
+            palette
+        ),
+    ]
+}
+
+fn render_firewall_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+    if app.firewalls.is_empty() {
+        return empty("No firewall groups available", palette);
+    }
+    let f = &app.firewalls[app.selected_real_index().min(app.firewalls.len() - 1)];
+    vec![
+        heading(&f.name, palette),
+        rule(palette),
+        kv("ID", format!("#{}", f.id), accent(palette), palette),
+        kv(
+            "Rules",
+            f.rule_count.to_string(),
+            name_style(palette),
+            palette
+        ),
+        kv(
+            "Resources",
+            f.resource_count.to_string(),
+            name_style(palette),
+            palette
+        ),
+    ]
+}
+
+fn render_floating_ip_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+    if app.floating_ips.is_empty() {
+        return empty("No floating IPs available", palette);
+    }
+    let f = &app.floating_ips[app.selected_real_index().min(app.floating_ips.len() - 1)];
+    vec![
+        heading(&f.ip, palette),
+        rule(palette),
+        kv("ID", format!("#{}", f.id), accent(palette), palette),
+        chip("Status", &f.status.to_lowercase(), palette.success, palette),
+        kv(
+            "Bound to",
+            f.server_name.clone(),
+            name_style(palette),
+            palette
+        ),
+    ]
+}
+
+fn render_image_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+    if app.images.is_empty() {
+        return empty("No images available", palette);
+    }
+    let i = &app.images[app.selected_real_index().min(app.images.len() - 1)];
+    vec![
+        heading(&i.name, palette),
+        rule(palette),
+        kv("ID", format!("#{}", i.id), accent(palette), palette),
+        chip("Status", &i.status.to_lowercase(), palette.success, palette),
+        kv(
+            "Size",
+            format!("{} MB", i.size_mb),
+            name_style(palette),
+            palette
+        ),
+    ]
+}
+
+fn render_network_drive_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+    if app.network_drives.is_empty() {
+        return empty("No network drives available", palette);
+    }
+    let n = &app.network_drives[app.selected_real_index().min(app.network_drives.len() - 1)];
+    vec![
+        heading(&n.name, palette),
+        rule(palette),
+        kv("ID", format!("#{}", n.id), accent(palette), palette),
+        chip("Status", &n.status.to_lowercase(), palette.success, palette),
+        kv(
+            "Size",
+            format!("{} GB", n.size_gb),
+            name_style(palette),
+            palette
+        ),
+    ]
+}
+
+fn render_vpc_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+    if app.vpcs.is_empty() {
+        return empty("No VPCs available", palette);
+    }
+    let v = &app.vpcs[app.selected_real_index().min(app.vpcs.len() - 1)];
+    vec![
+        heading(&v.name, palette),
+        rule(palette),
+        kv("ID", format!("#{}", v.id), accent(palette), palette),
+        chip("Status", &v.status.to_lowercase(), palette.success, palette),
+        kv(
+            "Subnets",
+            v.subnet_count.to_string(),
+            name_style(palette),
+            palette
+        ),
+    ]
+}
+
+fn render_dedicated_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+    if app.dedicated_servers.is_empty() {
+        return empty("No dedicated servers available", palette);
+    }
+    let d = &app.dedicated_servers[app
+        .selected_real_index()
+        .min(app.dedicated_servers.len() - 1)];
+    vec![
+        heading(&d.name, palette),
+        rule(palette),
+        kv("ID", format!("#{}", d.id), accent(palette), palette),
+        chip("Status", &d.status.to_lowercase(), palette.success, palette),
+        section("Resources", palette),
+        kv(
+            "CPU",
+            format!("{} cores", d.cpu),
+            name_style(palette),
+            palette
+        ),
+        kv(
+            "RAM",
+            format!("{} MB", d.ram_mb),
+            name_style(palette),
+            palette
+        ),
+        kv(
+            "Disk",
+            format!("{} GB", d.disk_gb),
+            name_style(palette),
+            palette
+        ),
+    ]
+}
+
+fn render_mail_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+    if app.mails.is_empty() {
+        return empty("No mailboxes available", palette);
+    }
+    let m = &app.mails[app.selected_real_index().min(app.mails.len() - 1)];
+    vec![
+        heading(&m.name, palette),
+        rule(palette),
+        kv("ID", format!("#{}", m.id), accent(palette), palette),
+        chip("Status", &m.status.to_lowercase(), palette.success, palette),
+        kv(
+            "Mailboxes",
+            m.mailbox_count.to_string(),
+            name_style(palette),
+            palette
+        ),
+    ]
+}
+
+fn render_app_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+    if app.apps.is_empty() {
+        return empty("No apps available", palette);
+    }
+    let a = &app.apps[app.selected_real_index().min(app.apps.len() - 1)];
+    vec![
+        heading(&a.name, palette),
+        rule(palette),
+        kv("ID", format!("#{}", a.id), accent(palette), palette),
+        chip("Status", &a.status.to_lowercase(), palette.success, palette),
+        kv(
+            "Deploys",
+            a.deploy_count.to_string(),
+            name_style(palette),
+            palette
+        ),
+    ]
+}
+
+fn render_ai_agent_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+    if app.ai_agents.is_empty() {
+        return empty("No AI agents available", palette);
+    }
+    let a = &app.ai_agents[app.selected_real_index().min(app.ai_agents.len() - 1)];
+    vec![
+        heading(&a.name, palette),
+        rule(palette),
+        kv("ID", format!("#{}", a.id), accent(palette), palette),
+        chip("Status", &a.status.to_lowercase(), palette.success, palette),
+        kv("Model", a.model.clone(), accent(palette), palette),
+    ]
+}
+
+fn render_knowledge_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+    if app.knowledge_bases.is_empty() {
+        return empty("No knowledge bases available", palette);
+    }
+    let k = &app.knowledge_bases[app.selected_real_index().min(app.knowledge_bases.len() - 1)];
+    vec![
+        heading(&k.name, palette),
+        rule(palette),
+        kv("ID", format!("#{}", k.id), accent(palette), palette),
+        chip("Status", &k.status.to_lowercase(), palette.success, palette),
+        kv(
+            "Documents",
+            k.document_count.to_string(),
+            name_style(palette),
+            palette
+        ),
+    ]
 }
 
 /// Widget wrapper for the details panel.
