@@ -9,8 +9,8 @@ use timeweb_rs::{apis::domains_api, models as dm};
 use crate::{error::TwcError, output::OutputFormat};
 
 /// Formats an f64 identifier for display.
-fn fmt_id(v: f64) -> String {
-    format!("{v:.0}")
+fn fmt_id<T: std::fmt::Display>(v: T) -> String {
+    v.to_string()
 }
 
 /// Compact row for the domain list table.

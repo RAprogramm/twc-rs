@@ -11,8 +11,8 @@ use timeweb_rs::{
 use crate::{error::TwcError, output::OutputFormat};
 
 /// Formats a float identifier for display.
-fn fmt_id(v: f64) -> String {
-    format!("{v:.0}")
+fn fmt_id<T: std::fmt::Display>(v: T) -> String {
+    v.to_string()
 }
 
 /// Compact row for the S3 storage list table.

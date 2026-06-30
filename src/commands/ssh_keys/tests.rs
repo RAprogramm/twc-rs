@@ -1,10 +1,9 @@
 use super::*;
 
 #[test]
-fn fmt_id_rounds_correctly() {
-    assert_eq!(fmt_id(1.0), "1");
-    assert_eq!(fmt_id(42.7), "43");
-    assert_eq!(fmt_id(0.4), "0");
+fn fmt_id_formats_integers() {
+    assert_eq!(fmt_id(1_i64), "1");
+    assert_eq!(fmt_id(1_873_345_i64), "1873345");
 }
 
 #[test]

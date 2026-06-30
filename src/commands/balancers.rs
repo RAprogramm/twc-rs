@@ -9,8 +9,8 @@ use timeweb_rs::{apis::balancers_api, models as bw};
 use crate::{error::TwcError, output::OutputFormat};
 
 /// Formats a float identifier for display.
-fn fmt_id(v: f64) -> String {
-    format!("{v:.0}")
+fn fmt_id<T: std::fmt::Display>(v: T) -> String {
+    v.to_string()
 }
 
 /// Compact row for the balancer list table.
@@ -265,7 +265,7 @@ pub async fn create(
         60.0,
         3.0,
         3.0,
-        1.0
+        1
     );
     let resp = balancers_api::create_balancer(config, req).await?;
     let b = &resp.balancer;
@@ -457,12 +457,9 @@ pub async fn rule_delete(
     id: i32,
     rule_id: i32
 ) -> Result<(), TwcError> {
-    #[allow(clippy::cast_lossless)]
-    let rule_id_f64 = f64::from(rule_id);
     let resp = balancers_api::get_balancer_rules(config, id).await?;
 
-    #[allow(clippy::float_cmp)]
-    let target = resp.rules.iter().find(|r| r.id == rule_id_f64);
+    let target = resp.rules.iter().find(|r| r.id == i64::from(rule_id));
 
     let Some(_rule) = target else {
         return Err(TwcError::Api(format!(

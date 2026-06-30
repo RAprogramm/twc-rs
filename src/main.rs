@@ -1198,7 +1198,7 @@ async fn refresh_all(
     let mut balance = String::new();
 
     if let Ok(resp) = account_res {
-        account_id = resp.status.company_info.id;
+        account_id = resp.status.company_info.id as f64;
         login = resp.status.login.clone().unwrap_or_default();
     } else {
         has_error = true;
