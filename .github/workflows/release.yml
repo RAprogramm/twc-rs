@@ -13,9 +13,9 @@ jobs:
     name: Create GitHub Release
     runs-on: ubuntu-latest
     steps:
-      # softprops/action-gh-release@v2 creates (or reuses) the Release for the tag.
+      # softprops/action-gh-release@v3 creates (or reuses) the Release for the tag.
       - name: Create release
-        uses: softprops/action-gh-release@v2 # pinned to major tag
+        uses: softprops/action-gh-release@v3 # pinned to major tag
         with:
           generate_release_notes: true
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -71,7 +71,7 @@ jobs:
       - name: Build .deb
         run: cargo deb -- --features tui
       - name: Upload .deb to release
-        uses: softprops/action-gh-release@v2 # pinned to major tag
+        uses: softprops/action-gh-release@v3 # pinned to major tag
         with:
           files: target/debian/*.deb
           token: ${{ secrets.GITHUB_TOKEN }}
