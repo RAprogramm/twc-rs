@@ -671,6 +671,7 @@ impl App {
 
     /// Returns true when the refresh interval has elapsed.
     #[must_use]
+    #[allow(dead_code)]
     pub fn needs_refresh(&self) -> bool {
         self.last_refresh.elapsed() >= self.refresh_interval
     }
@@ -1201,6 +1202,103 @@ impl App {
     /// Quits the application.
     pub const fn quit(&mut self) {
         self.running = false;
+    }
+
+    /// Applies a freshly fetched data snapshot, replacing all resource
+    /// lists in one shot and clearing the loading state.
+    pub fn apply_data(&mut self, data: DashboardData) {
+        self.account = data.account;
+        self.servers = data.servers;
+        self.databases = data.databases;
+        self.s3_storages = data.s3_storages;
+        self.k8s_clusters = data.k8s_clusters;
+        self.projects = data.projects;
+        self.balancers = data.balancers;
+        self.registries = data.registries;
+        self.domains = data.domains;
+        self.firewalls = data.firewalls;
+        self.floating_ips = data.floating_ips;
+        self.images = data.images;
+        self.network_drives = data.network_drives;
+        self.vpcs = data.vpcs;
+        self.dedicated_servers = data.dedicated_servers;
+        self.mails = data.mails;
+        self.apps = data.apps;
+        self.ai_agents = data.ai_agents;
+        self.knowledge_bases = data.knowledge_bases;
+        self.ssh_keys = data.ssh_keys;
+        self.finances = data.finances;
+        if data.error_message.is_some() {
+            self.error_message = data.error_message;
+        } else {
+            self.error_message = None;
+            self.status_message = data.status_message;
+        }
+        self.clamp_selection();
+        self.is_loading = false;
+        self.last_refresh = Instant::now();
+    }
+}
+
+/// An owned snapshot of all dashboard data, fetched off the UI thread and
+/// applied via [`App::apply_data`]. Cloned out of a throwaway [`App`] by the
+/// background refresh task.
+#[derive(Debug, Clone)]
+pub struct DashboardData {
+    pub account:           AccountInfo,
+    pub servers:           Vec<ServerSummary>,
+    pub databases:         Vec<DatabaseSummary>,
+    pub s3_storages:       Vec<S3Summary>,
+    pub k8s_clusters:      Vec<K8sSummary>,
+    pub projects:          Vec<ProjectSummary>,
+    pub balancers:         Vec<BalancerSummary>,
+    pub registries:        Vec<RegistrySummary>,
+    pub domains:           Vec<DomainSummary>,
+    pub firewalls:         Vec<FirewallSummary>,
+    pub floating_ips:      Vec<FloatingIpSummary>,
+    pub images:            Vec<ImageSummary>,
+    pub network_drives:    Vec<NetworkDriveSummary>,
+    pub vpcs:              Vec<VpcSummary>,
+    pub dedicated_servers: Vec<DedicatedServerSummary>,
+    pub mails:             Vec<MailSummary>,
+    pub apps:              Vec<AppSummary>,
+    pub ai_agents:         Vec<AiAgentSummary>,
+    pub knowledge_bases:   Vec<KnowledgeBaseSummary>,
+    pub ssh_keys:          Vec<String>,
+    pub finances:          Vec<String>,
+    pub error_message:     Option<String>,
+    pub status_message:    Option<String>
+}
+
+impl DashboardData {
+    /// Clones the resource data out of an [`App`] populated by `refresh_all`.
+    #[must_use]
+    pub fn from_app(app: &App) -> Self {
+        Self {
+            account:           app.account.clone(),
+            servers:           app.servers.clone(),
+            databases:         app.databases.clone(),
+            s3_storages:       app.s3_storages.clone(),
+            k8s_clusters:      app.k8s_clusters.clone(),
+            projects:          app.projects.clone(),
+            balancers:         app.balancers.clone(),
+            registries:        app.registries.clone(),
+            domains:           app.domains.clone(),
+            firewalls:         app.firewalls.clone(),
+            floating_ips:      app.floating_ips.clone(),
+            images:            app.images.clone(),
+            network_drives:    app.network_drives.clone(),
+            vpcs:              app.vpcs.clone(),
+            dedicated_servers: app.dedicated_servers.clone(),
+            mails:             app.mails.clone(),
+            apps:              app.apps.clone(),
+            ai_agents:         app.ai_agents.clone(),
+            knowledge_bases:   app.knowledge_bases.clone(),
+            ssh_keys:          app.ssh_keys.clone(),
+            finances:          app.finances.clone(),
+            error_message:     app.error_message.clone(),
+            status_message:    app.status_message.clone()
+        }
     }
 }
 

@@ -677,6 +677,50 @@ fn persist_dashboard_prefs(app: &tui::app::App) {
 
 #[cfg(feature = "tui")]
 #[expect(clippy::large_futures)]
+async fn fetch_data(
+    token: String,
+    interval: u64,
+    theme: crate::tui::themes::Theme
+) -> tui::app::DashboardData {
+    let config = authenticated(token);
+    let mut tmp = tui::app::App::new_with_theme(interval, theme, None);
+    refresh_all(&config, &mut tmp).await;
+    tui::app::DashboardData::from_app(&tmp)
+}
+
+#[cfg(feature = "tui")]
+fn spawn_refresh_loop(
+    tx: tokio::sync::mpsc::UnboundedSender<tui::event::AppEvent>,
+    token: String,
+    theme: crate::tui::themes::Theme,
+    interval: u64
+) {
+    tokio::spawn(async move {
+        let period = tokio::time::Duration::from_secs(interval.max(2));
+        loop {
+            let data = Box::pin(fetch_data(token.clone(), interval, theme)).await;
+            if tx.send(tui::event::AppEvent::Data(Box::new(data))).is_err() {
+                break;
+            }
+            tokio::time::sleep(period).await;
+        }
+    });
+}
+
+#[cfg(feature = "tui")]
+fn spawn_one_shot_refresh(
+    tx: tokio::sync::mpsc::UnboundedSender<tui::event::AppEvent>,
+    token: String,
+    theme: crate::tui::themes::Theme,
+    interval: u64
+) {
+    tokio::spawn(async move {
+        let data = Box::pin(fetch_data(token, interval, theme)).await;
+        let _ = tx.send(tui::event::AppEvent::Data(Box::new(data)));
+    });
+}
+
+#[cfg(feature = "tui")]
 async fn run_dashboard(
     token: String,
     interval: u64,
@@ -700,12 +744,8 @@ async fn run_dashboard(
 
     let mut app = tui::app::App::new_with_theme(interval, theme, Some(token.clone()));
     app.apply_prefs(&prefs.hidden_widgets, prefs.list_width_pct);
-
-    let config = authenticated(token.clone());
-    draw_splash(&mut terminal);
     app.is_loading = true;
-    refresh_all(&config, &mut app).await;
-    app.is_loading = false;
+    draw_splash(&mut terminal);
 
     let (tx, mut rx) = mpsc::unbounded_channel();
     let event_tx = tx.clone();
@@ -713,6 +753,8 @@ async fn run_dashboard(
     tokio::spawn(async move {
         tui::event::run_event_loop(event_tx).await;
     });
+
+    spawn_refresh_loop(tx.clone(), token.clone(), theme, interval);
 
     while let Some(event) = rx.recv().await {
         if !tui::event::handle_event(&mut app, event) {
@@ -731,12 +773,7 @@ async fn run_dashboard(
         if let Some(action) = app.take_dispatch() {
             let config = authenticated(token.clone());
             perform_action(&config, &mut app, action).await;
-            refresh_all(&config, &mut app).await;
-        }
-
-        if app.needs_refresh() {
-            let config = authenticated(token.clone());
-            refresh_all(&config, &mut app).await;
+            spawn_one_shot_refresh(tx.clone(), token.clone(), theme, interval);
         }
     }
 

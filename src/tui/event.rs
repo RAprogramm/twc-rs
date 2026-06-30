@@ -24,7 +24,9 @@ pub enum AppEvent {
     Error(String),
     /// A status message to display.
     // JUSTIFY: Status events are part of the public event API.
-    Status(String)
+    Status(String),
+    /// A freshly fetched data snapshot from the background refresh task.
+    Data(Box<super::app::DashboardData>)
 }
 
 /// Processes a single [`AppEvent`] and updates the [`App`] state.
@@ -44,6 +46,10 @@ pub fn handle_event(app: &mut App, event: AppEvent) -> bool {
         }
         AppEvent::Status(msg) => {
             app.status_message = Some(msg);
+            true
+        }
+        AppEvent::Data(data) => {
+            app.apply_data(*data);
             true
         }
     }
