@@ -1,0 +1,11 @@
+_version: 2
+
+cli.no_database_types_found:
+  en: No database types found.
+  ru: Типы баз данных не найдены.
+cli.no_database_instances_found:
+  en: No database instances found.
+  ru: Базы данных не найдены.
+cli.no_network_drivers_found:
+  en: No network drivers found.
+  ru: Сетевые драйверы не найдены.

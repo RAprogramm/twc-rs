@@ -5,7 +5,10 @@ use std::fmt;
 
 use rust_i18n::t;
 use tabled::Tabled;
-use timeweb_rs::apis::{configuration::Configuration, servers_api};
+use timeweb_rs::{
+    apis::{configuration::Configuration, servers_api},
+    models
+};
 
 use crate::{error::TwcError, output::OutputFormat};
 
@@ -488,6 +491,329 @@ pub async fn list_configurators(
             }
         }
     }
+    Ok(())
+}
+
+/// Compact row for the server disk list table.
+#[derive(Tabled)]
+struct DiskRow {
+    #[tabled(rename = "ID")]
+    id:     String,
+    #[tabled(rename = "Size (MB)")]
+    size:   String,
+    #[tabled(rename = "Used (MB)")]
+    used:   String,
+    #[tabled(rename = "Type")]
+    r#type: String,
+    #[tabled(rename = "Status")]
+    status: String
+}
+
+impl fmt::Display for DiskRow {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{} {} {} {} {}",
+            self.id, self.size, self.used, self.r#type, self.status
+        )
+    }
+}
+
+/// Lists the disks attached to a server.
+///
+/// # Overview
+///
+/// Fetches the disks of the specified server and displays them.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] on network or API failures.
+pub async fn list_disks(
+    config: &Configuration,
+    id: i32,
+    format: OutputFormat
+) -> Result<(), TwcError> {
+    let resp = servers_api::get_server_disks(config, id).await?;
+    let rows: Vec<DiskRow> = resp
+        .server_disks
+        .iter()
+        .map(|d| DiskRow {
+            id:     fmt_id(d.id),
+            size:   fmt_id(d.size),
+            used:   fmt_id(d.used),
+            r#type: d.r#type.clone(),
+            status: d.status.clone()
+        })
+        .collect();
+
+    match format {
+        OutputFormat::Table => {
+            if rows.is_empty() {
+                println!("{}", t!("cli.no_server_disks_found"));
+            } else {
+                println!("{}", crate::output::render_table(&rows));
+            }
+        }
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out = crate::output::serialized(format, &resp.server_disks)
+                .transpose()?
+                .unwrap_or_default();
+            println!("{out}");
+        }
+        OutputFormat::Quiet => {
+            for d in &resp.server_disks {
+                println!("{}", fmt_id(d.id));
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Compact row for the server IP list table.
+#[derive(Tabled)]
+struct IpRow {
+    #[tabled(rename = "IP")]
+    ip:      String,
+    #[tabled(rename = "Type")]
+    r#type:  String,
+    #[tabled(rename = "PTR")]
+    ptr:     String,
+    #[tabled(rename = "Main")]
+    is_main: String
+}
+
+impl fmt::Display for IpRow {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{} {} {} {}",
+            self.ip, self.r#type, self.ptr, self.is_main
+        )
+    }
+}
+
+/// Lists the IP addresses of a server.
+///
+/// # Overview
+///
+/// Fetches the IP addresses of the specified server and displays them.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] on network or API failures.
+pub async fn list_ips(
+    config: &Configuration,
+    id: i32,
+    format: OutputFormat
+) -> Result<(), TwcError> {
+    let resp = servers_api::get_server_ips(config, id).await?;
+    let rows: Vec<IpRow> = resp
+        .server_ips
+        .iter()
+        .map(|i| IpRow {
+            ip:      i.ip.clone(),
+            r#type:  format!("{:?}", i.r#type),
+            ptr:     i.ptr.clone(),
+            is_main: fmt_id(i.is_main)
+        })
+        .collect();
+
+    match format {
+        OutputFormat::Table => {
+            if rows.is_empty() {
+                println!("{}", t!("cli.no_server_ips_found"));
+            } else {
+                println!("{}", crate::output::render_table(&rows));
+            }
+        }
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out = crate::output::serialized(format, &resp.server_ips)
+                .transpose()?
+                .unwrap_or_default();
+            println!("{out}");
+        }
+        OutputFormat::Quiet => {
+            for i in &resp.server_ips {
+                println!("{}", i.ip);
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Compact row for the server log/history table.
+#[derive(Tabled)]
+struct LogRow {
+    #[tabled(rename = "ID")]
+    id:        String,
+    #[tabled(rename = "Logged At")]
+    logged_at: String,
+    #[tabled(rename = "Event")]
+    event:     String
+}
+
+impl fmt::Display for LogRow {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} {} {}", self.id, self.logged_at, self.event)
+    }
+}
+
+/// Shows the recent action history (logs) of a server.
+///
+/// # Overview
+///
+/// Fetches the most recent log entries of the specified server and
+/// displays them, newest first.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] on network or API failures.
+pub async fn history(
+    config: &Configuration,
+    id: i32,
+    format: OutputFormat
+) -> Result<(), TwcError> {
+    let resp = servers_api::get_server_logs(config, id, None, None, Some("desc")).await?;
+    let rows: Vec<LogRow> = resp
+        .server_logs
+        .iter()
+        .map(|l| LogRow {
+            id:        fmt_id(l.id),
+            logged_at: l.logged_at.to_rfc3339(),
+            event:     l.event.clone()
+        })
+        .collect();
+
+    match format {
+        OutputFormat::Table => {
+            if rows.is_empty() {
+                println!("{}", t!("cli.no_server_logs_found"));
+            } else {
+                println!("{}", crate::output::render_table(&rows));
+            }
+        }
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out = crate::output::serialized(format, &resp.server_logs)
+                .transpose()?
+                .unwrap_or_default();
+            println!("{out}");
+        }
+        OutputFormat::Quiet => {
+            for l in &resp.server_logs {
+                println!("{}", fmt_id(l.id));
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Sets the NAT mode of a server's local network.
+///
+/// # Overview
+///
+/// Accepts one of `dnat_and_snat`, `snat`, or `no_nat` and applies it.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] on an unknown mode or on network/API failures.
+pub async fn set_nat_mode(
+    config: &Configuration,
+    id: i32,
+    nat_mode: &str
+) -> Result<(), TwcError> {
+    let mode = match nat_mode {
+        "dnat_and_snat" => models::update_server_nat_request::NatMode::DnatAndSnat,
+        "snat" => models::update_server_nat_request::NatMode::Snat,
+        "no_nat" => models::update_server_nat_request::NatMode::NoNat,
+        other => {
+            return Err(TwcError::Api(
+                t!("cli.server_invalid_nat_mode", value => other).to_string()
+            ));
+        }
+    };
+    let body = models::UpdateServerNatRequest::new(mode);
+    servers_api::update_server_nat(config, id, Some(body)).await?;
+    println!(
+        "{}",
+        t!("cli.server_nat_mode_set", id => id, mode => nat_mode)
+    );
+    Ok(())
+}
+
+/// Sets the OS boot mode of a server.
+///
+/// # Overview
+///
+/// Accepts one of `default`, `single`, or `recovery_disk` and applies it.
+/// The server is restarted after the boot mode changes.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] on an unknown mode or on network/API failures.
+pub async fn set_boot_mode(
+    config: &Configuration,
+    id: i32,
+    boot_mode: &str
+) -> Result<(), TwcError> {
+    let mode = match boot_mode {
+        "default" => models::update_server_os_boot_mode_request::BootMode::Default,
+        "single" => models::update_server_os_boot_mode_request::BootMode::Single,
+        "recovery_disk" => models::update_server_os_boot_mode_request::BootMode::RecoveryDisk,
+        other => {
+            return Err(TwcError::Api(
+                t!("cli.server_invalid_boot_mode", value => other).to_string()
+            ));
+        }
+    };
+    let body = models::UpdateServerOsBootModeRequest::new(mode);
+    servers_api::update_server_os_boot_mode(config, id, Some(body)).await?;
+    println!(
+        "{}",
+        t!("cli.server_boot_mode_set", id => id, mode => boot_mode)
+    );
+    Ok(())
+}
+
+/// Resizes a server to a different preset.
+///
+/// # Overview
+///
+/// Applies the given preset to the server, leaving all other attributes
+/// unchanged.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] on network or API failures.
+pub async fn resize(config: &Configuration, id: i32, preset_id: i32) -> Result<(), TwcError> {
+    let body = models::UpdateServer {
+        preset_id: Some(i64::from(preset_id)),
+        ..Default::default()
+    };
+    servers_api::update_server(config, id, body).await?;
+    println!(
+        "{}",
+        t!("cli.server_resized", id => id, preset => preset_id)
+    );
+    Ok(())
+}
+
+/// Reinstalls the operating system of a server.
+///
+/// # Overview
+///
+/// Applies the given OS image to the server, leaving all other attributes
+/// unchanged. This wipes the server's data.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] on network or API failures.
+pub async fn reinstall(config: &Configuration, id: i32, os_id: i32) -> Result<(), TwcError> {
+    let body = models::UpdateServer {
+        os_id: Some(i64::from(os_id)),
+        ..Default::default()
+    };
+    servers_api::update_server(config, id, body).await?;
+    println!("{}", t!("cli.server_reinstalled", id => id, os => os_id));
     Ok(())
 }
 

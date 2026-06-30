@@ -1,0 +1,29 @@
+_version: 2
+
+cli.no_server_disks_found:
+  en: No disks found for this server.
+  ru: Дисков для этого сервера не найдено.
+cli.no_server_ips_found:
+  en: No IP addresses found for this server.
+  ru: IP-адресов для этого сервера не найдено.
+cli.no_server_logs_found:
+  en: No log entries found for this server.
+  ru: Записей журнала для этого сервера не найдено.
+cli.server_invalid_nat_mode:
+  en: "Invalid NAT mode '%{value}'. Expected one of: dnat_and_snat, snat, no_nat."
+  ru: "Недопустимый режим NAT «%{value}». Ожидается одно из: dnat_and_snat, snat, no_nat."
+cli.server_invalid_boot_mode:
+  en: "Invalid boot mode '%{value}'. Expected one of: default, single, recovery_disk."
+  ru: "Недопустимый режим загрузки «%{value}». Ожидается одно из: default, single, recovery_disk."
+cli.server_nat_mode_set:
+  en: "Server %{id} NAT mode set to %{mode}."
+  ru: "Режим NAT сервера %{id} изменён на %{mode}."
+cli.server_boot_mode_set:
+  en: "Server %{id} boot mode set to %{mode}. The server will be restarted."
+  ru: "Режим загрузки сервера %{id} изменён на %{mode}. Сервер будет перезапущен."
+cli.server_resized:
+  en: "Server %{id} is being resized to preset %{preset}."
+  ru: "Сервер %{id} изменяется на тариф %{preset}."
+cli.server_reinstalled:
+  en: "Server %{id} is being reinstalled with OS %{os}."
+  ru: "Сервер %{id} переустанавливается с ОС %{os}."

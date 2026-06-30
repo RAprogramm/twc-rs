@@ -207,7 +207,61 @@ pub enum ServerCommands {
     /// List available pre-installable software.
     ListSoftware,
     /// List server configurators (custom builds).
-    ListConfigurators
+    ListConfigurators,
+    /// List the disks attached to a server.
+    Disk {
+        /// Server ID.
+        #[arg(long)]
+        id: i32
+    },
+    /// List the IP addresses of a server.
+    Ip {
+        /// Server ID.
+        #[arg(long)]
+        id: i32
+    },
+    /// Show the recent action history (logs) of a server.
+    History {
+        /// Server ID.
+        #[arg(long)]
+        id: i32
+    },
+    /// Set the NAT mode of a server's local network.
+    SetNatMode {
+        /// Server ID.
+        #[arg(long)]
+        id:       i32,
+        /// One of: `dnat_and_snat`, `snat`, `no_nat`.
+        #[arg(long)]
+        nat_mode: String
+    },
+    /// Set the OS boot mode of a server (restarts the server).
+    SetBootMode {
+        /// Server ID.
+        #[arg(long)]
+        id:        i32,
+        /// One of: `default`, `single`, `recovery_disk`.
+        #[arg(long)]
+        boot_mode: String
+    },
+    /// Resize a server to a different preset.
+    Resize {
+        /// Server ID.
+        #[arg(long)]
+        id:        i32,
+        /// Target preset ID.
+        #[arg(long)]
+        preset_id: i32
+    },
+    /// Reinstall the OS of a server (wipes data).
+    Reinstall {
+        /// Server ID.
+        #[arg(long)]
+        id:    i32,
+        /// OS image ID to install.
+        #[arg(long)]
+        os_id: i32
+    }
 }
 
 /// SSH key subcommands.
@@ -395,7 +449,15 @@ pub enum DatabaseCommands {
         user_name: String
     },
     /// List available database presets.
-    PresetList
+    PresetList,
+    /// List available database cluster types (engines and versions).
+    ListTypes,
+    /// List individual database instances within a cluster.
+    ListInstances {
+        /// Database cluster ID.
+        #[arg(long)]
+        id: i32
+    }
 }
 
 /// Configuration subcommands.
@@ -530,7 +592,13 @@ pub enum S3Commands {
         subdomain: String
     },
     /// List available storage presets.
-    PresetList
+    PresetList,
+    /// Print an s3cmd config file for a storage.
+    Genconfig {
+        /// Storage ID.
+        #[arg(long)]
+        id: i32
+    }
 }
 
 /// Kubernetes subcommands.
@@ -641,6 +709,9 @@ pub enum KubernetesCommands {
 
     /// List available Kubernetes versions.
     VersionList,
+
+    /// List available Kubernetes network drivers.
+    NetworkDrivers,
 
     /// Get kubeconfig for a cluster.
     Kubeconfig {

@@ -215,6 +215,31 @@ async fn handle_server(
         ServerCommands::ListConfigurators => {
             commands::servers::list_configurators(config, format).await
         }
+        ServerCommands::Disk {
+            id
+        } => commands::servers::list_disks(config, id, format).await,
+        ServerCommands::Ip {
+            id
+        } => commands::servers::list_ips(config, id, format).await,
+        ServerCommands::History {
+            id
+        } => commands::servers::history(config, id, format).await,
+        ServerCommands::SetNatMode {
+            id,
+            nat_mode
+        } => commands::servers::set_nat_mode(config, id, &nat_mode).await,
+        ServerCommands::SetBootMode {
+            id,
+            boot_mode
+        } => commands::servers::set_boot_mode(config, id, &boot_mode).await,
+        ServerCommands::Resize {
+            id,
+            preset_id
+        } => commands::servers::resize(config, id, preset_id).await,
+        ServerCommands::Reinstall {
+            id,
+            os_id
+        } => commands::servers::reinstall(config, id, os_id).await
     }
 }
 
@@ -529,6 +554,12 @@ async fn run() -> Result<(), TwcError> {
                 DatabaseCommands::PresetList => {
                     commands::databases::preset_list(&config, format).await
                 }
+                DatabaseCommands::ListTypes => {
+                    commands::databases::list_types(&config, format).await
+                }
+                DatabaseCommands::ListInstances {
+                    id
+                } => commands::databases::list_instances(&config, id, format).await
             }
         }
         Commands::S3(cmd) => {
@@ -573,7 +604,10 @@ async fn run() -> Result<(), TwcError> {
                     id,
                     subdomain
                 } => commands::s3::subdomain_delete(&config, id, &subdomain).await,
-                S3Commands::PresetList => commands::s3::preset_list(&config, format).await
+                S3Commands::PresetList => commands::s3::preset_list(&config, format).await,
+                S3Commands::Genconfig {
+                    id
+                } => commands::s3::genconfig(&config, id).await
             }
         }
         Commands::Kubernetes(cmd) => {
@@ -628,6 +662,9 @@ async fn run() -> Result<(), TwcError> {
                 }
                 KubernetesCommands::VersionList => {
                     commands::kubernetes::version_list(&config, format).await
+                }
+                KubernetesCommands::NetworkDrivers => {
+                    commands::kubernetes::list_network_drivers(&config, format).await
                 }
                 KubernetesCommands::Kubeconfig {
                     id

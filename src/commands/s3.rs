@@ -555,6 +555,41 @@ pub async fn subdomain_delete(
     Ok(())
 }
 
+/// Prints an s3cmd configuration file for an S3 storage.
+///
+/// # Overview
+///
+/// Fetches the bucket by ID and prints a ready-to-use `.s3cfg` block
+/// containing the access credentials and endpoint of the storage. The
+/// output can be redirected straight into `~/.s3cfg`.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] on network or API failures.
+pub async fn genconfig(
+    config: &timeweb_rs::apis::configuration::Configuration,
+    id: i32
+) -> Result<(), TwcError> {
+    let resp = s3_api::get_storage(config, id).await?;
+    let bucket = &resp.bucket;
+
+    let prefix = format!("{}.", bucket.name);
+    let endpoint = bucket
+        .hostname
+        .strip_prefix(&prefix)
+        .unwrap_or(&bucket.hostname);
+
+    println!("[default]");
+    println!("access_key = {}", bucket.access_key);
+    println!("secret_key = {}", bucket.secret_key);
+    println!("bucket_location = {}", bucket.location);
+    println!("host_base = {endpoint}");
+    println!("host_bucket = %(bucket)s.{endpoint}");
+    println!("use_https = True");
+    println!("signature_v2 = False");
+    Ok(())
+}
+
 /// Lists available S3 storage presets.
 ///
 /// # Overview

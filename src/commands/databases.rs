@@ -137,6 +137,54 @@ impl fmt::Display for PresetRow {
     }
 }
 
+/// Compact row for the database type list table.
+#[derive(Tabled)]
+struct TypeRow {
+    #[tabled(rename = "Type")]
+    engine:      String,
+    #[tabled(rename = "Version")]
+    version:     String,
+    #[tabled(rename = "Name")]
+    name:        String,
+    #[tabled(rename = "Replication")]
+    replication: String,
+    #[tabled(rename = "Deprecated")]
+    deprecated:  String
+}
+
+impl fmt::Display for TypeRow {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{} {} {} {} {}",
+            self.engine, self.version, self.name, self.replication, self.deprecated
+        )
+    }
+}
+
+/// Compact row for the database instance list table.
+#[derive(Tabled)]
+struct InstanceRow {
+    #[tabled(rename = "ID")]
+    id:          String,
+    #[tabled(rename = "Name")]
+    name:        String,
+    #[tabled(rename = "Description")]
+    description: String,
+    #[tabled(rename = "Created")]
+    created_at:  String
+}
+
+impl fmt::Display for InstanceRow {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{} {} {} {}",
+            self.id, self.name, self.description, self.created_at
+        )
+    }
+}
+
 /// Lists all databases.
 ///
 /// # Overview
@@ -661,6 +709,113 @@ fn parse_db_type(s: &str) -> Result<String, TwcError> {
         }
     };
     Ok(canonical.to_string())
+}
+
+/// Lists available database cluster types (DBMS engines and versions).
+///
+/// # Overview
+///
+/// Fetches the catalog of supported database cluster types from the
+/// Timeweb Cloud API and displays them in the requested output format.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] on network or API failures.
+pub async fn list_types(config: &Configuration, format: OutputFormat) -> Result<(), TwcError> {
+    let resp = databases_api::get_database_cluster_types(config).await?;
+
+    let rows: Vec<TypeRow> = resp
+        .types
+        .iter()
+        .map(|t| TypeRow {
+            engine:      t.r#type.clone(),
+            version:     t.version.clone(),
+            name:        t.name.clone(),
+            replication: if t.is_available_replication {
+                "yes".to_string()
+            } else {
+                "no".to_string()
+            },
+            deprecated:  if t.is_deprecated {
+                "yes".to_string()
+            } else {
+                "no".to_string()
+            }
+        })
+        .collect();
+
+    match format {
+        OutputFormat::Table => {
+            if rows.is_empty() {
+                println!("{}", t!("cli.no_database_types_found"));
+            } else {
+                let table = crate::output::render_table(&rows);
+                println!("{table}");
+            }
+        }
+        OutputFormat::Json | OutputFormat::Yaml => {
+            if let Some(out) = crate::output::serialized(format, &resp.types) {
+                println!("{}", out?);
+            }
+        }
+        OutputFormat::Quiet => {
+            for t in &resp.types {
+                println!("{}\t{}", t.r#type, t.version);
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Lists individual database instances within a cluster.
+///
+/// # Overview
+///
+/// Fetches the individual databases hosted within the specified cluster
+/// and displays them in the requested output format.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] on network or API failures.
+pub async fn list_instances(
+    config: &Configuration,
+    id: i32,
+    format: OutputFormat
+) -> Result<(), TwcError> {
+    let resp = databases_api::get_database_instances(config, id).await?;
+
+    let rows: Vec<InstanceRow> = resp
+        .instances
+        .iter()
+        .map(|i| InstanceRow {
+            id:          fmt_id(i.id),
+            name:        i.name.clone(),
+            description: i.description.clone(),
+            created_at:  i.created_at.clone()
+        })
+        .collect();
+
+    match format {
+        OutputFormat::Table => {
+            if rows.is_empty() {
+                println!("{}", t!("cli.no_database_instances_found"));
+            } else {
+                let table = crate::output::render_table(&rows);
+                println!("{table}");
+            }
+        }
+        OutputFormat::Json | OutputFormat::Yaml => {
+            if let Some(out) = crate::output::serialized(format, &resp.instances) {
+                println!("{}", out?);
+            }
+        }
+        OutputFormat::Quiet => {
+            for i in &resp.instances {
+                println!("{}\t{}", fmt_id(i.id), i.name);
+            }
+        }
+    }
+    Ok(())
 }
 
 // Tests are managed by the @tester subagent.

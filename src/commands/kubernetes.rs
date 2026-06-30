@@ -771,6 +771,57 @@ pub async fn version_list(config: &Configuration, format: OutputFormat) -> Resul
     Ok(())
 }
 
+/// Lists available Kubernetes network drivers.
+///
+/// # Overview
+///
+/// Fetches the network drivers supported for Kubernetes clusters from the
+/// Timeweb Cloud API and displays them in the requested output format.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] on network or API failures.
+pub async fn list_network_drivers(
+    config: &Configuration,
+    format: OutputFormat
+) -> Result<(), TwcError> {
+    let resp = kubernetes_api::get_k8_s_network_drivers(config).await?;
+
+    match format {
+        OutputFormat::Table => {
+            if resp.network_drivers.is_empty() {
+                println!("{}", t!("cli.no_network_drivers_found"));
+            } else {
+                #[derive(Tabled)]
+                struct NetworkDriverRow {
+                    #[tabled(rename = "Network Driver")]
+                    network_driver: String
+                }
+                let rows: Vec<NetworkDriverRow> = resp
+                    .network_drivers
+                    .iter()
+                    .map(|d| NetworkDriverRow {
+                        network_driver: d.clone()
+                    })
+                    .collect();
+                let table = crate::output::render_table(&rows);
+                println!("{table}");
+            }
+        }
+        OutputFormat::Json | OutputFormat::Yaml => {
+            if let Some(out) = crate::output::serialized(format, &resp.network_drivers) {
+                println!("{}", out?);
+            }
+        }
+        OutputFormat::Quiet => {
+            for d in &resp.network_drivers {
+                println!("{d}");
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Gets the kubeconfig for a Kubernetes cluster.
 ///
 /// # Overview
