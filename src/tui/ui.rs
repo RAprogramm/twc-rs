@@ -12,7 +12,7 @@ use ratatui::{
 };
 
 use crate::tui::{
-    app::{App, Focus, NavLevel, ResourceTab},
+    app::{App, Focus, ResourceTab},
     themes::Palette,
     widgets::{
         Widget, account::AccountWidget, help::HelpWidget, resource_tabs::ResourceTabsWidget
@@ -325,25 +325,13 @@ fn render_info_column(frame: &mut Frame, area: Rect, app: &App, stats: bool, tok
 /// * `app` - The application state.
 /// * `palette` - The theme color palette.
 fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
-    let mode = match app.nav_level {
-        NavLevel::Overview => "overview",
-        NavLevel::Inner => "inner"
-    };
-    let focus = app.focus.label();
-    let keys = match app.nav_level {
-        NavLevel::Overview => match app.focus {
-            Focus::ResourceTabs => "Tab cycle  hjkl navigate  Enter drill in  Q quit",
-            Focus::ResourceList => "hjkl navigate  Enter drill in  ? help  Q quit",
-            Focus::Details => "hjkl navigate  ? help  Q quit"
-        },
-        NavLevel::Inner => match app.focus {
-            Focus::ResourceTabs => "k/j cycle tabs  Esc back",
-            Focus::ResourceList => "k/j select  Enter actions  Esc back",
-            Focus::Details => "k/j scroll  Esc back"
-        }
-    };
-
-    let left = format!("{mode}: {focus}  {keys}  ^K cmds");
+    let tab = ResourceTab::names()
+        .get(app.active_tab.index())
+        .copied()
+        .unwrap_or("Resources");
+    let left = format!(
+        "{tab}  │  h/l tabs   j/k select   Enter actions   ^K commands   ? help   Q quit"
+    );
     let right = match (&app.error_message, &app.status_message) {
         (Some(err), _) => err.clone(),
         (_, Some(msg)) => msg.clone(),

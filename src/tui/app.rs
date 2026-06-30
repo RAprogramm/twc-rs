@@ -216,15 +216,6 @@ pub struct KnowledgeBaseSummary {
     pub status:         String
 }
 
-/// Navigation depth level for vim-style navigation.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum NavLevel {
-    /// Moving focus between panels (h/l to switch).
-    Overview,
-    /// Interacting with content inside the focused panel.
-    Inner
-}
-
 /// A kind of action that can be performed on a resource.
 ///
 /// Each [`ResourceTab`] declares which kinds apply to it via
@@ -449,8 +440,9 @@ impl ResourceTab {
         }
     }
 }
-/// Which panel is currently focused.
+/// Which panel is currently highlighted.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[allow(dead_code)]
 pub enum Focus {
     /// Resource tabs bar at the top.
     ResourceTabs,
@@ -461,35 +453,6 @@ pub enum Focus {
     Details
 }
 
-impl Focus {
-    /// Returns the display label for the focus target.
-    #[must_use]
-    pub const fn label(self) -> &'static str {
-        match self {
-            Self::ResourceTabs => "Tabs",
-            Self::ResourceList => "List",
-            Self::Details => "Details"
-        }
-    }
-
-    /// Moves focus to the left neighbor.
-    #[must_use]
-    pub const fn left(self) -> Self {
-        match self {
-            Self::Details => Self::ResourceList,
-            Self::ResourceList | Self::ResourceTabs => Self::ResourceTabs
-        }
-    }
-
-    /// Moves focus to the right neighbor.
-    #[must_use]
-    pub const fn right(self) -> Self {
-        match self {
-            Self::ResourceTabs => Self::ResourceList,
-            Self::ResourceList | Self::Details => Self::Details
-        }
-    }
-}
 
 /// Holds all runtime state for the TUI dashboard.
 #[allow(clippy::struct_excessive_bools)]
@@ -533,7 +496,6 @@ pub struct App {
     pub widgets:           super::widgets::WidgetRegistry,
     pub project_manager:   ProjectManager,
     pub focus:             Focus,
-    pub nav_level:         NavLevel,
     pub action_menu:       Option<ActionMenu>,
     pub confirm:           Option<PendingAction>,
     pub dispatch:          Option<PendingAction>,
@@ -599,7 +561,6 @@ impl App {
             widgets: super::widgets::WidgetRegistry::new(),
             project_manager: ProjectManager::new(),
             focus: Focus::ResourceList,
-            nav_level: NavLevel::Overview,
             action_menu: None,
             confirm: None,
             dispatch: None,
@@ -654,6 +615,12 @@ impl App {
     /// Cycles to the next resource tab.
     pub const fn next_tab(&mut self) {
         self.active_tab = self.active_tab.next();
+        self.selected = 0;
+    }
+
+    /// Cycles to the previous resource tab.
+    pub const fn previous_tab(&mut self) {
+        self.active_tab = self.active_tab.previous();
         self.selected = 0;
     }
 

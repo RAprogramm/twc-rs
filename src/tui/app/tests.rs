@@ -318,8 +318,6 @@ fn handle_key_vim_k() {
         make_server(2, "s2", "running"),
     ];
     app.selected = 1;
-    app.nav_level = NavLevel::Inner;
-    app.focus = Focus::ResourceList;
     let event = AppEvent::Key(crossterm::event::KeyEvent {
         code:      KeyCode::Char('k'),
         modifiers: crossterm::event::KeyModifiers::NONE,
@@ -338,8 +336,6 @@ fn handle_key_vim_j() {
         make_server(1, "s1", "running"),
         make_server(2, "s2", "running"),
     ];
-    app.nav_level = NavLevel::Inner;
-    app.focus = Focus::ResourceList;
     let event = AppEvent::Key(crossterm::event::KeyEvent {
         code:      KeyCode::Char('j'),
         modifiers: crossterm::event::KeyModifiers::NONE,
@@ -354,8 +350,6 @@ fn handle_key_vim_j() {
 #[test]
 fn handle_key_vim_h() {
     let mut app = App::new(5);
-    app.focus = Focus::ResourceList;
-    app.nav_level = NavLevel::Overview;
     let event = AppEvent::Key(crossterm::event::KeyEvent {
         code:      KeyCode::Char('h'),
         modifiers: crossterm::event::KeyModifiers::NONE,
@@ -364,14 +358,12 @@ fn handle_key_vim_h() {
     });
     let keep_going = crate::tui::event::handle_event(&mut app, event);
     assert!(keep_going);
-    assert_eq!(app.focus, Focus::ResourceTabs);
+    assert_eq!(app.active_tab, ResourceTab::Finances);
 }
 
 #[test]
 fn handle_key_vim_l() {
     let mut app = App::new(5);
-    app.focus = Focus::ResourceList;
-    app.nav_level = NavLevel::Overview;
     let event = AppEvent::Key(crossterm::event::KeyEvent {
         code:      KeyCode::Char('l'),
         modifiers: crossterm::event::KeyModifiers::NONE,
@@ -380,7 +372,7 @@ fn handle_key_vim_l() {
     });
     let keep_going = crate::tui::event::handle_event(&mut app, event);
     assert!(keep_going);
-    assert_eq!(app.focus, Focus::Details);
+    assert_eq!(app.active_tab, ResourceTab::Databases);
 }
 
 #[test]
@@ -391,8 +383,6 @@ fn handle_key_g() {
         make_server(2, "s2", "running"),
     ];
     app.selected = 1;
-    app.nav_level = NavLevel::Inner;
-    app.focus = Focus::ResourceList;
     let event = AppEvent::Key(crossterm::event::KeyEvent {
         code:      KeyCode::Char('g'),
         modifiers: crossterm::event::KeyModifiers::NONE,
@@ -412,8 +402,6 @@ fn handle_key_dollar() {
         make_server(2, "s2", "running"),
     ];
     app.selected = 0;
-    app.nav_level = NavLevel::Inner;
-    app.focus = Focus::ResourceList;
     let event = AppEvent::Key(crossterm::event::KeyEvent {
         code:      KeyCode::Char('$'),
         modifiers: crossterm::event::KeyModifiers::NONE,
@@ -510,8 +498,6 @@ fn menu_select_destructive_requires_confirm() {
 fn enter_opens_menu_then_runs_action() {
     let mut app = App::new(5);
     app.servers = vec![make_server(7, "web", "On")];
-    app.nav_level = NavLevel::Inner;
-    app.focus = Focus::ResourceList;
 
     crate::tui::event::handle_event(&mut app, key(KeyCode::Enter));
     assert!(app.action_menu_open());

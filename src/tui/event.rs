@@ -6,7 +6,7 @@
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use tokio::{sync::mpsc, time::Duration};
 
-use super::app::{App, Focus, NavLevel};
+use super::app::App;
 
 /// Events that the TUI event loop can process.
 #[allow(dead_code)]
@@ -110,96 +110,48 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
     match key.code {
         KeyCode::Char('Q') => {
             app.quit();
-            return false;
+            false
         }
         KeyCode::Char('?') => {
             app.toggle_help();
-            return true;
+            true
         }
         KeyCode::Char('r') => {
             app.force_refresh();
-            return true;
+            true
         }
-        KeyCode::Tab => {
+        KeyCode::Tab | KeyCode::Char('l') | KeyCode::Right => {
             app.next_tab();
-            return true;
+            true
         }
-        _ => {}
-    }
-
-    if matches!(key.code, KeyCode::Enter) && app.focus == Focus::ResourceList {
-        app.open_action_menu();
-        if app.action_menu_open() {
-            return true;
+        KeyCode::BackTab | KeyCode::Char('h') | KeyCode::Left => {
+            app.previous_tab();
+            true
         }
-    }
-
-    match app.nav_level {
-        NavLevel::Overview => handle_overview_key(app, key),
-        NavLevel::Inner => handle_inner_key(app, key)
-    }
-    true
-}
-
-const fn handle_overview_key(app: &mut App, key: KeyEvent) {
-    match key.code {
-        KeyCode::Char('h') | KeyCode::Left => {
-            app.focus = app.focus.left();
+        KeyCode::Char('j') | KeyCode::Down => {
+            app.select_next();
+            true
         }
-        KeyCode::Char('l') | KeyCode::Right => {
-            app.focus = app.focus.right();
+        KeyCode::Char('k') | KeyCode::Up => {
+            app.select_previous();
+            true
         }
-        KeyCode::Char('j' | 'k') | KeyCode::Down | KeyCode::Up | KeyCode::Enter => {
-            app.nav_level = NavLevel::Inner;
-        }
-        _ => {}
-    }
-}
-
-fn handle_inner_key(app: &mut App, key: KeyEvent) {
-    match key.code {
-        KeyCode::Esc => {
-            app.nav_level = NavLevel::Overview;
-        }
-        KeyCode::Char('h') | KeyCode::Left => {
-            app.nav_level = NavLevel::Overview;
-            app.focus = app.focus.left();
-        }
-        KeyCode::Char('l') | KeyCode::Right => {
-            app.nav_level = NavLevel::Overview;
-            app.focus = app.focus.right();
-        }
-        KeyCode::Char('k') | KeyCode::Up => match app.focus {
-            Focus::ResourceTabs => {
-                app.active_tab = app.active_tab.previous();
-                app.selected = 0;
-            }
-            Focus::ResourceList => app.select_previous(),
-            Focus::Details => {}
-        },
-        KeyCode::Char('j') | KeyCode::Down => match app.focus {
-            Focus::ResourceTabs => {
-                app.active_tab = app.active_tab.next();
-                app.selected = 0;
-            }
-            Focus::ResourceList => app.select_next(),
-            Focus::Details => {}
-        },
-        KeyCode::Enter => {
-            if app.focus == Focus::ResourceList {
-                app.focus = Focus::Details;
-            }
-        }
-        KeyCode::Char('g') => {
+        KeyCode::Char('g') | KeyCode::Home => {
             app.selected = 0;
+            true
         }
-        KeyCode::Char('$') => {
+        KeyCode::Char('G' | '$') | KeyCode::End => {
             let len = app.current_list_len();
             if len > 0 {
                 app.selected = len - 1;
             }
+            true
         }
-        _ => {}
+        KeyCode::Enter => {
+            app.open_action_menu();
+            true
+        }
+        _ => true
     }
 }
 

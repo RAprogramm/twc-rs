@@ -64,29 +64,51 @@ impl AccountWidget {
         palette: crate::tui::themes::Palette
     ) -> Vec<Line<'static>> {
         let id_text = Self::format_account_id(account.account_id);
-        let status_style = match account.status.as_str() {
-            "active" | "running" | "enabled" => Style::default().fg(palette.success),
-            "inactive" | "suspended" => Style::default().fg(palette.warning),
-            "error" | "failed" => Style::default().fg(palette.error),
-            _ => Style::default().fg(palette.fg)
+        let status_color = match account.status.as_str() {
+            "active" | "running" | "enabled" => palette.success,
+            "inactive" | "suspended" => palette.warning,
+            "error" | "failed" => palette.error,
+            _ => palette.dim
         };
+        let balance = if account.balance.is_empty() {
+            "—".to_string()
+        } else {
+            account.balance.clone()
+        };
+        let status = if account.status.is_empty() {
+            "unknown".to_string()
+        } else {
+            account.status.clone()
+        };
+        let sep = || Span::styled("   │   ", Style::default().fg(palette.border));
 
-        vec![
-            Line::from(Span::styled(
-                format!("ID: {id_text}"),
+        vec![Line::from(vec![
+            Span::styled(
+                "twc",
+                Style::default()
+                    .fg(palette.title)
+                    .add_modifier(Modifier::BOLD)
+            ),
+            sep(),
+            Span::styled("ID ", Style::default().fg(palette.dim)),
+            Span::styled(
+                id_text,
                 Style::default()
                     .fg(palette.header)
                     .add_modifier(Modifier::BOLD)
-            )),
-            Line::from(Span::styled(
-                format!("Balance: {}", account.balance),
-                Style::default().fg(palette.accent)
-            )),
-            Line::from(Span::styled(
-                format!("Status: {}", account.status),
-                status_style
-            )),
-        ]
+            ),
+            sep(),
+            Span::styled("Balance ", Style::default().fg(palette.dim)),
+            Span::styled(
+                balance,
+                Style::default()
+                    .fg(palette.accent)
+                    .add_modifier(Modifier::BOLD)
+            ),
+            sep(),
+            Span::styled("\u{25CF} ", Style::default().fg(status_color)),
+            Span::styled(status, Style::default().fg(status_color)),
+        ])]
     }
 }
 
@@ -199,31 +221,30 @@ mod tests {
         assert_eq!(AccountWidget::format_account_id(12345.67), "12345.67");
     }
 
+    fn joined(lines: &[Line]) -> String {
+        lines
+            .iter()
+            .flat_map(|l| l.spans.iter())
+            .map(|s| s.content.as_ref())
+            .collect::<String>()
+    }
+
+    fn status_fg(lines: &[Line]) -> Option<Color> {
+        lines[0].spans.last().and_then(|s| s.style.fg)
+    }
+
     #[test]
     fn build_lines_active_status() {
         let account = make_account(12345.0, "1,234.56 RUB", "active");
         let palette = Theme::GruvboxDark.palette();
         let lines = AccountWidget::build_lines(&account, palette);
 
-        assert_eq!(lines.len(), 3);
-        assert!(
-            lines[0]
-                .spans
-                .iter()
-                .any(|s| s.content.contains("ID: 12345"))
-        );
-        assert!(
-            lines[1]
-                .spans
-                .iter()
-                .any(|s| s.content.contains("1,234.56 RUB"))
-        );
-        assert!(
-            lines[2]
-                .spans
-                .iter()
-                .any(|s| s.content.contains("Status: active"))
-        );
+        assert_eq!(lines.len(), 1);
+        let text = joined(&lines);
+        assert!(text.contains("12345"));
+        assert!(text.contains("1,234.56 RUB"));
+        assert!(text.contains("active"));
+        assert_eq!(status_fg(&lines), Some(palette.success));
     }
 
     #[test]
@@ -231,10 +252,7 @@ mod tests {
         let account = make_account(100.0, "0.00 RUB", "inactive");
         let palette = Theme::GruvboxDark.palette();
         let lines = AccountWidget::build_lines(&account, palette);
-
-        let status_line = &lines[2];
-        let span = status_line.spans.first().expect("status span");
-        assert!(matches!(span.style.fg, Some(Color::Rgb(249, 226, 175))));
+        assert_eq!(status_fg(&lines), Some(palette.warning));
     }
 
     #[test]
@@ -242,10 +260,7 @@ mod tests {
         let account = make_account(200.0, "0.00 RUB", "error");
         let palette = Theme::GruvboxDark.palette();
         let lines = AccountWidget::build_lines(&account, palette);
-
-        let status_line = &lines[2];
-        let span = status_line.spans.first().expect("status span");
-        assert!(matches!(span.style.fg, Some(Color::Rgb(243, 113, 113))));
+        assert_eq!(status_fg(&lines), Some(palette.error));
     }
 
     #[test]
@@ -254,9 +269,7 @@ mod tests {
         let palette = Theme::GruvboxDark.palette();
         let lines = AccountWidget::build_lines(&account, palette);
 
-        let status_line = &lines[2];
-        let span = status_line.spans.first().expect("status span");
-        assert!(matches!(span.style.fg, Some(Color::Rgb(250, 241, 242))));
+        assert_eq!(status_fg(&lines), Some(palette.dim));
     }
 
     #[test]
@@ -265,15 +278,12 @@ mod tests {
         let palette = Theme::GruvboxDark.palette();
         let lines = AccountWidget::build_lines(&account, palette);
 
-        assert_eq!(lines.len(), 3);
-        assert!(lines[0].spans.iter().any(|s| s.content.contains("ID: 0")));
-        assert!(
-            lines[1]
-                .spans
-                .iter()
-                .any(|s| s.content.is_empty() || s.content.contains("Balance:"))
-        );
-        assert!(lines[2].spans.iter().any(|s| s.content.contains("Status:")));
+        assert_eq!(lines.len(), 1);
+        let text = joined(&lines);
+        assert!(text.contains("ID"));
+        assert!(text.contains('0'));
+        assert!(text.contains('—'));
+        assert!(text.contains("unknown"));
     }
 
     #[test]
