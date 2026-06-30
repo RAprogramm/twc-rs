@@ -240,8 +240,9 @@ pub async fn list(
             }
         }
         OutputFormat::Json | OutputFormat::Yaml => {
-            let out =
-                crate::output::serialized(format, &resp.domains).expect("json or yaml branch")?;
+            let out = crate::output::serialized(format, &resp.domains)
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -322,8 +323,9 @@ pub async fn info(
             }
         }
         OutputFormat::Json | OutputFormat::Yaml => {
-            let out =
-                crate::output::serialized(format, &resp.domain).expect("json or yaml branch")?;
+            let out = crate::output::serialized(format, &resp.domain)
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -459,7 +461,8 @@ pub async fn dns_list(
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             let out = crate::output::serialized(format, &resp.dns_records)
-                .expect("json or yaml branch")?;
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -619,7 +622,8 @@ pub async fn ns_list(
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             let out = crate::output::serialized(format, &resp.name_servers)
-                .expect("json or yaml branch")?;
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -661,7 +665,8 @@ pub async fn ns_update(
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             let out = crate::output::serialized(format, &resp.name_servers)
-                .expect("json or yaml branch")?;
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -709,8 +714,9 @@ pub async fn subdomain_list(
             }
         }
         OutputFormat::Json | OutputFormat::Yaml => {
-            let out =
-                crate::output::serialized(format, &d.subdomains).expect("json or yaml branch")?;
+            let out = crate::output::serialized(format, &d.subdomains)
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -818,8 +824,9 @@ pub async fn request_list(
             }
         }
         OutputFormat::Json | OutputFormat::Yaml => {
-            let out =
-                crate::output::serialized(format, &resp.requests).expect("json or yaml branch")?;
+            let out = crate::output::serialized(format, &resp.requests)
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -872,7 +879,8 @@ pub async fn tld_list(
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             let out = crate::output::serialized(format, &resp.top_level_domains)
-                .expect("json or yaml branch")?;
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -917,8 +925,9 @@ pub async fn auto_prolong(
             println!("{msg}");
         }
         OutputFormat::Json | OutputFormat::Yaml => {
-            let out =
-                crate::output::serialized(format, &resp.domain).expect("json or yaml branch")?;
+            let out = crate::output::serialized(format, &resp.domain)
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {

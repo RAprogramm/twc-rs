@@ -22,10 +22,8 @@ use crate::tui::{
 ///
 /// The API reports states like `On`, `Off`, `Installing`, `Rebooting` —
 /// not `Running`/`Stopped` — so the dashboard translates them here.
-pub(crate) fn server_status_view(
-    status: &str,
-    palette: &Palette
-) -> (&'static str, Color, String) {
+#[must_use]
+pub fn server_status_view(status: &str, palette: &Palette) -> (&'static str, Color, String) {
     match status {
         "On" => (
             "\u{25B6}",

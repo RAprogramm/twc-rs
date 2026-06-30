@@ -72,7 +72,7 @@ fn new_app_defaults() {
 #[test]
 fn account_default() {
     let app = App::new(5);
-    assert_eq!(app.account.account_id, 0.0);
+    assert_eq!(app.account.account_id, 0);
     assert!(app.account.balance.is_empty());
     assert!(app.account.status.is_empty());
 }
@@ -163,8 +163,8 @@ fn push_cpu_rolling_window() {
         app.push_cpu(f64::from(i));
     }
     assert_eq!(app.cpu_history.len(), 60);
-    assert_eq!(*app.cpu_history.front().unwrap(), 5.0);
-    assert_eq!(*app.cpu_history.back().unwrap(), 64.0);
+    assert!((*app.cpu_history.front().unwrap() - 5.0).abs() < f64::EPSILON);
+    assert!((*app.cpu_history.back().unwrap() - 64.0).abs() < f64::EPSILON);
 }
 
 #[test]

@@ -103,7 +103,7 @@ impl StatsWidget {
     ///
     /// The value clamped to `0..=100` and rounded to the nearest integer.
     #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-    fn pct_to_u64(value: f64) -> u64 {
+    const fn pct_to_u64(value: f64) -> u64 {
         value.clamp(0.0, 100.0).round() as u64
     }
 
@@ -123,7 +123,7 @@ impl StatsWidget {
     /// Converts a byte sample to a non-negative integer for the sparkline,
     /// which renders `u64` data points.
     #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-    fn bytes_to_spark(value: f64) -> u64 {
+    const fn bytes_to_spark(value: f64) -> u64 {
         value.max(0.0).round() as u64
     }
 
@@ -247,10 +247,10 @@ impl crate::tui::widgets::Widget for StatsWidget {
     fn render(&self, frame: &mut Frame, area: Rect, app: &App) {
         let palette = app.theme.palette();
 
-        let title = match &app.stats_subject {
-            Some(name) => format!(" {} — {name} ", t!("stats.title")),
-            None => format!(" {} ", t!("stats.title"))
-        };
+        let title = app.stats_subject.as_ref().map_or_else(
+            || format!(" {} ", t!("stats.title")),
+            |name| format!(" {} — {name} ", t!("stats.title"))
+        );
         let block = Block::default()
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)

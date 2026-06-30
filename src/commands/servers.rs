@@ -85,8 +85,9 @@ pub async fn list(
             }
         }
         OutputFormat::Json | OutputFormat::Yaml => {
-            let out =
-                crate::output::serialized(format, &resp.servers).expect("json or yaml branch")?;
+            let out = crate::output::serialized(format, &resp.servers)
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -134,8 +135,9 @@ pub async fn info(config: &Configuration, id: i32, format: OutputFormat) -> Resu
             }
         }
         OutputFormat::Json | OutputFormat::Yaml => {
-            let out =
-                crate::output::serialized(format, &resp.server).expect("json or yaml branch")?;
+            let out = crate::output::serialized(format, &resp.server)
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -284,7 +286,8 @@ pub async fn list_presets(config: &Configuration, format: OutputFormat) -> Resul
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             let out = crate::output::serialized(format, &resp.server_presets)
-                .expect("json or yaml branch")?;
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -347,7 +350,8 @@ pub async fn list_os(config: &Configuration, format: OutputFormat) -> Result<(),
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             let out = crate::output::serialized(format, &resp.servers_os)
-                .expect("json or yaml branch")?;
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -405,7 +409,8 @@ pub async fn list_software(config: &Configuration, format: OutputFormat) -> Resu
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             let out = crate::output::serialized(format, &resp.servers_software)
-                .expect("json or yaml branch")?;
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -473,7 +478,8 @@ pub async fn list_configurators(
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             let out = crate::output::serialized(format, &resp.server_configurators)
-                .expect("json or yaml branch")?;
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {

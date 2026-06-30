@@ -147,12 +147,14 @@ impl AppConfig {
     /// Returns [`TwcError::ConfigNotFound`] when the named profile does not
     /// exist.
     pub fn token_for(&self, profile: Option<&str>) -> Result<Option<String>, TwcError> {
-        match profile {
-            Some(name) => self.profiles.get(name).cloned().map(Some).ok_or_else(|| {
-                TwcError::ConfigNotFound(format!("profile '{name}' not found in config"))
-            }),
-            None => Ok(self.token.clone())
-        }
+        profile.map_or_else(
+            || Ok(self.token.clone()),
+            |name| {
+                self.profiles.get(name).cloned().map(Some).ok_or_else(|| {
+                    TwcError::ConfigNotFound(format!("profile '{name}' not found in config"))
+                })
+            }
+        )
     }
 
     /// Returns the path to the configuration file.

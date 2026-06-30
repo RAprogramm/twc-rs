@@ -159,7 +159,8 @@ pub async fn list(
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             let out = crate::output::serialized(format, &resp.balancers)
-                .expect("json or yaml branch")?;
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -227,8 +228,9 @@ pub async fn info(
             }
         }
         OutputFormat::Json | OutputFormat::Yaml => {
-            let out =
-                crate::output::serialized(format, &resp.balancer).expect("json or yaml branch")?;
+            let out = crate::output::serialized(format, &resp.balancer)
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -279,8 +281,9 @@ pub async fn create(
             );
         }
         OutputFormat::Json | OutputFormat::Yaml => {
-            let out =
-                crate::output::serialized(format, &resp.balancer).expect("json or yaml branch")?;
+            let out = crate::output::serialized(format, &resp.balancer)
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -338,8 +341,9 @@ pub async fn update(
             );
         }
         OutputFormat::Json | OutputFormat::Yaml => {
-            let out =
-                crate::output::serialized(format, &resp.balancer).expect("json or yaml branch")?;
+            let out = crate::output::serialized(format, &resp.balancer)
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -388,8 +392,9 @@ pub async fn rule_list(
             }
         }
         OutputFormat::Json | OutputFormat::Yaml => {
-            let out =
-                crate::output::serialized(format, &resp.rules).expect("json or yaml branch")?;
+            let out = crate::output::serialized(format, &resp.rules)
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -443,8 +448,9 @@ pub async fn rule_create(
             );
         }
         OutputFormat::Json | OutputFormat::Yaml => {
-            let out =
-                crate::output::serialized(format, &resp.rule).expect("json or yaml branch")?;
+            let out = crate::output::serialized(format, &resp.rule)
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -521,8 +527,9 @@ pub async fn ip_list(
             }
         }
         OutputFormat::Json | OutputFormat::Yaml => {
-            let out =
-                crate::output::serialized(format, &resp.ips).expect("json or yaml branch")?;
+            let out = crate::output::serialized(format, &resp.ips)
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -615,7 +622,8 @@ pub async fn preset_list(
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             let out = crate::output::serialized(format, &resp.balancers_presets)
-                .expect("json or yaml branch")?;
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {

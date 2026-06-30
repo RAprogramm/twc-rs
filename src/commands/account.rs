@@ -84,7 +84,9 @@ pub async fn show(config: &Configuration, format: OutputFormat) -> Result<(), Tw
             println!("{table}");
         }
         OutputFormat::Json | OutputFormat::Yaml => {
-            let out = crate::output::serialized(format, &summary).expect("json or yaml branch")?;
+            let out = crate::output::serialized(format, &summary)
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {

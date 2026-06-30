@@ -199,8 +199,9 @@ pub async fn list(
             }
         }
         OutputFormat::Json | OutputFormat::Yaml => {
-            let out =
-                crate::output::serialized(format, &resp.clusters).expect("json or yaml branch")?;
+            let out = crate::output::serialized(format, &resp.clusters)
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -252,8 +253,9 @@ pub async fn info(config: &Configuration, id: i32, format: OutputFormat) -> Resu
             println!("Created at:         {}", cluster.created_at);
         }
         OutputFormat::Json | OutputFormat::Yaml => {
-            let out =
-                crate::output::serialized(format, &resp.cluster).expect("json or yaml branch")?;
+            let out = crate::output::serialized(format, &resp.cluster)
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -301,8 +303,9 @@ pub async fn create(
             );
         }
         OutputFormat::Json | OutputFormat::Yaml => {
-            let out =
-                crate::output::serialized(format, &resp.cluster).expect("json or yaml branch")?;
+            let out = crate::output::serialized(format, &resp.cluster)
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -357,8 +360,9 @@ pub async fn update(
             );
         }
         OutputFormat::Json | OutputFormat::Yaml => {
-            let out =
-                crate::output::serialized(format, &resp.cluster).expect("json or yaml branch")?;
+            let out = crate::output::serialized(format, &resp.cluster)
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -408,7 +412,8 @@ pub async fn nodegroup_list(
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             let out = crate::output::serialized(format, &resp.node_groups)
-                .expect("json or yaml branch")?;
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -450,7 +455,8 @@ pub async fn nodegroup_create(
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             let out = crate::output::serialized(format, &resp.node_group)
-                .expect("json or yaml branch")?;
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -523,8 +529,9 @@ pub async fn node_list(
             }
         }
         OutputFormat::Json | OutputFormat::Yaml => {
-            let out =
-                crate::output::serialized(format, &resp.nodes).expect("json or yaml branch")?;
+            let out = crate::output::serialized(format, &resp.nodes)
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -575,8 +582,9 @@ pub async fn addon_list(
             }
         }
         OutputFormat::Json | OutputFormat::Yaml => {
-            let out =
-                crate::output::serialized(format, &resp.addons).expect("json or yaml branch")?;
+            let out = crate::output::serialized(format, &resp.addons)
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -694,7 +702,8 @@ pub async fn preset_list(config: &Configuration, format: OutputFormat) -> Result
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             let out = crate::output::serialized(format, &resp.k8s_presets)
-                .expect("json or yaml branch")?;
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -749,7 +758,8 @@ pub async fn version_list(config: &Configuration, format: OutputFormat) -> Resul
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             let out = crate::output::serialized(format, &resp.k8s_versions)
-                .expect("json or yaml branch")?;
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -802,7 +812,8 @@ pub async fn resources(
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             let out = crate::output::serialized(format, &resp.resources)
-                .expect("json or yaml branch")?;
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {

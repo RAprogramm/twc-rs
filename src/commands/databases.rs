@@ -177,8 +177,9 @@ pub async fn list(
             }
         }
         OutputFormat::Json | OutputFormat::Yaml => {
-            let out =
-                crate::output::serialized(format, &resp.dbs).expect("json or yaml branch")?;
+            let out = crate::output::serialized(format, &resp.dbs)
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -216,8 +217,7 @@ pub async fn info(config: &Configuration, id: i32, format: OutputFormat) -> Resu
             println!("Engine:         {}", String::new());
             println!(
                 "Port:           {}",
-                db.port
-                    .map_or_else(|| "-".to_string(), |p| p.to_string())
+                db.port.map_or_else(|| "-".to_string(), |p| p.to_string())
             );
             println!("Location:       {:?}", db.location);
             println!("Preset ID:      {}", db.preset_id);
@@ -233,7 +233,9 @@ pub async fn info(config: &Configuration, id: i32, format: OutputFormat) -> Resu
             );
         }
         OutputFormat::Json | OutputFormat::Yaml => {
-            let out = crate::output::serialized(format, &resp.db).expect("json or yaml branch")?;
+            let out = crate::output::serialized(format, &resp.db)
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -288,7 +290,9 @@ pub async fn update(
             );
         }
         OutputFormat::Json | OutputFormat::Yaml => {
-            let out = crate::output::serialized(format, &resp.db).expect("json or yaml branch")?;
+            let out = crate::output::serialized(format, &resp.db)
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -353,8 +357,9 @@ pub async fn backup_list(
             }
         }
         OutputFormat::Json | OutputFormat::Yaml => {
-            let out =
-                crate::output::serialized(format, &resp.backups).expect("json or yaml branch")?;
+            let out = crate::output::serialized(format, &resp.backups)
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -420,8 +425,9 @@ pub async fn user_list(
             }
         }
         OutputFormat::Json | OutputFormat::Yaml => {
-            let out =
-                crate::output::serialized(format, &resp.admins).expect("json or yaml branch")?;
+            let out = crate::output::serialized(format, &resp.admins)
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -466,8 +472,9 @@ pub async fn user_create(
             );
         }
         OutputFormat::Json | OutputFormat::Yaml => {
-            let out =
-                crate::output::serialized(format, &resp.admin).expect("json or yaml branch")?;
+            let out = crate::output::serialized(format, &resp.admin)
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -555,7 +562,8 @@ pub async fn preset_list(config: &Configuration, format: OutputFormat) -> Result
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             let out = crate::output::serialized(format, &resp.databases_presets)
-                .expect("json or yaml branch")?;
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {
@@ -607,7 +615,9 @@ pub async fn create(
             println!("{}", t!("cli.password", password => password));
         }
         OutputFormat::Json | OutputFormat::Yaml => {
-            let out = crate::output::serialized(format, &resp.db).expect("json or yaml branch")?;
+            let out = crate::output::serialized(format, &resp.db)
+                .transpose()?
+                .unwrap_or_default();
             println!("{out}");
         }
         OutputFormat::Quiet => {

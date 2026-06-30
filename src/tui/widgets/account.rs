@@ -37,7 +37,7 @@ impl AccountWidget {
         }
     }
 
-    /// Formats an f64 account ID as a clean integer string when possible.
+    /// Formats an account ID as a string.
     ///
     /// # Arguments
     ///
@@ -46,12 +46,8 @@ impl AccountWidget {
     /// # Returns
     ///
     /// A string representation without trailing decimal points.
-    fn format_account_id(id: f64) -> String {
-        if id.fract() == 0.0 {
-            format!("{id:.0}")
-        } else {
-            format!("{id}")
-        }
+    fn format_account_id(id: i64) -> String {
+        id.to_string()
     }
 
     /// Builds the styled lines for the account info panel.
@@ -171,7 +167,7 @@ mod tests {
     use super::*;
     use crate::tui::{themes::Theme, widgets::Widget};
 
-    fn make_account(id: f64, balance: &str, status: &str) -> AccountInfo {
+    fn make_account(id: i64, balance: &str, status: &str) -> AccountInfo {
         AccountInfo {
             login:      String::new(),
             account_id: id,
@@ -220,22 +216,17 @@ mod tests {
 
     #[test]
     fn format_account_id_integer() {
-        assert_eq!(AccountWidget::format_account_id(12345.0), "12345");
+        assert_eq!(AccountWidget::format_account_id(12345), "12345");
     }
 
     #[test]
     fn format_account_id_zero() {
-        assert_eq!(AccountWidget::format_account_id(0.0), "0");
+        assert_eq!(AccountWidget::format_account_id(0), "0");
     }
 
     #[test]
     fn format_account_id_negative() {
-        assert_eq!(AccountWidget::format_account_id(-100.0), "-100");
-    }
-
-    #[test]
-    fn format_account_id_float() {
-        assert_eq!(AccountWidget::format_account_id(12345.67), "12345.67");
+        assert_eq!(AccountWidget::format_account_id(-100), "-100");
     }
 
     fn joined(lines: &[Line]) -> String {
@@ -252,7 +243,7 @@ mod tests {
 
     #[test]
     fn build_lines_active_status() {
-        let account = make_account(12345.0, "1,234.56 RUB", "active");
+        let account = make_account(12345, "1,234.56 RUB", "active");
         let palette = Theme::GruvboxDark.palette();
         let lines = AccountWidget::build_lines(&account, palette);
 
@@ -266,7 +257,7 @@ mod tests {
 
     #[test]
     fn build_lines_inactive_status_has_warning_color() {
-        let account = make_account(100.0, "0.00 RUB", "inactive");
+        let account = make_account(100, "0.00 RUB", "inactive");
         let palette = Theme::GruvboxDark.palette();
         let lines = AccountWidget::build_lines(&account, palette);
         assert_eq!(status_fg(&lines), Some(palette.warning));
@@ -274,7 +265,7 @@ mod tests {
 
     #[test]
     fn build_lines_error_status_has_error_color() {
-        let account = make_account(200.0, "0.00 RUB", "error");
+        let account = make_account(200, "0.00 RUB", "error");
         let palette = Theme::GruvboxDark.palette();
         let lines = AccountWidget::build_lines(&account, palette);
         assert_eq!(status_fg(&lines), Some(palette.error));
@@ -282,7 +273,7 @@ mod tests {
 
     #[test]
     fn build_lines_default_status_has_fg_color() {
-        let account = make_account(300.0, "0.00 RUB", "unknown");
+        let account = make_account(300, "0.00 RUB", "unknown");
         let palette = Theme::GruvboxDark.palette();
         let lines = AccountWidget::build_lines(&account, palette);
 

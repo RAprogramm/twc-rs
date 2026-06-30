@@ -61,14 +61,19 @@ pub fn handle_event(app: &mut App, event: AppEvent) -> bool {
     }
 }
 
-fn handle_key(app: &mut App, key: KeyEvent) -> bool {
+/// Handles a key when an overlay is active (command palette, action menu,
+/// confirm dialog, help, drill view or filter input).
+///
+/// Returns `Some(continue_running)` when an overlay consumed the key, or
+/// `None` to fall through to normal navigation keys.
+fn handle_overlay_key(app: &mut App, key: KeyEvent) -> Option<bool> {
     if key.modifiers.contains(KeyModifiers::CONTROL) && matches!(key.code, KeyCode::Char('k')) {
         if app.palette_open() {
             app.close_palette();
         } else {
             app.open_palette();
         }
-        return true;
+        return Some(true);
     }
 
     if app.palette_open() {
@@ -81,7 +86,7 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
             KeyCode::Char(c) => app.palette_input(c),
             _ => {}
         }
-        return true;
+        return Some(true);
     }
 
     if app.action_menu_open() {
@@ -92,7 +97,7 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
             KeyCode::Esc | KeyCode::Char('q') => app.close_action_menu(),
             _ => {}
         }
-        return true;
+        return Some(true);
     }
 
     if app.awaiting_confirm() {
@@ -100,31 +105,28 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
             KeyCode::Char('y' | 'Y') | KeyCode::Enter => app.confirm_action(),
             _ => app.cancel_action()
         }
-        return true;
+        return Some(true);
     }
 
     if app.show_help {
-        match key.code {
-            KeyCode::Esc | KeyCode::Char('?') => {
-                app.show_help = false;
-            }
-            _ => {}
+        if matches!(key.code, KeyCode::Esc | KeyCode::Char('?')) {
+            app.show_help = false;
         }
-        return true;
+        return Some(true);
     }
 
     if app.drill_open() {
         match key.code {
             KeyCode::Char('Q') => {
                 app.quit();
-                return false;
+                return Some(false);
             }
             KeyCode::Esc | KeyCode::Char('q' | 'h') | KeyCode::Left => app.close_drill(),
             KeyCode::Char('j') | KeyCode::Down => app.drill_next(),
             KeyCode::Char('k') | KeyCode::Up => app.drill_previous(),
             _ => {}
         }
-        return true;
+        return Some(true);
     }
 
     if app.filter_editing {
@@ -135,7 +137,15 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
             KeyCode::Char(c) => app.filter_push(c),
             _ => {}
         }
-        return true;
+        return Some(true);
+    }
+
+    None
+}
+
+fn handle_key(app: &mut App, key: KeyEvent) -> bool {
+    if let Some(result) = handle_overlay_key(app, key) {
+        return result;
     }
 
     match key.code {

@@ -38,7 +38,7 @@ pub struct LogEntry {
 #[derive(Debug, Clone, Default)]
 pub struct AccountInfo {
     pub login:      String,
-    pub account_id: f64,
+    pub account_id: i64,
     pub balance:    String,
     pub status:     String
 }
@@ -456,65 +456,7 @@ impl ResourceTab {
         }
     }
 
-    /// Cycles to the next tab.
-    #[allow(dead_code)]
-    #[must_use]
-    pub const fn next(self) -> Self {
-        match self {
-            Self::Servers => Self::Databases,
-            Self::Databases => Self::S3,
-            Self::S3 => Self::Kubernetes,
-            Self::Kubernetes => Self::Projects,
-            Self::Projects => Self::Balancers,
-            Self::Balancers => Self::Registry,
-            Self::Registry => Self::Domains,
-            Self::Domains => Self::Firewall,
-            Self::Firewall => Self::FloatingIps,
-            Self::FloatingIps => Self::Images,
-            Self::Images => Self::NetworkDrives,
-            Self::NetworkDrives => Self::Vpc,
-            Self::Vpc => Self::DedicatedServers,
-            Self::DedicatedServers => Self::Mail,
-            Self::Mail => Self::Apps,
-            Self::Apps => Self::AiAgents,
-            Self::AiAgents => Self::KnowledgeBases,
-            Self::KnowledgeBases => Self::SshKeys,
-            Self::SshKeys => Self::Finances,
-            Self::Finances => Self::Servers
-        }
-    }
-
-    /// Cycles to the previous tab.
-    #[allow(dead_code)]
-    #[must_use]
-    pub const fn previous(self) -> Self {
-        match self {
-            Self::Servers => Self::Finances,
-            Self::Databases => Self::Servers,
-            Self::S3 => Self::Databases,
-            Self::Kubernetes => Self::S3,
-            Self::Projects => Self::Kubernetes,
-            Self::Balancers => Self::Projects,
-            Self::Registry => Self::Balancers,
-            Self::Domains => Self::Registry,
-            Self::Firewall => Self::Domains,
-            Self::FloatingIps => Self::Firewall,
-            Self::Images => Self::FloatingIps,
-            Self::NetworkDrives => Self::Images,
-            Self::Vpc => Self::NetworkDrives,
-            Self::DedicatedServers => Self::Vpc,
-            Self::Mail => Self::DedicatedServers,
-            Self::Apps => Self::Mail,
-            Self::AiAgents => Self::Apps,
-            Self::KnowledgeBases => Self::AiAgents,
-            Self::SshKeys => Self::KnowledgeBases,
-            Self::Finances => Self::SshKeys
-        }
-    }
-
     /// Returns the index of this tab.
-    // JUSTIFY: Public API method for future UI integration.
-    #[allow(dead_code)]
     #[must_use]
     pub const fn index(self) -> usize {
         match self {
@@ -801,7 +743,7 @@ impl App {
 
     /// Returns the number of items currently loaded for the given tab.
     #[must_use]
-    pub fn tab_count(&self, tab: ResourceTab) -> usize {
+    pub const fn tab_count(&self, tab: ResourceTab) -> usize {
         match tab {
             ResourceTab::Servers => self.servers.len(),
             ResourceTab::Databases => self.databases.len(),
@@ -844,7 +786,7 @@ impl App {
     }
 
     /// Toggles hiding of empty tabs and marks preferences dirty.
-    pub fn toggle_hide_empty_tabs(&mut self) {
+    pub const fn toggle_hide_empty_tabs(&mut self) {
         self.hide_empty_tabs = !self.hide_empty_tabs;
         self.prefs_dirty = true;
     }
@@ -904,7 +846,7 @@ impl App {
     }
 
     /// Begins filter input for the current list.
-    pub fn start_filter(&mut self) {
+    pub const fn start_filter(&mut self) {
         self.filter_editing = true;
         self.selected = 0;
     }
@@ -922,7 +864,7 @@ impl App {
     }
 
     /// Applies the filter and leaves input mode (keeps it active for nav).
-    pub fn filter_apply(&mut self) {
+    pub const fn filter_apply(&mut self) {
         self.filter_editing = false;
     }
 
@@ -935,7 +877,7 @@ impl App {
 
     /// Returns true when the filter is being typed or is applied.
     #[must_use]
-    pub fn filter_active(&self) -> bool {
+    pub const fn filter_active(&self) -> bool {
         self.filter_editing || !self.filter.is_empty()
     }
 
@@ -1283,7 +1225,7 @@ impl App {
 
     /// Takes the pending drill request for the loop to fetch.
     #[must_use]
-    pub fn take_drill_request(&mut self) -> Option<(ResourceTab, i32, String)> {
+    pub const fn take_drill_request(&mut self) -> Option<(ResourceTab, i32, String)> {
         self.drill_request.take()
     }
 
@@ -1310,7 +1252,7 @@ impl App {
     }
 
     /// Moves the drill selection down.
-    pub fn drill_next(&mut self) {
+    pub const fn drill_next(&mut self) {
         if let Some(view) = self.drill.as_mut()
             && view.selected + 1 < view.items.len()
         {
@@ -1319,7 +1261,7 @@ impl App {
     }
 
     /// Moves the drill selection up.
-    pub fn drill_previous(&mut self) {
+    pub const fn drill_previous(&mut self) {
         if let Some(view) = self.drill.as_mut() {
             view.selected = view.selected.saturating_sub(1);
         }
@@ -1338,7 +1280,7 @@ impl App {
     }
 
     /// Moves the action-menu highlight to the next item (wraps).
-    pub fn menu_next(&mut self) {
+    pub const fn menu_next(&mut self) {
         if let Some(menu) = self.action_menu.as_mut()
             && !menu.actions.is_empty()
         {
@@ -1347,7 +1289,7 @@ impl App {
     }
 
     /// Moves the action-menu highlight to the previous item (wraps).
-    pub fn menu_previous(&mut self) {
+    pub const fn menu_previous(&mut self) {
         if let Some(menu) = self.action_menu.as_mut() {
             let len = menu.actions.len();
             if len > 0 {
@@ -1402,7 +1344,7 @@ impl App {
 
     /// Takes the action queued for dispatch, if the user confirmed one.
     #[must_use]
-    pub fn take_dispatch(&mut self) -> Option<PendingAction> {
+    pub const fn take_dispatch(&mut self) -> Option<PendingAction> {
         self.dispatch.take()
     }
 
@@ -1465,7 +1407,7 @@ impl App {
     }
 
     /// Switches the active theme and marks preferences dirty.
-    pub fn set_theme(&mut self, theme: super::themes::Theme) {
+    pub const fn set_theme(&mut self, theme: super::themes::Theme) {
         self.theme = theme;
         self.prefs_dirty = true;
     }
@@ -1507,14 +1449,14 @@ impl App {
     }
 
     /// Moves the palette selection down.
-    pub fn palette_next(&mut self) {
+    pub const fn palette_next(&mut self) {
         if let Some(p) = self.palette.as_mut() {
             p.next();
         }
     }
 
     /// Moves the palette selection up.
-    pub fn palette_previous(&mut self) {
+    pub const fn palette_previous(&mut self) {
         if let Some(p) = self.palette.as_mut() {
             p.previous();
         }
@@ -1685,7 +1627,7 @@ impl App {
                     t!("app.log_recovered", name => name).to_string()
                 );
             }
-            self.last_load_errors = data.load_errors.clone();
+            self.last_load_errors = data.load_errors;
         }
         self.clamp_selection();
         self.is_loading = false;

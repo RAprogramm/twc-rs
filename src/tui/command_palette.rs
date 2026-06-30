@@ -75,7 +75,7 @@ impl CommandPalette {
     }
 
     /// Moves the selection down within the filtered list, wrapping.
-    pub fn next(&mut self) {
+    pub const fn next(&mut self) {
         if self.filtered.is_empty() {
             self.selected = 0;
             return;
@@ -84,7 +84,7 @@ impl CommandPalette {
     }
 
     /// Moves the selection up within the filtered list, wrapping.
-    pub fn previous(&mut self) {
+    pub const fn previous(&mut self) {
         if self.filtered.is_empty() {
             self.selected = 0;
             return;
@@ -136,7 +136,7 @@ impl CommandPalette {
     }
 
     /// Ensures `selected` points inside the filtered range.
-    fn clamp_selected(&mut self) {
+    const fn clamp_selected(&mut self) {
         if self.filtered.is_empty() {
             self.selected = 0;
         } else if self.selected >= self.filtered.len() {

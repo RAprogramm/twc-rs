@@ -41,7 +41,7 @@ fn shimmer_pos(width: u16, tick: u64) -> u16 {
     if width == 0 {
         return 0;
     }
-    (tick % u64::from(width)) as u16
+    u16::try_from(tick % u64::from(width)).unwrap_or(0)
 }
 
 /// Builds a single shimmer bar line of the given width for the current `tick`.
@@ -68,7 +68,7 @@ fn bar_width(inner_width: u16, row: usize) -> u16 {
     if inner_width == 0 {
         return 0;
     }
-    let shrink = (row as u16 % 4).saturating_mul(2);
+    let shrink = u16::try_from(row % 4).unwrap_or(0).saturating_mul(2);
     inner_width.saturating_sub(shrink).max(1)
 }
 

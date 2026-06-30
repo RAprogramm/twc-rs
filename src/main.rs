@@ -972,7 +972,7 @@ fn spawn_stats_fetch(
 
 /// Keeps the most recent `LIVE_STATS_SAMPLES` points of a series.
 #[cfg(feature = "tui")]
-fn tail_skip(len: usize) -> usize {
+const fn tail_skip(len: usize) -> usize {
     const LIVE_STATS_SAMPLES: usize = 60;
     len.saturating_sub(LIVE_STATS_SAMPLES)
 }
@@ -1387,12 +1387,12 @@ async fn refresh_all(
     .flatten()
     .collect();
 
-    let mut account_id = 0.0;
+    let mut account_id: i64 = 0;
     let mut login = String::new();
     let mut balance = String::new();
 
     if let Ok(resp) = account_res {
-        account_id = resp.status.company_info.id as f64;
+        account_id = resp.status.company_info.id;
         login = resp.status.login.clone().unwrap_or_default();
     } else {
         has_error = true;
