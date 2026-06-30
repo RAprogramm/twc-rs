@@ -34,7 +34,7 @@ pub fn serialized<T: Serialize>(
             Some(serde_json::to_string_pretty(value).map_err(|e| TwcError::Api(e.to_string())))
         }
         OutputFormat::Yaml => {
-            Some(serde_yml::to_string(value).map_err(|e| TwcError::Api(e.to_string())))
+            Some(serde_yaml_ng::to_string(value).map_err(|e| TwcError::Api(e.to_string())))
         }
         OutputFormat::Table | OutputFormat::Quiet => None
     }

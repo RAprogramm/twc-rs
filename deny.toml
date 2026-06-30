@@ -4,7 +4,10 @@ all-features = true
 [advisories]
 version = 2
 yanked = "deny"
-ignore = []
+# proc-macro-error2 is an unmaintained-only advisory (no security impact); it is
+# a build-time proc-macro pulled transitively by tabled_derive and cannot be
+# removed until tabled drops it. Revisit when tabled updates.
+ignore = ["RUSTSEC-2026-0173"]
 
 [bans]
 multiple-versions = "warn"
