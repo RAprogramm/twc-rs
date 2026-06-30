@@ -72,7 +72,7 @@ impl WidgetRegistry {
     /// use twc_rs::tui::widgets::WidgetRegistry;
     ///
     /// let registry = WidgetRegistry::new();
-    /// assert!(!registry.enabled_widgets().is_empty());
+    /// assert!(registry.get("account").is_some());
     /// ```
     #[must_use]
     pub fn new() -> Self {
@@ -80,7 +80,6 @@ impl WidgetRegistry {
             widgets: Vec::new()
         };
         registry.register(Box::new(account::AccountWidget::new(true)));
-        registry.register(Box::new(project_manager::ProjectManagerWidget::new(true)));
         registry.register(Box::new(resource_list::ResourceListWidget::new(true)));
         registry.register(Box::new(details::DetailsWidget::new(true)));
         registry.register(Box::new(stats::StatsWidget::new(true)));
@@ -159,85 +158,6 @@ impl WidgetRegistry {
             w.toggle();
         }
     }
-
-    /// Returns all enabled widgets.
-    ///
-    /// # Returns
-    ///
-    /// A vector of references to enabled widgets.
-    pub fn enabled_widgets(&self) -> Vec<&(dyn Widget + Send)> {
-        self.widgets
-            .iter()
-            .filter(|w| w.enabled())
-            .map(std::convert::AsRef::as_ref)
-            .collect()
-    }
-
-    /// Renders all enabled widgets, splitting the area evenly.
-    ///
-    /// # Arguments
-    ///
-    /// * `frame` - The render frame.
-    /// * `area` - The total area to split among widgets.
-    /// * `app` - The application state.
-    #[expect(
-        clippy::cast_possible_truncation,
-        clippy::cast_sign_loss,
-        clippy::cast_precision_loss
-    )]
-    pub fn render_all(&self, frame: &mut Frame, area: Rect, app: &App) {
-        let enabled = self.enabled_widgets();
-        let count = enabled.len();
-        if count == 0 {
-            return;
-        }
-
-        let rows = (count as f64).sqrt().ceil() as usize;
-        let cols = count.div_ceil(rows);
-
-        let h = area.height / rows as u16;
-        let w = area.width / cols as u16;
-
-        let mut idx = 0usize;
-        for r in 0..rows {
-            for c in 0..cols {
-                if idx < count {
-                    let x = area.x + (c as u16) * w;
-                    let y = area.y + (r as u16) * h;
-                    let inner = Rect {
-                        x,
-                        y,
-                        width: w.saturating_sub(1),
-                        height: h.saturating_sub(1)
-                    };
-                    enabled[idx].render(frame, inner, app);
-                }
-                idx += 1;
-            }
-        }
-    }
-
-    /// Renders two widgets side by side within the given areas.
-    ///
-    /// # Arguments
-    ///
-    /// * `frame` - The render frame.
-    /// * `left_area` - The area for the left widget.
-    /// * `right_area` - The area for the right widget.
-    /// * `app` - The application state.
-    /// * `left_border` - Border color for the left panel.
-    /// * `right_border` - Border color for the right panel.
-    pub fn render_side_by_side(
-        frame: &mut Frame,
-        left_area: Rect,
-        right_area: Rect,
-        app: &App,
-        left_border: ratatui::style::Color,
-        right_border: ratatui::style::Color
-    ) {
-        resource_list::render(frame, left_area, app, left_border);
-        details::render(frame, right_area, app, right_border);
-    }
 }
 
 impl Default for WidgetRegistry {
@@ -258,7 +178,6 @@ pub mod account;
 pub mod details;
 pub mod events;
 pub mod help;
-pub mod project_manager;
 pub mod resource_list;
 pub mod resource_tabs;
 pub mod skeleton;

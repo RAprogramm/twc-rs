@@ -72,7 +72,8 @@ fn bar_width(inner_width: u16, row: usize) -> u16 {
     inner_width.saturating_sub(shrink).max(1)
 }
 
-/// Renders `rows` shimmer placeholder bars inside `area`, bordered, titled `title`.
+/// Renders `rows` shimmer placeholder bars inside `area`, bordered, titled
+/// `title`.
 pub fn render(
     frame: &mut Frame,
     area: Rect,

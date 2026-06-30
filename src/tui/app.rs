@@ -8,8 +8,6 @@ use std::{
     time::{Duration, Instant}
 };
 
-use crate::tui::widgets::project_manager::ProjectManager;
-
 /// Severity of an event-log entry.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(dead_code)]
@@ -499,7 +497,6 @@ pub enum Focus {
     Details
 }
 
-
 /// Holds all runtime state for the TUI dashboard.
 #[allow(clippy::struct_excessive_bools)]
 pub struct App {
@@ -540,7 +537,6 @@ pub struct App {
     pub error_message:     Option<String>,
     pub is_loading:        bool,
     pub widgets:           super::widgets::WidgetRegistry,
-    pub project_manager:   ProjectManager,
     pub focus:             Focus,
     pub action_menu:       Option<ActionMenu>,
     pub confirm:           Option<PendingAction>,
@@ -610,7 +606,6 @@ impl App {
             error_message: None,
             is_loading: false,
             widgets: super::widgets::WidgetRegistry::new(),
-            project_manager: ProjectManager::new(),
             focus: Focus::ResourceList,
             action_menu: None,
             confirm: None,
@@ -1140,7 +1135,9 @@ impl App {
     /// Returns true when the widget with `id` is registered and enabled.
     #[must_use]
     pub fn is_widget_enabled(&self, id: &str) -> bool {
-        self.widgets.get(id).is_some_and(super::widgets::Widget::enabled)
+        self.widgets
+            .get(id)
+            .is_some_and(super::widgets::Widget::enabled)
     }
 
     /// Toggles a widget's visibility and marks preferences dirty.
@@ -1268,8 +1265,9 @@ impl App {
 
     fn run_command(&mut self, id: &str) {
         if let Some(rest) = id.strip_prefix("theme:") {
-            if let Some(theme) =
-                super::themes::Theme::ALL.into_iter().find(|t| t.id() == rest)
+            if let Some(theme) = super::themes::Theme::ALL
+                .into_iter()
+                .find(|t| t.id() == rest)
             {
                 self.set_theme(theme);
             }

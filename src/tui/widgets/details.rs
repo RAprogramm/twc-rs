@@ -100,7 +100,10 @@ fn section(label: &str, palette: Palette) -> Line<'static> {
 /// Builds a key/value row, dimming the key via the palette's dim color.
 fn kv(key: &str, value: String, value_style: Style, palette: Palette) -> Line<'static> {
     Line::from(vec![
-        Span::styled(format!("{key:<KEY_WIDTH$}"), Style::default().fg(palette.dim)),
+        Span::styled(
+            format!("{key:<KEY_WIDTH$}"),
+            Style::default().fg(palette.dim)
+        ),
         Span::styled(value, value_style),
     ])
 }
@@ -108,7 +111,10 @@ fn kv(key: &str, value: String, value_style: Style, palette: Palette) -> Line<'s
 /// Builds a status row rendered as a colored `\u{25CF} label` chip.
 fn chip(key: &str, label: &str, color: Color, palette: Palette) -> Line<'static> {
     Line::from(vec![
-        Span::styled(format!("{key:<KEY_WIDTH$}"), Style::default().fg(palette.dim)),
+        Span::styled(
+            format!("{key:<KEY_WIDTH$}"),
+            Style::default().fg(palette.dim)
+        ),
         Span::styled(
             format!("\u{25CF} {label}"),
             Style::default().fg(color).add_modifier(Modifier::BOLD)
@@ -156,9 +162,24 @@ fn render_server_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
         kv("Location", server.location.clone(), warn(palette), palette),
         Line::from(""),
         section("Resources", palette),
-        kv("CPU", format!("{} cores", server.cpu), accent(palette), palette),
-        kv("RAM", format!("{} MB", server.ram_mb), accent(palette), palette),
-        kv("Disk", format!("{} GB", server.disk_gb), accent(palette), palette),
+        kv(
+            "CPU",
+            format!("{} cores", server.cpu),
+            accent(palette),
+            palette
+        ),
+        kv(
+            "RAM",
+            format!("{} MB", server.ram_mb),
+            accent(palette),
+            palette
+        ),
+        kv(
+            "Disk",
+            format!("{} GB", server.disk_gb),
+            accent(palette),
+            palette
+        ),
     ]
 }
 
@@ -173,8 +194,18 @@ fn render_database_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
         rule(palette),
         kv("ID", format!("#{}", db.id), accent(palette), palette),
         kv("Engine", db.engine.clone(), accent(palette), palette),
-        chip("Status", &db.status.to_lowercase(), palette.success, palette),
-        kv("Size", format!("{} MB", db.size_mb), name_style(palette), palette),
+        chip(
+            "Status",
+            &db.status.to_lowercase(),
+            palette.success,
+            palette
+        ),
+        kv(
+            "Size",
+            format!("{} MB", db.size_mb),
+            name_style(palette),
+            palette
+        ),
     ]
 }
 
@@ -214,9 +245,24 @@ fn render_k8s_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
         heading(&cluster.name, palette),
         rule(palette),
         kv("ID", format!("#{}", cluster.id), accent(palette), palette),
-        kv("Version", format!("v{}", cluster.version), accent(palette), palette),
-        chip("Status", &cluster.status.to_lowercase(), palette.success, palette),
-        kv("Nodes", cluster.node_count.to_string(), name_style(palette), palette),
+        kv(
+            "Version",
+            format!("v{}", cluster.version),
+            accent(palette),
+            palette
+        ),
+        chip(
+            "Status",
+            &cluster.status.to_lowercase(),
+            palette.success,
+            palette
+        ),
+        kv(
+            "Nodes",
+            cluster.node_count.to_string(),
+            name_style(palette),
+            palette
+        ),
     ]
 }
 

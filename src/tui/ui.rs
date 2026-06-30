@@ -261,7 +261,10 @@ fn render_content(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
     let list_pct = app.list_width_pct.clamp(20, 70);
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(list_pct), Constraint::Percentage(100 - list_pct)])
+        .constraints([
+            Constraint::Percentage(list_pct),
+            Constraint::Percentage(100 - list_pct)
+        ])
         .split(area);
 
     if app.is_loading {
@@ -417,9 +420,7 @@ fn render_drill(frame: &mut Frame, area: Rect, view: &DrillView, palette: &Palet
                     ),
                     Span::styled(
                         item.name.clone(),
-                        Style::default()
-                            .fg(palette.fg)
-                            .add_modifier(Modifier::BOLD)
+                        Style::default().fg(palette.fg).add_modifier(Modifier::BOLD)
                     ),
                     Span::raw("   "),
                     Span::styled(item.detail.clone(), Style::default().fg(palette.accent)),

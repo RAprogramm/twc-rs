@@ -163,10 +163,7 @@ pub async fn list(
             name:     d.name.clone(),
             status:   format!("{:?}", d.status),
             engine:   d.r#type.clone(),
-            location: d
-                .location
-                .clone()
-                .unwrap_or_else(|| "-".to_string())
+            location: d.location.clone().unwrap_or_else(|| "-".to_string())
         })
         .collect();
 
@@ -537,10 +534,7 @@ pub async fn preset_list(config: &Configuration, format: OutputFormat) -> Result
             price:       p
                 .price
                 .map_or_else(|| "-".to_string(), |pr| format!("{pr}")),
-            location:    p
-                .location
-                .clone()
-                .unwrap_or_else(|| "-".to_string()),
+            location:    p.location.clone().unwrap_or_else(|| "-".to_string()),
             description: p
                 .description_short
                 .as_deref()

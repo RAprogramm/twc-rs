@@ -593,7 +593,11 @@ fn palette_opens_with_context_commands() {
     app.open_palette();
     assert!(app.palette_open());
     let cp = app.palette.as_ref().unwrap();
-    let titles: Vec<&str> = cp.filtered_commands().iter().map(|c| c.title.as_str()).collect();
+    let titles: Vec<&str> = cp
+        .filtered_commands()
+        .iter()
+        .map(|c| c.title.as_str())
+        .collect();
     assert!(titles.iter().any(|t| t.contains("Reboot web")));
     assert!(titles.iter().any(|t| t.starts_with("Theme:")));
     assert!(titles.iter().any(|t| t.contains("Stats panel")));

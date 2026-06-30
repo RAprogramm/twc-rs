@@ -182,7 +182,12 @@ impl StatsWidget {
             Self::percent_row("CPU", &app.cpu_history, palette),
             Self::percent_row("RAM", &app.ram_history, palette),
             Self::net_row("Net\u{2193}", &app.net_in_history, palette.accent, palette),
-            Self::net_row("Net\u{2191}", &app.net_out_history, palette.warning, palette)
+            Self::net_row(
+                "Net\u{2191}",
+                &app.net_out_history,
+                palette.warning,
+                palette
+            )
         ]
     }
 }

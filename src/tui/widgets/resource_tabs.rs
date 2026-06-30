@@ -145,7 +145,8 @@ impl ResourceTabsWidget {
         (start, end)
     }
 
-    /// Builds the styled tab bar line with pills, chevrons and a position badge.
+    /// Builds the styled tab bar line with pills, chevrons and a position
+    /// badge.
     ///
     /// # Arguments
     ///
@@ -166,8 +167,8 @@ impl ResourceTabsWidget {
             .map(|i| {
                 let head = format!(" {} {} ", TAB_ICONS[i], names[i]);
                 let tail = format!("{} ", counts[i]);
-                let w = u16::try_from(head.chars().count() + tail.chars().count())
-                    .unwrap_or(u16::MAX);
+                let w =
+                    u16::try_from(head.chars().count() + tail.chars().count()).unwrap_or(u16::MAX);
                 (head, tail, w)
             })
             .collect();
@@ -197,7 +198,10 @@ impl ResourceTabsWidget {
                 spans.push(Span::styled(head, pill));
                 spans.push(Span::styled(tail, pill));
             } else {
-                spans.push(Span::styled(head, Style::default().fg(palette.tab_inactive)));
+                spans.push(Span::styled(
+                    head,
+                    Style::default().fg(palette.tab_inactive)
+                ));
                 spans.push(Span::styled(tail, Style::default().fg(palette.dim)));
             }
             used = used.saturating_add(w);
@@ -276,7 +280,10 @@ mod tests {
         let budget = 30;
         for active in 0..widths.len() {
             let (start, end) = ResourceTabsWidget::visible_window(&widths, active, budget);
-            assert!(start <= active && active < end, "active {active} not in window");
+            assert!(
+                start <= active && active < end,
+                "active {active} not in window"
+            );
         }
     }
 
