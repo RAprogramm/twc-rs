@@ -18,4 +18,12 @@ sha256sums=('SKIP')
 
 package() {
     install -Dm755 "${srcdir}/${_pkgname}" "${pkgdir}/usr/bin/${_pkgname}"
+
+    local bin="${pkgdir}/usr/bin/${_pkgname}"
+    install -Dm644 <("${bin}" completions bash) \
+        "${pkgdir}/usr/share/bash-completion/completions/${_pkgname}"
+    install -Dm644 <("${bin}" completions zsh) \
+        "${pkgdir}/usr/share/zsh/site-functions/_${_pkgname}"
+    install -Dm644 <("${bin}" completions fish) \
+        "${pkgdir}/usr/share/fish/vendor_completions.d/${_pkgname}.fish"
 }
