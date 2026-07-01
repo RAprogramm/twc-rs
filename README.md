@@ -23,6 +23,8 @@ managed from one native binary. No Python, no `pip`, no virtualenv.
 [![MSRV](https://img.shields.io/badge/MSRV-1.96-blue.svg?logo=rust)](Cargo.toml)
 [![platforms](https://img.shields.io/badge/platforms-linux%20%7C%20macos%20%7C%20windows-informational?logo=linux)](#supported-platforms)
 
+**English** · [Русский](README.ru.md)
+
 </div>
 
 ---
@@ -32,6 +34,7 @@ managed from one native binary. No Python, no `pip`, no virtualenv.
 - [Why twc-rs](#why-twc-rs)
 - [The dashboard](#the-dashboard)
 - [Install](#install)
+  - [Direct downloads](#direct-downloads)
   - [Supported platforms](#supported-platforms)
 - [Authenticate](#authenticate)
 - [Usage](#usage)
@@ -112,9 +115,24 @@ build without it: `cargo install twc-rs --no-default-features --features auth`.
 |---|---|
 | **crates.io** | `cargo install twc-rs` |
 | **Installer** (Linux/macOS) | `curl -fsSL https://raw.githubusercontent.com/RAprogramm/twc-rs/main/install.sh \| sh` |
-| **Arch (AUR)** | `yay -S twc-rs-bin` |
+| **Arch (AUR)** | `paru -S twc-rs-bin` |
 | **Debian/Ubuntu** | `sudo apt install ./twc-rs_<ver>_amd64.deb` |
 | **Releases** | download an archive from [Releases](https://github.com/RAprogramm/twc-rs/releases), verify the `.sha256`, put `twc-rs` on your `PATH` |
+
+### Direct downloads
+
+Prebuilt, checksummed archives are attached to the
+**[latest release](https://github.com/RAprogramm/twc-rs/releases/latest)** — pick
+your platform (each archive has a matching `.sha256`):
+
+| Platform | Archive |
+|---|---|
+| 🐧 Linux `x86_64` | [`twc-rs-*-x86_64-unknown-linux-gnu.tar.gz`](https://github.com/RAprogramm/twc-rs/releases/latest) |
+| 🐧 Linux `aarch64` | [`twc-rs-*-aarch64-unknown-linux-gnu.tar.gz`](https://github.com/RAprogramm/twc-rs/releases/latest) |
+| 🍎 macOS Intel | [`twc-rs-*-x86_64-apple-darwin.tar.gz`](https://github.com/RAprogramm/twc-rs/releases/latest) |
+| 🍎 macOS Apple Silicon | [`twc-rs-*-aarch64-apple-darwin.tar.gz`](https://github.com/RAprogramm/twc-rs/releases/latest) |
+| 🪟 Windows `x86_64` | [`twc-rs-*-x86_64-pc-windows-msvc.zip`](https://github.com/RAprogramm/twc-rs/releases/latest) |
+| 📦 Debian/Ubuntu | [`twc-rs_*_amd64.deb`](https://github.com/RAprogramm/twc-rs/releases/latest) |
 
 The one-line installer detects your OS/arch, downloads the matching tarball
 from the latest GitHub release and installs to `~/.local/bin` (or
@@ -201,7 +219,9 @@ twc-rs completions zsh     > ~/.zfunc/_twc-rs
 twc-rs completions bash    > /etc/bash_completion.d/twc-rs
 ```
 
-Supported shells: `bash`, `zsh`, `fish`, `powershell`, `elvish`, `nushell`.
+Supported shells: `bash`, `zsh`, `fish`, `powershell`, `elvish`, `nushell`. The
+AUR package wires up completions automatically for whichever of these shells you
+have installed.
 
 <p align="right"><a href="#top">↑ back to top</a></p>
 
