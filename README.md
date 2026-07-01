@@ -18,7 +18,7 @@ managed from one native binary. No Python, no `pip`, no virtualenv.
 [![downloads](https://img.shields.io/crates/d/twc-rs.svg?color=brightgreen)](https://crates.io/crates/twc-rs)
 [![CI](https://github.com/RAprogramm/twc-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/RAprogramm/twc-rs/actions/workflows/ci.yml)
 [![Security](https://github.com/RAprogramm/twc-rs/actions/workflows/security.yml/badge.svg)](https://github.com/RAprogramm/twc-rs/actions/workflows/security.yml)
-[![release-plz](https://img.shields.io/badge/release-plz-automated-blue)](https://github.com/RAprogramm/twc-rs/actions/workflows/release-plz.yml)
+[![release-plz](https://github.com/RAprogramm/twc-rs/actions/workflows/release-plz.yml/badge.svg)](https://github.com/RAprogramm/twc-rs/actions/workflows/release-plz.yml)
 [![license](https://img.shields.io/crates/l/twc-rs.svg?color=blue)](LICENSE)
 [![MSRV](https://img.shields.io/badge/MSRV-1.96-blue.svg?logo=rust)](Cargo.toml)
 [![platforms](https://img.shields.io/badge/platforms-linux%20%7C%20macos%20%7C%20windows-informational?logo=linux)](#supported-platforms)
