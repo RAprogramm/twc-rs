@@ -47,9 +47,20 @@ jobs:
           set -euo pipefail
           asset="twc-rs-${TAG}-x86_64-unknown-linux-gnu.tar.gz"
           url="https://github.com/RAprogramm/twc-rs/releases/download/${TAG}/${asset}.sha256"
-          checksum="$(curl -fsSL "${url}" | awk '{print $1}')"
+          # The Release workflow builds and uploads the binaries in parallel with
+          # this job, so the .sha256 asset may not exist yet. Wait for it instead
+          # of failing on the race.
+          checksum=""
+          for attempt in $(seq 1 40); do
+            if checksum="$(curl -fsSL "${url}" | awk '{print $1}')" && [ -n "${checksum}" ]; then
+              break
+            fi
+            echo "checksum asset not ready yet (attempt ${attempt}/40); waiting..."
+            checksum=""
+            sleep 20
+          done
           if [ -z "${checksum}" ]; then
-            echo "::error::Could not read checksum from ${url}"
+            echo "::error::Could not read checksum from ${url} after waiting"
             exit 1
           fi
           sed -i "s/^pkgver=.*/pkgver=${VERSION}/" packaging/PKGBUILD
