@@ -45,8 +45,8 @@ jobs:
           VERSION: ${{ steps.meta.outputs.version }}
         run: |
           set -euo pipefail
-          asset="twc-rs-${TAG}-x86_64-unknown-linux-gnu.tar.gz"
-          url="https://github.com/RAprogramm/twc-rs/releases/download/${TAG}/${asset}.sha256"
+          archive="twc-rs-${TAG}-x86_64-unknown-linux-gnu"
+          url="https://github.com/RAprogramm/twc-rs/releases/download/${TAG}/${archive}.sha256"
           # The Release workflow builds and uploads the binaries in parallel with
           # this job, so the .sha256 asset may not exist yet. Wait for it instead
           # of failing on the race.
