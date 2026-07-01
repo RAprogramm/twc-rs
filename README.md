@@ -163,15 +163,30 @@ twc-rs --profile staging server list
 
 <a id="usage"></a>
 
+Every resource type is a subcommand; run `twc-rs <group> --help` to see its
+actions and flags.
+
 ```sh
-twc-rs server list
-twc-rs database info --id 12345
-twc-rs project list -f json
-twc-rs dashboard                       # interactive TUI
+twc-rs server list                        # list cloud servers
+twc-rs server info --id 12345             # server details
+twc-rs database list -f json              # JSON output
+twc-rs ssh attach --server 12345 --key 42 # attach an SSH key to a server
+twc-rs project resources --id 678         # drill into a project
+twc-rs dashboard                          # interactive TUI (k9s-style)
 ```
 
-Global flags: `-f, --format <table|json|yaml|quiet>` (env `TWC_OUTPUT`) and
-`-t, --token <TOKEN>` (env `TWC_TOKEN`).
+Resource groups: `server`, `database`, `s3`, `kubernetes`, `registry`,
+`balancer`, `domain`, `firewall`, `apps`, `image`, `ip`, `vpc`, `ssh`,
+`project`, `account`. The full command coverage versus the official CLI is in
+[docs/COMPARISON.md](docs/COMPARISON.md).
+
+Global flags:
+
+| Flag | Env | Meaning |
+|---|---|---|
+| `-f, --format <table\|json\|yaml\|quiet>` | `TWC_OUTPUT` | output format (default `table`) |
+| `-t, --token <TOKEN>` | `TWC_TOKEN` | API token override |
+| `--profile <NAME>` | `TWC_PROFILE` | use a named profile for multi-account setups |
 
 <p align="right"><a href="#top">↑ back to top</a></p>
 
@@ -201,6 +216,11 @@ cargo build --release --features tui
 python3 -m venv /tmp/twcbench && /tmp/twcbench/bin/pip install twc-cli
 benches/compare.sh ./target/release/twc-rs /tmp/twcbench/bin/twc
 ```
+
+Prefer CI? The **[Benchmarks](../../actions/workflows/benchmarks.yml)** workflow
+runs the same comparison on demand (Actions → Benchmarks → *Run workflow*) and
+prints the head-to-head table in the run summary. It is manual only — never on
+push — so it never slows down regular CI.
 
 <p align="right"><a href="#top">↑ back to top</a></p>
 
