@@ -1,0 +1,36 @@
+name: Benchmarks
+
+# Manual only — benchmarks are not run on every push. Trigger from the Actions
+# tab ("Run workflow") to produce a fresh head-to-head table in the run summary.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    name: twc-rs vs official twc
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
+      - name: Build release binary
+        run: cargo build --release --features tui
+      - name: Install the official twc-cli
+        run: |
+          python3 -m venv /tmp/twcbench
+          /tmp/twcbench/bin/pip install --quiet twc-cli
+      - name: Run head-to-head benchmark
+        run: |
+          {
+            echo '## Benchmark — twc-rs vs official twc'
+            echo
+            echo '```'
+            benches/compare.sh ./target/release/twc-rs /tmp/twcbench/bin/twc
+            echo '```'
+            echo
+            echo "_Numbers are produced live on this GitHub-hosted runner; run it on your own machine for local figures._"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
