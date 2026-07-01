@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.7](https://github.com/RAprogramm/twc-rs/compare/v0.3.6...v0.3.7) - 2026-07-01
+
+### Documentation
+
+- Add direct download links and a Russian README with cross-links ([#30](https://github.com/RAprogramm/twc-rs/pull/30)) ([8bda9b4](https://github.com/RAprogramm/twc-rs/commit/8bda9b43edc5214c2d6da836216ecc0ee9654c0a))
+
+
 ## [0.3.6](https://github.com/RAprogramm/twc-rs/compare/v0.3.5...v0.3.6) - 2026-07-01
 
 ### Documentation
