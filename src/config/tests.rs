@@ -165,6 +165,55 @@ fn save_overwrites_existing_config() {
     assert_eq!(loaded.token.as_deref(), Some("second"));
 }
 
+#[cfg(unix)]
+#[test]
+#[serial]
+fn save_restricts_file_and_dir_permissions() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let dir = tempfile::tempdir().unwrap();
+    let _guard = XdgGuard::set(dir.path());
+    let cfg = AppConfig {
+        token: Some("secret".to_string()),
+        ..AppConfig::default()
+    };
+    cfg.save().expect("save should succeed");
+
+    let path = AppConfig::path().unwrap();
+    let file_mode = fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+    assert_eq!(file_mode, 0o600, "config file must be owner-only");
+
+    let dir_mode = fs::metadata(path.parent().unwrap())
+        .unwrap()
+        .permissions()
+        .mode()
+        & 0o777;
+    assert_eq!(dir_mode, 0o700, "config dir must be owner-only");
+}
+
+#[cfg(unix)]
+#[test]
+#[serial]
+fn save_tightens_permissions_on_preexisting_file() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let dir = tempfile::tempdir().unwrap();
+    let _guard = XdgGuard::set(dir.path());
+    let path = AppConfig::path().unwrap();
+    fs::create_dir_all(path.parent().unwrap()).unwrap();
+    fs::write(&path, "token = \"stale\"\n").unwrap();
+    fs::set_permissions(&path, fs::Permissions::from_mode(0o644)).unwrap();
+
+    let cfg = AppConfig {
+        token: Some("fresh".to_string()),
+        ..AppConfig::default()
+    };
+    cfg.save().expect("save should succeed");
+
+    let file_mode = fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+    assert_eq!(file_mode, 0o600, "existing config file must be re-restricted");
+}
+
 #[test]
 fn serialization_roundtrip_via_string() {
     let cfg = AppConfig {
