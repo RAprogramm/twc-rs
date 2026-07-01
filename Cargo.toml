@@ -41,7 +41,9 @@ name = "twc-rs"
 path = "src/main.rs"
 
 [features]
-default = ["auth"]
+# The interactive TUI dashboard ships by default. Build without it for a lean,
+# headless CLI with: cargo install twc-rs --no-default-features --features auth
+default = ["auth", "tui"]
 auth = ["dep:open", "dep:tiny_http", "dep:keyring"]
 tui = ["dep:ratatui", "dep:crossterm", "dep:tokio-stream"]
 

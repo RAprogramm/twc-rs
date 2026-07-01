@@ -104,8 +104,9 @@ The headline feature the Python CLI does not have: a live, k9s-style TUI
 
 <a id="install"></a>
 
-Pick the channel that fits your platform. Prebuilt binaries are built with the
-`tui` feature, so the interactive dashboard works out of the box.
+Pick the channel that fits your platform. Every channel ships with the
+interactive TUI dashboard **enabled by default**. For a lean, headless CLI,
+build without it: `cargo install twc-rs --no-default-features --features auth`.
 
 | Channel | Command |
 |---|---|
@@ -230,8 +231,10 @@ push — so it never slows down regular CI.
 
 ```sh
 git clone https://github.com/RAprogramm/twc-rs && cd twc-rs
-cargo build --release --features tui    # full binary with the TUI dashboard
+cargo build --release                   # full binary (TUI dashboard is on by default)
 cargo install --path .                  # install from the checkout
+# headless, no TUI:
+cargo build --release --no-default-features --features auth
 ```
 
 Requires Rust **1.96+**. The crate is linted under `clippy` pedantic + nursery
