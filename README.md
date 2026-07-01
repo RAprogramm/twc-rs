@@ -113,18 +113,16 @@ Pick the channel that fits your platform. Prebuilt binaries are built with the
 | **Installer** (Linux/macOS) | `curl -fsSL https://raw.githubusercontent.com/RAprogramm/twc-rs/main/install.sh \| sh` |
 | **Arch (AUR)** | `yay -S twc-rs-bin` |
 | **Debian/Ubuntu** | `sudo apt install ./twc-rs_<ver>_amd64.deb` |
-| **Homebrew** | `brew install RAprogramm/tap/twc-rs` |
 | **Releases** | download an archive from [Releases](https://github.com/RAprogramm/twc-rs/releases), verify the `.sha256`, put `twc-rs` on your `PATH` |
 
 The one-line installer detects your OS/arch, downloads the matching tarball
 from the latest GitHub release and installs to `~/.local/bin` (or
-`/usr/local/bin` when writable). The `.deb` and Homebrew packages are attached
-to every tagged release automatically.
+`/usr/local/bin` when writable). The `.deb` package is attached to every tagged
+release automatically.
 
 > `twc-rs` is **not** in the official Debian/Ubuntu (`apt install twc-rs`) or
 > Arch (`pacman -S twc-rs`) repositories — those require distro maintainership.
-> Use the AUR package, the `.deb`, the Homebrew tap, the installer, or
-> `cargo install`.
+> Use the AUR package, the `.deb`, the installer, or `cargo install`.
 
 ### Supported platforms
 

@@ -65,31 +65,3 @@ jobs:
           commit_email: andrey.rozanov.vl@gmail.com
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
           commit_message: "Update to ${{ steps.meta.outputs.tag }}"
-
-  homebrew:
-    name: Bump Homebrew formula (twc-rs)
-    runs-on: ubuntu-latest
-    if: github.repository_owner == 'RAprogramm'
-    steps:
-      - name: Guard on HOMEBREW_TAP_TOKEN
-        id: guard
-        env:
-          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
-        run: if [ -n "${HOMEBREW_TAP_TOKEN}" ]; then echo "ok=true" >> "$GITHUB_OUTPUT"; fi
-      - name: Resolve tag
-        if: steps.guard.outputs.ok == 'true'
-        id: meta
-        env:
-          INPUT_TAG: ${{ github.event.inputs.tag }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: |
-          tag="${INPUT_TAG:-${RELEASE_TAG}}"
-          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
-      - name: Bump formula in tap
-        if: steps.guard.outputs.ok == 'true'
-        uses: dawidd6/action-homebrew-bump-formula@8d494330bce4434918392df134ad3db1167904db # v4
-        with:
-          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
-          tap: RAprogramm/homebrew-tap
-          formula: twc-rs
-          tag: ${{ steps.meta.outputs.tag }}
