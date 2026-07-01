@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.6](https://github.com/RAprogramm/twc-rs/compare/v0.3.5...v0.3.6) - 2026-07-01
+
+### Documentation
+
+- Use the native GitHub status badge for release-plz ([#27](https://github.com/RAprogramm/twc-rs/pull/27)) ([b3a3efe](https://github.com/RAprogramm/twc-rs/commit/b3a3efe62fb081bf7c91d3a9b67bb8d6121ea9ad))
+
+
 ## [0.3.5](https://github.com/RAprogramm/twc-rs/compare/v0.3.4...v0.3.5) - 2026-07-01
 
 ### Fixed
