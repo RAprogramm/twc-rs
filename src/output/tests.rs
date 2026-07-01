@@ -99,3 +99,87 @@ fn parse_yaml_format() {
 fn display_yaml() {
     assert_eq!(OutputFormat::Yaml.to_string(), "yaml");
 }
+
+#[derive(Tabled, Serialize)]
+struct Row {
+    name:  &'static str,
+    value: u32
+}
+
+#[test]
+fn render_table_contains_headers_and_values() {
+    let rows = vec![
+        Row {
+            name:  "alpha",
+            value: 1
+        },
+        Row {
+            name:  "beta",
+            value: 2
+        },
+    ];
+    let out = render_table(&rows);
+    assert!(out.contains("name"));
+    assert!(out.contains("value"));
+    assert!(out.contains("alpha"));
+    assert!(out.contains("beta"));
+}
+
+#[test]
+fn serialized_json_returns_pretty_json() {
+    let row = Row {
+        name:  "alpha",
+        value: 7
+    };
+    let out = serialized(OutputFormat::Json, &row)
+        .expect("json returns Some")
+        .expect("serialization succeeds");
+    assert!(out.contains("\"name\": \"alpha\""));
+    assert!(out.contains("\"value\": 7"));
+}
+
+#[test]
+fn serialized_yaml_returns_yaml() {
+    let row = Row {
+        name:  "beta",
+        value: 9
+    };
+    let out = serialized(OutputFormat::Yaml, &row)
+        .expect("yaml returns Some")
+        .expect("serialization succeeds");
+    assert!(out.contains("name: beta"));
+    assert!(out.contains("value: 9"));
+}
+
+#[test]
+fn serialized_table_and_quiet_return_none() {
+    let row = Row {
+        name:  "gamma",
+        value: 0
+    };
+    assert!(serialized(OutputFormat::Table, &row).is_none());
+    assert!(serialized(OutputFormat::Quiet, &row).is_none());
+}
+
+struct FailingSerialize;
+
+impl Serialize for FailingSerialize {
+    fn serialize<S>(&self, _serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer
+    {
+        Err(serde::ser::Error::custom("intentional serialization failure"))
+    }
+}
+
+#[test]
+fn serialized_json_propagates_error() {
+    let result = serialized(OutputFormat::Json, &FailingSerialize).expect("json returns Some");
+    assert!(result.is_err());
+}
+
+#[test]
+fn serialized_yaml_propagates_error() {
+    let result = serialized(OutputFormat::Yaml, &FailingSerialize).expect("yaml returns Some");
+    assert!(result.is_err());
+}

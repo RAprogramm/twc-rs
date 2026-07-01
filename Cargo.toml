@@ -82,6 +82,7 @@ predicates = "3"
 tempfile = "3"
 reqwest = "0.13"
 serial_test = "3"
+keyring-core = "1"
 
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }
