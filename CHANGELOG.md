@@ -5,6 +5,20 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.8](https://github.com/RAprogramm/twc-rs/compare/v0.3.7...v0.3.8) - 2026-07-01
+
+### Documentation
+
+- Add funding info ([#36](https://github.com/RAprogramm/twc-rs/pull/36)) ([3bd63e6](https://github.com/RAprogramm/twc-rs/commit/3bd63e6b32d3dfb083b0d446230600fc3f2a25b5))
+
+- Point documentation link to docs.rs ([#35](https://github.com/RAprogramm/twc-rs/pull/35)) ([eb26e48](https://github.com/RAprogramm/twc-rs/commit/eb26e48c811236e23842987e51232ed3db289a6d))
+
+
+### Other
+
+- 32 ([#33](https://github.com/RAprogramm/twc-rs/pull/33)) ([856758e](https://github.com/RAprogramm/twc-rs/commit/856758e828060a4acf91eab8de6e34becc96a1ee))
+
+
 ## [0.3.7](https://github.com/RAprogramm/twc-rs/compare/v0.3.6...v0.3.7) - 2026-07-01
 
 ### Documentation
