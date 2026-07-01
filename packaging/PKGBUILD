@@ -29,4 +29,6 @@ package() {
         "${pkgdir}/usr/share/twc-rs/completions/_${_pkgname}"
     install -Dm644 <("${bin}" completions fish) \
         "${pkgdir}/usr/share/twc-rs/completions/${_pkgname}.fish"
+    install -Dm644 <("${bin}" completions nushell) \
+        "${pkgdir}/usr/share/twc-rs/completions/${_pkgname}.nu"
 }
