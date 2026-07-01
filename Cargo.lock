@@ -3970,6 +3970,7 @@ dependencies = [
  "dirs",
  "indicatif",
  "keyring",
+ "keyring-core",
  "open",
  "predicates",
  "ratatui",

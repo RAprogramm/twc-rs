@@ -165,6 +165,58 @@ fn save_overwrites_existing_config() {
     assert_eq!(loaded.token.as_deref(), Some("second"));
 }
 
+#[cfg(unix)]
+#[test]
+#[serial]
+fn save_restricts_file_and_dir_permissions() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let dir = tempfile::tempdir().unwrap();
+    let _guard = XdgGuard::set(dir.path());
+    let cfg = AppConfig {
+        token: Some("secret".to_string()),
+        ..AppConfig::default()
+    };
+    cfg.save().expect("save should succeed");
+
+    let path = AppConfig::path().unwrap();
+    let file_mode = fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+    assert_eq!(file_mode, 0o600, "config file must be owner-only");
+
+    let dir_mode = fs::metadata(path.parent().unwrap())
+        .unwrap()
+        .permissions()
+        .mode()
+        & 0o777;
+    assert_eq!(dir_mode, 0o700, "config dir must be owner-only");
+}
+
+#[cfg(unix)]
+#[test]
+#[serial]
+fn save_tightens_permissions_on_preexisting_file() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let dir = tempfile::tempdir().unwrap();
+    let _guard = XdgGuard::set(dir.path());
+    let path = AppConfig::path().unwrap();
+    fs::create_dir_all(path.parent().unwrap()).unwrap();
+    fs::write(&path, "token = \"stale\"\n").unwrap();
+    fs::set_permissions(&path, fs::Permissions::from_mode(0o644)).unwrap();
+
+    let cfg = AppConfig {
+        token: Some("fresh".to_string()),
+        ..AppConfig::default()
+    };
+    cfg.save().expect("save should succeed");
+
+    let file_mode = fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+    assert_eq!(
+        file_mode, 0o600,
+        "existing config file must be re-restricted"
+    );
+}
+
 #[test]
 fn serialization_roundtrip_via_string() {
     let cfg = AppConfig {
@@ -286,4 +338,93 @@ fn debug_format() {
     let debug_str = format!("{cfg:?}");
     assert!(debug_str.contains("AppConfig"));
     assert!(debug_str.contains("debug"));
+}
+
+#[test]
+fn language_locale_en() {
+    assert_eq!(Language::En.locale(), "en");
+}
+
+#[test]
+fn language_locale_ru() {
+    assert_eq!(Language::Ru.locale(), "ru");
+}
+
+#[test]
+fn language_default_is_en() {
+    assert_eq!(Language::default(), Language::En);
+}
+
+#[test]
+fn token_for_none_returns_default_token() {
+    let cfg = AppConfig {
+        token: Some("default-tok".to_string()),
+        ..AppConfig::default()
+    };
+    let got = cfg.token_for(None).unwrap();
+    assert_eq!(got.as_deref(), Some("default-tok"));
+}
+
+#[test]
+fn token_for_none_returns_none_when_unset() {
+    let cfg = AppConfig::default();
+    assert!(cfg.token_for(None).unwrap().is_none());
+}
+
+#[test]
+fn token_for_existing_profile() {
+    let mut cfg = AppConfig::default();
+    cfg.profiles
+        .insert("work".to_string(), "work-tok".to_string());
+    let got = cfg.token_for(Some("work")).unwrap();
+    assert_eq!(got.as_deref(), Some("work-tok"));
+}
+
+#[test]
+fn token_for_missing_profile_errors() {
+    let cfg = AppConfig::default();
+    let err = cfg.token_for(Some("ghost")).unwrap_err();
+    assert!(err.to_string().contains("profile 'ghost' not found"));
+}
+
+#[test]
+fn path_ends_with_expected_segments() {
+    let path = AppConfig::path().unwrap();
+    assert!(path.ends_with("twc-rs/config.toml"));
+}
+
+#[test]
+fn save_to_fails_when_path_is_a_directory() {
+    let dir = tempfile::tempdir().unwrap();
+    let target = dir.path().join("as-dir");
+    fs::create_dir(&target).unwrap();
+    let cfg = AppConfig {
+        token: Some("x".to_string()),
+        ..AppConfig::default()
+    };
+    let err = cfg.save_to(&target).unwrap_err();
+    assert!(err.to_string().contains("failed to write"));
+}
+
+#[cfg(unix)]
+#[test]
+fn restrict_dir_permissions_errors_on_missing_dir() {
+    let dir = tempfile::tempdir().unwrap();
+    let missing = dir.path().join("does-not-exist");
+    let err = super::restrict_dir_permissions(&missing).unwrap_err();
+    assert!(err.to_string().contains("failed to set permissions"));
+}
+
+#[test]
+fn save_to_fails_when_parent_is_a_file() {
+    let dir = tempfile::tempdir().unwrap();
+    let file_as_parent = dir.path().join("afile");
+    fs::write(&file_as_parent, "x").unwrap();
+    let target = file_as_parent.join("nested").join("config.toml");
+    let cfg = AppConfig {
+        token: Some("x".to_string()),
+        ..AppConfig::default()
+    };
+    let err = cfg.save_to(&target).unwrap_err();
+    assert!(err.to_string().contains("failed to create dir"));
 }

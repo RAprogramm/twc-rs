@@ -228,13 +228,89 @@ impl AppConfig {
             fs::create_dir_all(parent).map_err(|e| {
                 TwcError::ConfigWrite(format!("failed to create dir {}: {e}", parent.display()))
             })?;
+            restrict_dir_permissions(parent)?;
         }
         let content = toml::to_string_pretty(self)?;
-        fs::write(path, content).map_err(|e| {
-            TwcError::ConfigWrite(format!("failed to write {}: {e}", path.display()))
-        })?;
+        write_private(path, content.as_bytes())?;
         Ok(())
     }
+}
+
+/// Writes `content` to `path` so that only the owner can read or write it.
+///
+/// # Overview
+///
+/// The config file is the fallback token store, so it holds a live API
+/// credential. On unix targets the file is created (or, if it already exists,
+/// re-restricted) to mode `0600`, preventing other local users from reading
+/// the token. On non-unix targets the write falls back to [`fs::write`] and
+/// relies on the platform's per-user profile ACLs.
+///
+/// # Errors
+///
+/// Returns [`TwcError::ConfigWrite`] on I/O or permission failure.
+#[cfg(unix)]
+fn write_private(path: &Path, content: &[u8]) -> Result<(), TwcError> {
+    use std::{
+        io::Write,
+        os::unix::fs::{OpenOptionsExt, PermissionsExt}
+    };
+
+    let mut file = fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .mode(0o600)
+        .open(path)
+        .map_err(|e| TwcError::ConfigWrite(format!("failed to write {}: {e}", path.display())))?;
+    file.set_permissions(fs::Permissions::from_mode(0o600))
+        .map_err(|e| {
+            TwcError::ConfigWrite(format!(
+                "failed to set permissions on {}: {e}",
+                path.display()
+            ))
+        })?;
+    file.write_all(content)
+        .map_err(|e| TwcError::ConfigWrite(format!("failed to write {}: {e}", path.display())))?;
+    Ok(())
+}
+
+/// Writes `content` to `path` (non-unix fallback without explicit mode bits).
+///
+/// # Errors
+///
+/// Returns [`TwcError::ConfigWrite`] on I/O failure.
+#[cfg(not(unix))]
+fn write_private(path: &Path, content: &[u8]) -> Result<(), TwcError> {
+    fs::write(path, content)
+        .map_err(|e| TwcError::ConfigWrite(format!("failed to write {}: {e}", path.display())))
+}
+
+/// Restricts the config directory to owner-only access (mode `0700`) on unix.
+///
+/// # Errors
+///
+/// Returns [`TwcError::ConfigWrite`] if the permissions cannot be applied.
+#[cfg(unix)]
+fn restrict_dir_permissions(dir: &Path) -> Result<(), TwcError> {
+    use std::os::unix::fs::PermissionsExt;
+
+    fs::set_permissions(dir, fs::Permissions::from_mode(0o700)).map_err(|e| {
+        TwcError::ConfigWrite(format!(
+            "failed to set permissions on {}: {e}",
+            dir.display()
+        ))
+    })
+}
+
+/// No-op on non-unix targets, where per-user profile ACLs apply.
+///
+/// # Errors
+///
+/// Never returns an error; the signature mirrors the unix variant.
+#[cfg(not(unix))]
+fn restrict_dir_permissions(_dir: &Path) -> Result<(), TwcError> {
+    Ok(())
 }
 
 #[cfg(test)]

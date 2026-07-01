@@ -338,4 +338,63 @@ mod tests {
         let payload = JwtPayload::parse(&token);
         assert!(!payload.is_expired());
     }
+
+    #[test]
+    fn parse_valid_utf8_but_invalid_json() {
+        let payload_b64 = URL_SAFE_NO_PAD.encode("not json at all");
+        let token = format!("header.{payload_b64}.sig");
+
+        let payload = JwtPayload::parse(&token);
+        assert!(payload.sub.is_none());
+        assert!(payload.exp.is_none());
+    }
+
+    #[test]
+    #[expect(clippy::cast_precision_loss, clippy::suboptimal_flops)]
+    fn days_remaining_some_for_future_exp() {
+        let now_secs = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        let far_future = now_secs as f64 + 86400.0 * 100.0;
+        let claims = serde_json::json!({"exp": far_future});
+        let payload_b64 = URL_SAFE_NO_PAD.encode(claims.to_string());
+        let token = format!("header.{payload_b64}.sig");
+
+        let payload = JwtPayload::parse(&token);
+        let days = payload.days_remaining().expect("exp is set");
+        assert!((95..=100).contains(&days), "unexpected days: {days}");
+    }
+
+    #[test]
+    #[expect(clippy::cast_precision_loss, clippy::suboptimal_flops)]
+    fn is_expiring_soon_true_within_window() {
+        let now_secs = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        let soon = now_secs as f64 + 86400.0 * 10.0;
+        let claims = serde_json::json!({"exp": soon});
+        let payload_b64 = URL_SAFE_NO_PAD.encode(claims.to_string());
+        let token = format!("header.{payload_b64}.sig");
+
+        let payload = JwtPayload::parse(&token);
+        assert!(payload.is_expiring_soon());
+    }
+
+    #[test]
+    #[expect(clippy::cast_precision_loss, clippy::suboptimal_flops)]
+    fn is_expiring_soon_false_beyond_window() {
+        let now_secs = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        let far = now_secs as f64 + 86400.0 * 200.0;
+        let claims = serde_json::json!({"exp": far});
+        let payload_b64 = URL_SAFE_NO_PAD.encode(claims.to_string());
+        let token = format!("header.{payload_b64}.sig");
+
+        let payload = JwtPayload::parse(&token);
+        assert!(!payload.is_expiring_soon());
+    }
 }
