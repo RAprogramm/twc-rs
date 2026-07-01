@@ -262,9 +262,7 @@ fn write_private(path: &Path, content: &[u8]) -> Result<(), TwcError> {
         .truncate(true)
         .mode(0o600)
         .open(path)
-        .map_err(|e| {
-            TwcError::ConfigWrite(format!("failed to write {}: {e}", path.display()))
-        })?;
+        .map_err(|e| TwcError::ConfigWrite(format!("failed to write {}: {e}", path.display())))?;
     file.set_permissions(fs::Permissions::from_mode(0o600))
         .map_err(|e| {
             TwcError::ConfigWrite(format!(
@@ -272,9 +270,8 @@ fn write_private(path: &Path, content: &[u8]) -> Result<(), TwcError> {
                 path.display()
             ))
         })?;
-    file.write_all(content).map_err(|e| {
-        TwcError::ConfigWrite(format!("failed to write {}: {e}", path.display()))
-    })?;
+    file.write_all(content)
+        .map_err(|e| TwcError::ConfigWrite(format!("failed to write {}: {e}", path.display())))?;
     Ok(())
 }
 
@@ -285,9 +282,8 @@ fn write_private(path: &Path, content: &[u8]) -> Result<(), TwcError> {
 /// Returns [`TwcError::ConfigWrite`] on I/O failure.
 #[cfg(not(unix))]
 fn write_private(path: &Path, content: &[u8]) -> Result<(), TwcError> {
-    fs::write(path, content).map_err(|e| {
-        TwcError::ConfigWrite(format!("failed to write {}: {e}", path.display()))
-    })
+    fs::write(path, content)
+        .map_err(|e| TwcError::ConfigWrite(format!("failed to write {}: {e}", path.display())))
 }
 
 /// Restricts the config directory to owner-only access (mode `0700`) on unix.

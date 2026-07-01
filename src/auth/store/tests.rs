@@ -86,7 +86,10 @@ fn save_and_load_from_config_fallback() {
     let path = dir.path().join("config.toml");
 
     save_token("cfg-token", &path).unwrap();
-    assert!(path.exists(), "keyring is unavailable, so config must be used");
+    assert!(
+        path.exists(),
+        "keyring is unavailable, so config must be used"
+    );
     assert_eq!(load_token(&path).unwrap(), "cfg-token");
 }
 

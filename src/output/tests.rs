@@ -168,7 +168,9 @@ impl Serialize for FailingSerialize {
     where
         S: serde::Serializer
     {
-        Err(serde::ser::Error::custom("intentional serialization failure"))
+        Err(serde::ser::Error::custom(
+            "intentional serialization failure"
+        ))
     }
 }
 

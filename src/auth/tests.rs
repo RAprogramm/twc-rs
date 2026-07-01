@@ -38,7 +38,6 @@ fn auth_error_display_server() {
 
 #[test]
 fn auth_error_is_std_error() {
-    let err: Box<dyn std::error::Error> =
-        Box::new(AuthError::Timeout);
+    let err: Box<dyn std::error::Error> = Box::new(AuthError::Timeout);
     assert!(err.to_string().contains("timed out"));
 }

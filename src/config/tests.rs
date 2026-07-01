@@ -211,7 +211,10 @@ fn save_tightens_permissions_on_preexisting_file() {
     cfg.save().expect("save should succeed");
 
     let file_mode = fs::metadata(&path).unwrap().permissions().mode() & 0o777;
-    assert_eq!(file_mode, 0o600, "existing config file must be re-restricted");
+    assert_eq!(
+        file_mode, 0o600,
+        "existing config file must be re-restricted"
+    );
 }
 
 #[test]
