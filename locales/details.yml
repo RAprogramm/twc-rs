@@ -31,9 +31,9 @@ details.size:
 details.region:
   en: "Region"
   ru: "Регион"
-details.buckets:
-  en: "Buckets"
-  ru: "Бакеты"
+details.objects:
+  en: "Objects"
+  ru: "Объекты"
 details.version:
   en: "Version"
   ru: "Версия"

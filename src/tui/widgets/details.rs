@@ -257,13 +257,13 @@ fn render_s3_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
         ),
         kv(
             &t!("details.size"),
-            format!("{} KB", storage.size_bytes / 1024),
+            format!("{} MB", storage.size_kb / 1024),
             name_style(palette),
             palette
         ),
         kv(
-            &t!("details.buckets"),
-            storage.bucket_count.to_string(),
+            &t!("details.objects"),
+            storage.object_count.to_string(),
             accent(palette),
             palette
         ),

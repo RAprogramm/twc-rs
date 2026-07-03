@@ -31,8 +31,8 @@ fn make_s3(id: i32, name: &str) -> S3Summary {
         id,
         name: name.to_string(),
         region: "ru-1".to_string(),
-        size_bytes: 1_000_000_000,
-        bucket_count: 3
+        size_kb: 1_000_000,
+        object_count: 3
     }
 }
 

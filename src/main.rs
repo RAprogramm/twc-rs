@@ -1580,6 +1580,38 @@ async fn perform_action(
     }
 }
 
+/// Extracts the primary public IPv4 address of a server, preferring the
+/// address marked as main and falling back to the first public one.
+#[cfg(feature = "tui")]
+fn server_public_ip(server: &timeweb_rs::models::Vds) -> String {
+    use timeweb_rs::models::vds_networks_inner::Type;
+
+    let mut fallback = None;
+    for network in &server.networks {
+        if !matches!(network.r#type, Type::Public) {
+            continue;
+        }
+        for ip in network.ips.iter().flatten() {
+            if ip.is_main {
+                return ip.ip.clone();
+            }
+            if fallback.is_none() {
+                fallback = Some(ip.ip.clone());
+            }
+        }
+    }
+    fallback.unwrap_or_default()
+}
+
+/// Sums the sizes of all disks attached to a server, converting the API's
+/// megabyte values to whole gigabytes.
+#[cfg(feature = "tui")]
+#[expect(clippy::cast_possible_truncation)]
+fn server_disk_gb(server: &timeweb_rs::models::Vds) -> i32 {
+    let total_mb: f64 = server.disks.iter().map(|d| d.size).sum();
+    (total_mb / 1024.0).round() as i32
+}
+
 #[cfg(feature = "tui")]
 #[expect(clippy::too_many_lines)]
 #[expect(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
@@ -1754,8 +1786,8 @@ async fn refresh_all(
                 status:   format!("{:?}", s.status),
                 cpu:      s.cpu as i32,
                 ram_mb:   s.ram as i32,
-                disk_gb:  0,
-                ip:       String::new(),
+                disk_gb:  server_disk_gb(s),
+                ip:       server_public_ip(s),
                 location: s.location.clone()
             })
             .collect();
@@ -1774,7 +1806,11 @@ async fn refresh_all(
                 name:    d.name.clone(),
                 status:  format!("{:?}", d.status),
                 engine:  d.r#type.clone(),
-                size_mb: 0
+                size_mb: d
+                    .disk
+                    .as_ref()
+                    .and_then(|disk| disk.as_deref())
+                    .map_or(0, |disk| (disk.size / 1024.0) as i64)
             })
             .collect();
         app.update_databases(summaries);
@@ -1790,8 +1826,8 @@ async fn refresh_all(
                 id:           b.id as i32,
                 name:         b.name.clone(),
                 region:       b.location.clone(),
-                size_bytes:   b.disk_stats.size as i64,
-                bucket_count: 0
+                size_kb:      b.disk_stats.size as i64,
+                object_count: b.object_amount as i64
             })
             .collect();
         app.update_s3(summaries);

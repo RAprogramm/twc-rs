@@ -73,8 +73,8 @@ pub struct S3Summary {
     pub id:           i32,
     pub name:         String,
     pub region:       String,
-    pub size_bytes:   i64,
-    pub bucket_count: i32
+    pub size_kb:      i64,
+    pub object_count: i64
 }
 
 /// Summary of a single Kubernetes cluster.
