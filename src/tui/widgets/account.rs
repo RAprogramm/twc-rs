@@ -55,9 +55,11 @@ impl AccountWidget {
     /// # Arguments
     ///
     /// * `account` - The account information to display.
+    /// * `profile` - The name of the active profile.
     /// * `palette` - The theme color palette.
     fn build_lines(
         account: &AccountInfo,
+        profile: &str,
         palette: crate::tui::themes::Palette
     ) -> Vec<Line<'static>> {
         let (id_label, id_text) = if account.login.is_empty() {
@@ -96,6 +98,7 @@ impl AccountWidget {
                     .fg(palette.title)
                     .add_modifier(Modifier::BOLD)
             ),
+            Span::styled(format!(" [{profile}]"), Style::default().fg(palette.accent)),
             sep(),
             Span::styled(id_label, Style::default().fg(palette.dim)),
             Span::styled(
@@ -141,7 +144,7 @@ impl crate::tui::widgets::Widget for AccountWidget {
 
     fn render(&self, frame: &mut Frame, area: Rect, app: &App) {
         let palette = app.theme.palette();
-        let lines = Self::build_lines(&app.account, palette);
+        let lines = Self::build_lines(&app.account, &app.active_profile, palette);
 
         let paragraph = Paragraph::new(lines).block(
             Block::default()
@@ -245,7 +248,7 @@ mod tests {
     fn build_lines_active_status() {
         let account = make_account(12345, "1,234.56 RUB", "active");
         let palette = Theme::GruvboxDark.palette();
-        let lines = AccountWidget::build_lines(&account, palette);
+        let lines = AccountWidget::build_lines(&account, "default", palette);
 
         assert_eq!(lines.len(), 1);
         let text = joined(&lines);
@@ -259,7 +262,7 @@ mod tests {
     fn build_lines_inactive_status_has_warning_color() {
         let account = make_account(100, "0.00 RUB", "inactive");
         let palette = Theme::GruvboxDark.palette();
-        let lines = AccountWidget::build_lines(&account, palette);
+        let lines = AccountWidget::build_lines(&account, "default", palette);
         assert_eq!(status_fg(&lines), Some(palette.warning));
     }
 
@@ -267,7 +270,7 @@ mod tests {
     fn build_lines_error_status_has_error_color() {
         let account = make_account(200, "0.00 RUB", "error");
         let palette = Theme::GruvboxDark.palette();
-        let lines = AccountWidget::build_lines(&account, palette);
+        let lines = AccountWidget::build_lines(&account, "default", palette);
         assert_eq!(status_fg(&lines), Some(palette.error));
     }
 
@@ -275,7 +278,7 @@ mod tests {
     fn build_lines_default_status_has_fg_color() {
         let account = make_account(300, "0.00 RUB", "unknown");
         let palette = Theme::GruvboxDark.palette();
-        let lines = AccountWidget::build_lines(&account, palette);
+        let lines = AccountWidget::build_lines(&account, "default", palette);
 
         assert_eq!(status_fg(&lines), Some(palette.dim));
     }
@@ -284,7 +287,7 @@ mod tests {
     fn build_lines_empty_account() {
         let account = AccountInfo::default();
         let palette = Theme::GruvboxDark.palette();
-        let lines = AccountWidget::build_lines(&account, palette);
+        let lines = AccountWidget::build_lines(&account, "default", palette);
 
         assert_eq!(lines.len(), 1);
         let text = joined(&lines);

@@ -77,6 +77,7 @@ impl HelpWidget {
             ("n", t!("help.shortcut_new")),
             ("/", t!("help.shortcut_filter")),
             ("Ctrl+K", t!("help.shortcut_palette")),
+            ("p", t!("help.shortcut_profile")),
             ("r", t!("help.shortcut_refresh")),
             ("Esc", t!("help.shortcut_esc")),
             ("?", t!("help.shortcut_toggle_help")),
