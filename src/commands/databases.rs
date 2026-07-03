@@ -350,21 +350,6 @@ pub async fn update(
     Ok(())
 }
 
-/// Restarts a database by ID.
-///
-/// # Overview
-///
-/// Sends a restart request for the specified database.
-///
-/// # Errors
-///
-/// Returns [`TwcError::Api`] on network or API failures.
-pub async fn restart(config: &Configuration, id: i32) -> Result<(), TwcError> {
-    databases_api::delete_database_cluster(config, id, None, None).await?;
-    println!("{}", t!("cli.database_restarted", id => id));
-    Ok(())
-}
-
 /// Lists backups for a database.
 ///
 /// # Overview

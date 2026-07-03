@@ -469,12 +469,6 @@ pub enum DatabaseCommands {
         #[arg(long)]
         name: Option<String>
     },
-    /// Restart a database by ID.
-    Restart {
-        /// Database ID.
-        #[arg(long)]
-        id: i32
-    },
     /// List backups for a database.
     BackupList {
         /// Database ID.

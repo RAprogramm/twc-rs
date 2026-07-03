@@ -19,9 +19,6 @@ cli.database_deleted:
 cli.database_updated:
   en: "Database '%{name}' updated (id: %{id})."
   ru: "База данных «%{name}» обновлена (id: %{id})."
-cli.database_restarted:
-  en: "Database %{id} deleted (restart via recreation)."
-  ru: "База данных %{id} удалена (перезапуск через пересоздание)."
 cli.database_created:
   en: "Database '%{name}' created (id: %{id})."
   ru: "База данных «%{name}» создана (id: %{id})."

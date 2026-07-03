@@ -593,9 +593,6 @@ async fn run() -> Result<(), TwcError> {
                     id,
                     name
                 } => commands::databases::update(&config, id, name.as_deref(), format).await,
-                DatabaseCommands::Restart {
-                    id
-                } => commands::databases::restart(&config, id).await,
                 DatabaseCommands::BackupList {
                     id
                 } => commands::databases::backup_list(&config, id, format).await,
