@@ -3,14 +3,19 @@
 
 //! Main draw function — composes all widgets into the terminal layout.
 
+mod overlays;
+mod status_bar;
+
+use overlays::{render_action_menu, render_confirm, render_create_form};
 use ratatui::{
     Frame,
-    layout::{Alignment, Constraint, Direction, Layout, Rect},
+    layout::{Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, BorderType, Borders, Clear, List, ListItem, ListState, Paragraph}
+    widgets::{Block, BorderType, Borders, List, ListItem, ListState}
 };
 use rust_i18n::t;
+use status_bar::render_status_bar;
 
 use crate::tui::{
     app::{App, DrillView, Focus},
@@ -91,232 +96,6 @@ pub fn draw(frame: &mut Frame, app: &App) {
     if let Some(cp) = app.palette.as_ref() {
         crate::tui::command_palette::render(frame, size, &palette, cp);
     }
-}
-
-/// Renders the in-dashboard resource-creation form: a titled box with one
-/// labelled input per field, the focused field highlighted, and a hint line.
-fn render_create_form(
-    frame: &mut Frame,
-    area: Rect,
-    form: &crate::tui::app::CreateForm,
-    palette: &Palette
-) {
-    let width = 56u16.min(area.width.saturating_sub(4));
-    let height = u16::try_from(form.fields.len()).unwrap_or(2) + 4;
-    let popup = Rect {
-        x: (area.width.saturating_sub(width)) / 2,
-        y: (area.height.saturating_sub(height)) / 2,
-        width,
-        height
-    };
-    frame.render_widget(Clear, popup);
-
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_type(BorderType::Rounded)
-        .border_style(Style::default().fg(palette.accent))
-        .title(Line::from(Span::styled(
-            format!(" {} ", form.title),
-            Style::default()
-                .fg(palette.title)
-                .add_modifier(Modifier::BOLD)
-        )));
-    let inner = block.inner(popup);
-    frame.render_widget(block, popup);
-
-    let mut constraints: Vec<Constraint> =
-        form.fields.iter().map(|_| Constraint::Length(1)).collect();
-    constraints.push(Constraint::Length(1));
-    let rows = Layout::vertical(constraints).split(inner);
-
-    for (i, field) in form.fields.iter().enumerate() {
-        let focused = i == form.active;
-        let marker = if focused { "▸ " } else { "  " };
-        let label = format!("{marker}{}: ", field.label);
-        let value_style = if focused {
-            Style::default()
-                .fg(palette.fg)
-                .add_modifier(Modifier::BOLD | Modifier::UNDERLINED)
-        } else {
-            Style::default().fg(palette.dim)
-        };
-        let cursor = if focused { "█" } else { "" };
-        let line = Line::from(vec![
-            Span::styled(label, Style::default().fg(palette.header)),
-            Span::styled(format!("{}{cursor}", field.value), value_style),
-        ]);
-        if let Some(row) = rows.get(i) {
-            frame.render_widget(Paragraph::new(line), *row);
-        }
-    }
-
-    if let Some(hint_row) = rows.last() {
-        let hint = Paragraph::new(Line::from(Span::styled(
-            "Tab next · Enter create · Esc cancel",
-            Style::default().fg(palette.dim)
-        )));
-        frame.render_widget(hint, *hint_row);
-    }
-}
-
-/// Renders the context action menu for the selected server.
-///
-/// Lists the available actions with the highlighted one marked; destructive
-/// actions are shown in the error color with a warning glyph.
-fn render_action_menu(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
-    let Some(menu) = app.action_menu() else {
-        return;
-    };
-
-    let lines: Vec<Line> = menu
-        .actions
-        .iter()
-        .enumerate()
-        .map(|(idx, action)| {
-            let selected = idx == menu.selected;
-            let marker = if selected { "\u{25B6} " } else { "  " };
-            let color = if action.is_destructive() {
-                palette.error
-            } else if selected {
-                palette.accent
-            } else {
-                palette.fg
-            };
-            let mut style = Style::default().fg(color);
-            if selected {
-                style = style.add_modifier(Modifier::BOLD);
-            }
-            let mut spans = vec![
-                Span::styled(marker, Style::default().fg(palette.accent)),
-                Span::styled(format!("{:<10}", action.display_label()), style),
-            ];
-            if action.is_destructive() {
-                spans.push(Span::styled("\u{26A0}", Style::default().fg(palette.error)));
-            }
-            Line::from(spans)
-        })
-        .collect();
-
-    let kind = menu.tab.display_name();
-    let title = t!(
-        "ui.action_menu_title",
-        kind => kind,
-        name => menu.resource_name,
-        id => menu.resource_id
-    )
-    .to_string();
-    let width = u16::try_from(title.len() + 4)
-        .unwrap_or(40)
-        .clamp(28, area.width.saturating_sub(4));
-    let height = u16::try_from(menu.actions.len()).unwrap_or(5) + 2;
-    let popup = Rect {
-        x: area.width.saturating_sub(width) / 2,
-        y: area.height.saturating_sub(height) / 2,
-        width,
-        height
-    };
-
-    let paragraph = Paragraph::new(lines)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(palette.accent))
-                .title(Line::from(Span::styled(
-                    title,
-                    Style::default()
-                        .fg(palette.title)
-                        .add_modifier(Modifier::BOLD)
-                )))
-        )
-        .alignment(Alignment::Left)
-        .style(Style::default().bg(palette.bg));
-
-    frame.render_widget(Clear, popup);
-    frame.render_widget(paragraph, popup);
-}
-
-/// Renders the action confirmation modal centered on screen.
-///
-/// Shows the verb, target server, an irreversibility warning for
-/// destructive actions, and the confirm/cancel keys.
-fn render_confirm(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
-    let Some(pending) = app.pending_action() else {
-        return;
-    };
-
-    let accent = if pending.kind.is_destructive() {
-        palette.error
-    } else {
-        palette.warning
-    };
-
-    let mut lines = vec![
-        Line::from(Span::styled(
-            t!(
-                "ui.confirm_prompt",
-                verb => pending.kind.display_label(),
-                name => pending.resource_name,
-                id => pending.resource_id
-            )
-            .to_string(),
-            Style::default().fg(palette.fg).add_modifier(Modifier::BOLD)
-        )),
-        Line::from(""),
-    ];
-    if pending.kind.is_destructive() {
-        lines.push(Line::from(Span::styled(
-            t!("ui.confirm_irreversible").to_string(),
-            Style::default().fg(palette.error)
-        )));
-        lines.push(Line::from(""));
-    }
-    lines.push(Line::from(vec![
-        Span::styled(
-            " [y] ",
-            Style::default().fg(accent).add_modifier(Modifier::BOLD)
-        ),
-        Span::styled(
-            format!("{}    ", t!("ui.confirm_yes")),
-            Style::default().fg(palette.dim)
-        ),
-        Span::styled(
-            "[n] ",
-            Style::default().fg(palette.fg).add_modifier(Modifier::BOLD)
-        ),
-        Span::styled(
-            t!("ui.confirm_no").to_string(),
-            Style::default().fg(palette.dim)
-        ),
-    ]));
-
-    let width = 54u16.min(area.width.saturating_sub(4));
-    let height = u16::try_from(lines.len()).unwrap_or(4) + 2;
-    let popup = Rect {
-        x: area.width.saturating_sub(width) / 2,
-        y: area.height.saturating_sub(height) / 2,
-        width,
-        height
-    };
-
-    let paragraph = Paragraph::new(lines)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(accent))
-                .title(Line::from(Span::styled(
-                    t!("ui.confirm_title").to_string(),
-                    Style::default()
-                        .fg(palette.title)
-                        .add_modifier(Modifier::BOLD)
-                )))
-        )
-        .alignment(Alignment::Left)
-        .style(Style::default().bg(palette.bg));
-
-    frame.render_widget(Clear, popup);
-    frame.render_widget(paragraph, popup);
 }
 
 /// Renders the content area with resource list and details side by side.
@@ -417,72 +196,6 @@ fn render_info_column(frame: &mut Frame, area: Rect, app: &App, stats: bool, tok
         (false, true) => TokenInfoWidget::new(true).render(frame, area, app),
         (false, false) => {}
     }
-}
-
-/// Renders the status bar with mode indicator and available keys.
-///
-/// # Arguments
-///
-/// * `frame` - The render frame.
-/// * `area` - The status bar area rectangle.
-/// * `app` - The application state.
-/// * `palette` - The theme color palette.
-fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
-    let tab = app.active_tab.display_name();
-
-    let key = |k: &'static str| {
-        Span::styled(
-            k,
-            Style::default()
-                .fg(palette.accent)
-                .add_modifier(Modifier::BOLD)
-        )
-    };
-    let lbl = |t: String| Span::styled(t, Style::default().fg(palette.dim));
-
-    let mut spans = vec![
-        Span::styled(
-            format!(" {tab} "),
-            Style::default()
-                .fg(palette.bg)
-                .bg(palette.tab_active)
-                .add_modifier(Modifier::BOLD)
-        ),
-        Span::raw("  "),
-        key("h/l"),
-        lbl(format!(" {}   ", t!("ui.status_tabs"))),
-        key("j/k"),
-        lbl(format!(" {}   ", t!("ui.status_move"))),
-        key("⏎"),
-        lbl(format!(" {}   ", t!("ui.status_open"))),
-        key("/"),
-        lbl(format!(" {}   ", t!("ui.status_filter"))),
-        key("^K"),
-        lbl(format!(" {}   ", t!("ui.status_cmds"))),
-        key("?"),
-        lbl(format!(" {}   ", t!("ui.status_help"))),
-        key("Q"),
-        lbl(format!(" {}", t!("ui.status_quit"))),
-    ];
-
-    let message = match (&app.error_message, &app.status_message) {
-        (Some(err), _) => Some((err.clone(), palette.error)),
-        (_, Some(msg)) => Some((msg.clone(), palette.success)),
-        _ => None
-    };
-    if let Some((text, color)) = message {
-        spans.push(Span::raw("   "));
-        spans.push(Span::styled("● ", Style::default().fg(color)));
-        spans.push(Span::styled(text, Style::default().fg(color)));
-    }
-
-    let paragraph = Paragraph::new(Line::from(spans)).block(
-        Block::default()
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(palette.border))
-    );
-    frame.render_widget(paragraph, area);
 }
 
 /// Renders the drill-in view listing the resources contained in a parent.
