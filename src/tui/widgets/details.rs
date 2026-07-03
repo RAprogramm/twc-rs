@@ -297,9 +297,23 @@ fn render_k8s_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
             palette.success,
             palette
         ),
+        Line::from(""),
+        section(&t!("details.resources"), palette),
         kv(
-            &t!("details.nodes"),
-            cluster.node_count.to_string(),
+            &t!("details.cpu"),
+            format!("{} {}", cluster.cpu, t!("details.cores")),
+            name_style(palette),
+            palette
+        ),
+        kv(
+            &t!("details.ram"),
+            format!("{} MB", cluster.ram_mb),
+            name_style(palette),
+            palette
+        ),
+        kv(
+            &t!("details.disk"),
+            format!("{} GB", cluster.disk_gb),
             name_style(palette),
             palette
         ),
@@ -397,18 +411,18 @@ fn render_registry_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
             palette
         ),
         kv(
-            &t!("details.region"),
-            r.region.clone(),
-            warn(palette),
-            palette
-        ),
-        kv(
-            &t!("details.repos"),
-            r.repository_count.to_string(),
+            &t!("details.disk_used"),
+            format!("{}%", disk_used_percent(r.disk_used, r.disk_size)),
             name_style(palette),
             palette
         ),
     ]
+}
+
+/// Computes an integral used-disk percentage, treating a zero-sized disk as
+/// fully free.
+fn disk_used_percent(used: i64, size: i64) -> i64 {
+    if size <= 0 { 0 } else { used * 100 / size }
 }
 
 fn render_domain_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
@@ -460,14 +474,8 @@ fn render_firewall_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
             palette
         ),
         kv(
-            &t!("details.rules"),
-            f.rule_count.to_string(),
-            name_style(palette),
-            palette
-        ),
-        kv(
-            &t!("details.resources"),
-            f.resource_count.to_string(),
+            &t!("details.policy"),
+            f.policy.clone(),
             name_style(palette),
             palette
         ),
@@ -575,16 +583,16 @@ fn render_vpc_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
             accent(palette),
             palette
         ),
-        chip(
-            &t!("details.status"),
-            &v.status.to_lowercase(),
-            palette.success,
+        kv(
+            &t!("details.subnet"),
+            v.subnet.clone(),
+            name_style(palette),
             palette
         ),
         kv(
-            &t!("details.subnets"),
-            v.subnet_count.to_string(),
-            name_style(palette),
+            &t!("details.location"),
+            v.location.clone(),
+            warn(palette),
             palette
         ),
     ]
@@ -612,22 +620,24 @@ fn render_dedicated_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
             palette.success,
             palette
         ),
+        kv(&t!("details.ip"), d.ip.clone(), warn(palette), palette),
+        Line::from(""),
         section(&t!("details.resources"), palette),
         kv(
             &t!("details.cpu"),
-            format!("{} {}", d.cpu, t!("details.cores")),
+            d.cpu.clone(),
             name_style(palette),
             palette
         ),
         kv(
             &t!("details.ram"),
-            format!("{} MB", d.ram_mb),
+            d.ram.clone(),
             name_style(palette),
             palette
         ),
         kv(
             &t!("details.disk"),
-            format!("{} GB", d.disk_gb),
+            d.disk.clone(),
             name_style(palette),
             palette
         ),
@@ -639,28 +649,24 @@ fn render_mail_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
         return empty(&t!("details.no_mail"), palette);
     }
     let m = &app.mails[app.selected_real_index().min(app.mails.len() - 1)];
-    vec![
-        heading(&m.name, palette),
-        rule(palette),
-        kv(
-            &t!("details.id"),
-            format!("#{}", m.id),
-            accent(palette),
-            palette
-        ),
-        chip(
-            &t!("details.status"),
-            &m.status.to_lowercase(),
-            palette.success,
-            palette
-        ),
-        kv(
-            &t!("details.mailboxes"),
-            m.mailbox_count.to_string(),
+    let mut lines = vec![heading(&m.name, palette), rule(palette)];
+    if !m.owner.is_empty() {
+        lines.push(kv(
+            &t!("details.owner"),
+            m.owner.clone(),
             name_style(palette),
             palette
-        ),
-    ]
+        ));
+    }
+    if !m.comment.is_empty() {
+        lines.push(kv(
+            &t!("details.comment"),
+            m.comment.clone(),
+            accent(palette),
+            palette
+        ));
+    }
+    lines
 }
 
 fn render_app_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
@@ -683,10 +689,11 @@ fn render_app_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
             palette.success,
             palette
         ),
+        kv(&t!("details.ip"), a.ip.clone(), warn(palette), palette),
         kv(
-            &t!("details.deploys"),
-            a.deploy_count.to_string(),
-            name_style(palette),
+            &t!("details.location"),
+            a.location.clone(),
+            warn(palette),
             palette
         ),
     ]
@@ -713,8 +720,8 @@ fn render_ai_agent_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
             palette
         ),
         kv(
-            &t!("details.model"),
-            a.model.clone(),
+            &t!("details.tokens"),
+            format!("{} / {}", a.tokens_used, a.tokens_total),
             accent(palette),
             palette
         ),

@@ -1840,11 +1840,13 @@ async fn refresh_all(
             .clusters
             .iter()
             .map(|c| K8sSummary {
-                id:         c.id,
-                name:       c.name.clone(),
-                status:     c.status.clone(),
-                version:    c.k8s_version.clone(),
-                node_count: c.cpu.unwrap_or(0)
+                id:      c.id,
+                name:    c.name.clone(),
+                status:  c.status.clone(),
+                version: c.k8s_version.clone(),
+                cpu:     c.cpu.unwrap_or(0),
+                ram_mb:  c.ram.unwrap_or(0),
+                disk_gb: c.disk.unwrap_or(0)
             })
             .collect();
         app.update_k8s(summaries);
@@ -1853,15 +1855,24 @@ async fn refresh_all(
     }
 
     if let Ok(resp) = projects_res {
-        let summaries: Vec<ProjectSummary> = resp
-            .projects
-            .iter()
-            .map(|p| ProjectSummary {
+        let mut count_handles = Vec::with_capacity(resp.projects.len());
+        for p in &resp.projects {
+            let cfg = c.clone();
+            let project_id = p.id as i32;
+            count_handles.push(tokio::spawn(async move {
+                timeweb_rs::apis::projects_api::get_all_project_resources(&cfg, project_id)
+                    .await
+                    .map_or(0, |r| r.servers.len() as i32)
+            }));
+        }
+        let mut summaries = Vec::with_capacity(resp.projects.len());
+        for (p, handle) in resp.projects.iter().zip(count_handles) {
+            summaries.push(ProjectSummary {
                 id:           p.id as i32,
                 name:         p.name.clone(),
-                server_count: 0
-            })
-            .collect();
+                server_count: handle.await.unwrap_or(0)
+            });
+        }
         app.update_projects(summaries);
     } else if !has_error {
         app.status_message = Some("No projects available".to_string());
@@ -1889,10 +1900,10 @@ async fn refresh_all(
             let summaries: Vec<RegistrySummary> = registries
                 .iter()
                 .map(|r| RegistrySummary {
-                    id:               r.id,
-                    name:             r.name.clone(),
-                    region:           String::new(),
-                    repository_count: 0
+                    id:        r.id,
+                    name:      r.name.clone(),
+                    disk_used: i64::from(r.disk_stats.used),
+                    disk_size: i64::from(r.disk_stats.size)
                 })
                 .collect();
             app.update_registries(summaries);
@@ -1925,10 +1936,9 @@ async fn refresh_all(
             .groups
             .iter()
             .map(|g| FirewallSummary {
-                id:             g.id.parse::<i32>().unwrap_or(0),
-                name:           g.name.clone(),
-                rule_count:     0,
-                resource_count: 0
+                id:     g.id.parse::<i32>().unwrap_or(0),
+                name:   g.name.clone(),
+                policy: g.policy.to_string()
             })
             .collect();
         app.update_firewalls(summaries);
@@ -1989,10 +1999,10 @@ async fn refresh_all(
             .vpcs
             .iter()
             .map(|v| VpcSummary {
-                id:           v.id.parse::<i32>().unwrap_or(0),
-                name:         v.name.clone(),
-                subnet_count: v.busy_address.len() as i32,
-                status:       String::new()
+                id:       v.id.parse::<i32>().unwrap_or(0),
+                name:     v.name.clone(),
+                subnet:   v.subnet_v4.clone(),
+                location: v.location.clone()
             })
             .collect();
         app.update_vpcs(summaries);
@@ -2005,12 +2015,13 @@ async fn refresh_all(
             .dedicated_servers
             .iter()
             .map(|ds| DedicatedServerSummary {
-                id:      ds.id as i32,
-                name:    ds.name.clone(),
-                status:  format!("{:?}", ds.status),
-                cpu:     0,
-                ram_mb:  0,
-                disk_gb: 0
+                id:     ds.id as i32,
+                name:   ds.name.clone(),
+                status: format!("{:?}", ds.status),
+                cpu:    ds.cpu_description.clone(),
+                ram:    ds.ram_description.clone(),
+                disk:   ds.hdd_description.clone(),
+                ip:     ds.ip.clone().unwrap_or_default()
             })
             .collect();
         app.update_dedicated_servers(summaries);
@@ -2023,10 +2034,9 @@ async fn refresh_all(
             .mailboxes
             .iter()
             .map(|m| MailSummary {
-                id:            0,
-                name:          m.fqdn.clone(),
-                mailbox_count: 1,
-                status:        String::new()
+                name:    format!("{}@{}", m.mailbox, m.fqdn),
+                owner:   m.owner_full_name.clone(),
+                comment: m.comment.clone()
             })
             .collect();
         app.update_mails(summaries);
@@ -2039,10 +2049,11 @@ async fn refresh_all(
             .apps
             .iter()
             .map(|a| AppSummary {
-                id:           a.id as i32,
-                name:         a.name.clone(),
-                status:       format!("{:?}", a.status),
-                deploy_count: 0
+                id:       a.id as i32,
+                name:     a.name.clone(),
+                status:   format!("{:?}", a.status),
+                ip:       a.ip.clone().unwrap_or_default(),
+                location: a.location.clone().unwrap_or_default()
             })
             .collect();
         app.update_apps(summaries);
@@ -2055,10 +2066,11 @@ async fn refresh_all(
             .agents
             .iter()
             .map(|a| AiAgentSummary {
-                id:     a.id as i32,
-                name:   a.name.clone(),
-                status: format!("{:?}", a.status),
-                model:  String::new()
+                id:           a.id as i32,
+                name:         a.name.clone(),
+                status:       format!("{:?}", a.status),
+                tokens_used:  a.used_tokens as i64,
+                tokens_total: a.total_tokens as i64
             })
             .collect();
         app.update_ai_agents(summaries);
@@ -2073,7 +2085,7 @@ async fn refresh_all(
             .map(|kb| KnowledgeBaseSummary {
                 id:             kb.id as i32,
                 name:           kb.name.clone(),
-                document_count: 0,
+                document_count: kb.documents_count as i32,
                 status:         format!("{:?}", kb.status)
             })
             .collect();

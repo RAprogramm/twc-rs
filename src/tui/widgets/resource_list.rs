@@ -65,6 +65,16 @@ pub fn server_status_view(status: &str, palette: &Palette) -> (&'static str, Col
     }
 }
 
+/// Computes the integral used-disk percentage of a container registry,
+/// treating a zero-sized disk as fully free.
+fn registry_used_percent(registry: &crate::tui::app::RegistrySummary) -> i64 {
+    if registry.disk_size <= 0 {
+        0
+    } else {
+        registry.disk_used * 100 / registry.disk_size
+    }
+}
+
 /// Renders the resource list panel with a given border color.
 ///
 /// # Arguments
@@ -181,7 +191,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
                     Span::styled(
                         format!(
                             "[{}]",
-                            t!("resource_list.count_repos", n => r.repository_count)
+                            t!("resource_list.disk_used", pct => registry_used_percent(r))
                         ),
                         Style::default().fg(palette.accent)
                     ),
@@ -214,7 +224,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
                     Span::styled(&f.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
                     Span::styled(
-                        format!("[{}]", t!("resource_list.count_rules", n => f.rule_count)),
+                        format!("[{}]", f.policy),
                         Style::default().fg(palette.accent)
                     ),
                 ]);
@@ -274,13 +284,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
                     Span::raw("\u{1F517} "),
                     Span::styled(&v.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
-                    Span::styled(
-                        format!(
-                            "[{}]",
-                            t!("resource_list.count_subnets", n => v.subnet_count)
-                        ),
-                        Style::default().fg(palette.warning)
-                    ),
+                    Span::styled(v.subnet.clone(), Style::default().fg(palette.warning)),
                 ]);
                 ListItem::new(line)
             })
@@ -306,13 +310,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
                     Span::raw("\u{1F4E7} "),
                     Span::styled(&m.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
-                    Span::styled(
-                        format!(
-                            "[{}]",
-                            t!("resource_list.count_mailboxes", n => m.mailbox_count)
-                        ),
-                        Style::default().fg(palette.accent)
-                    ),
+                    Span::styled(m.owner.clone(), Style::default().fg(palette.dim)),
                 ]);
                 ListItem::new(line)
             })
@@ -325,13 +323,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
                     Span::raw("\u{1F680} "),
                     Span::styled(&a.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
-                    Span::styled(
-                        format!(
-                            "[{}]",
-                            t!("resource_list.count_deploys", n => a.deploy_count)
-                        ),
-                        Style::default().fg(palette.accent)
-                    ),
+                    Span::styled(a.location.clone(), Style::default().fg(palette.warning)),
                 ]);
                 ListItem::new(line)
             })
@@ -344,7 +336,10 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
                     Span::raw("\u{1F916} "),
                     Span::styled(&a.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
-                    Span::styled(&a.model, Style::default().fg(palette.warning)),
+                    Span::styled(
+                        format!("[{}/{}]", a.tokens_used, a.tokens_total),
+                        Style::default().fg(palette.warning)
+                    ),
                 ]);
                 ListItem::new(line)
             })

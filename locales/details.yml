@@ -37,9 +37,24 @@ details.objects:
 details.version:
   en: "Version"
   ru: "Версия"
-details.nodes:
-  en: "Nodes"
-  ru: "Ноды"
+details.disk_used:
+  en: "Disk used"
+  ru: "Диск занят"
+details.policy:
+  en: "Policy"
+  ru: "Политика"
+details.subnet:
+  en: "Subnet"
+  ru: "Подсеть"
+details.owner:
+  en: "Owner"
+  ru: "Владелец"
+details.comment:
+  en: "Comment"
+  ru: "Комментарий"
+details.tokens:
+  en: "Tokens"
+  ru: "Токены"
 details.servers:
   en: "Servers"
   ru: "Серверы"
@@ -49,33 +64,15 @@ details.value:
 details.ip:
   en: "IP"
   ru: "IP"
-details.repos:
-  en: "Repos"
-  ru: "Репозитории"
 details.auto_prolong:
   en: "Auto-prolong"
   ru: "Автопродление"
-details.rules:
-  en: "Rules"
-  ru: "Правила"
 details.resources:
   en: "Resources"
   ru: "Ресурсы"
 details.bound_to:
   en: "Bound to"
   ru: "Привязан к"
-details.subnets:
-  en: "Subnets"
-  ru: "Подсети"
-details.mailboxes:
-  en: "Mailboxes"
-  ru: "Почтовые ящики"
-details.deploys:
-  en: "Deploys"
-  ru: "Деплои"
-details.model:
-  en: "Model"
-  ru: "Модель"
 details.documents:
   en: "Documents"
   ru: "Документы"

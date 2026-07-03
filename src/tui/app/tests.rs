@@ -42,7 +42,9 @@ fn make_k8s(id: i32, name: &str) -> K8sSummary {
         name: name.to_string(),
         status: "running".to_string(),
         version: "1.28".to_string(),
-        node_count: 3
+        cpu: 4,
+        ram_mb: 8192,
+        disk_gb: 100
     }
 }
 
