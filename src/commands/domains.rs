@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: 2026 RAprogramm <andrey.rozanov.vl@gmail.com>
 // SPDX-License-Identifier: MIT
 
-use std::fmt;
+mod rows;
 
+use rows::{DnsRecordRow, DomainRequestRow, DomainRow, NameServerRow, SubdomainRow, TldRow};
 use rust_i18n::t;
-use tabled::Tabled;
 use timeweb_rs::{apis::domains_api, models as dm};
 
 use crate::{error::TwcError, output::OutputFormat};
@@ -12,142 +12,6 @@ use crate::{error::TwcError, output::OutputFormat};
 /// Formats an f64 identifier for display.
 fn fmt_id<T: std::fmt::Display>(v: T) -> String {
     v.to_string()
-}
-
-/// Compact row for the domain list table.
-#[derive(Tabled)]
-struct DomainRow {
-    #[tabled(rename = "ID")]
-    id:           String,
-    #[tabled(rename = "FQDN")]
-    fqdn:         String,
-    #[tabled(rename = "Status")]
-    status:       String,
-    #[tabled(rename = "Expires")]
-    expires:      String,
-    #[tabled(rename = "AutoProlong")]
-    auto_prolong: String,
-    #[tabled(rename = "DaysLeft")]
-    days_left:    String
-}
-
-impl fmt::Display for DomainRow {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} {} {} {} {} {}",
-            self.id, self.fqdn, self.status, self.expires, self.auto_prolong, self.days_left
-        )
-    }
-}
-
-/// Compact row for the DNS record table.
-#[derive(Tabled)]
-struct DnsRecordRow {
-    #[tabled(rename = "ID")]
-    id:       String,
-    #[tabled(rename = "Type")]
-    r#type:   String,
-    #[tabled(rename = "Value")]
-    value:    String,
-    #[tabled(rename = "TTL")]
-    ttl:      String,
-    #[tabled(rename = "Priority")]
-    priority: String
-}
-
-impl fmt::Display for DnsRecordRow {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} {} {} {} {}",
-            self.id, self.r#type, self.value, self.ttl, self.priority
-        )
-    }
-}
-
-/// Compact row for the name server table.
-#[derive(Tabled)]
-struct NameServerRow {
-    #[tabled(rename = "Host")]
-    host: String,
-    #[tabled(rename = "IPs")]
-    ips:  String
-}
-
-impl fmt::Display for NameServerRow {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} {}", self.host, self.ips)
-    }
-}
-
-/// Compact row for the subdomain table.
-#[derive(Tabled)]
-struct SubdomainRow {
-    #[tabled(rename = "ID")]
-    id:   String,
-    #[tabled(rename = "FQDN")]
-    fqdn: String,
-    #[tabled(rename = "IP")]
-    ip:   String
-}
-
-impl fmt::Display for SubdomainRow {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} {} {}", self.id, self.fqdn, self.ip)
-    }
-}
-
-/// Compact row for the TLD table.
-#[derive(Tabled)]
-struct TldRow {
-    #[tabled(rename = "ID")]
-    id:            String,
-    #[tabled(rename = "Name")]
-    name:          String,
-    #[tabled(rename = "Price")]
-    price:         String,
-    #[tabled(rename = "Registrar")]
-    registrar:     String,
-    #[tabled(rename = "Published")]
-    is_published:  String,
-    #[tabled(rename = "Registered")]
-    is_registered: String
-}
-
-impl fmt::Display for TldRow {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} {} {} {} {} {}",
-            self.id, self.name, self.price, self.registrar, self.is_published, self.is_registered
-        )
-    }
-}
-
-/// Compact row for the domain request table.
-#[derive(Tabled)]
-struct DomainRequestRow {
-    #[tabled(rename = "ID")]
-    id:      String,
-    #[tabled(rename = "FQDN")]
-    fqdn:    String,
-    #[tabled(rename = "Type")]
-    r#type:  String,
-    #[tabled(rename = "Date")]
-    date:    String,
-    #[tabled(rename = "Message")]
-    message: String
-}
-
-impl fmt::Display for DomainRequestRow {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} {} {} {} {}",
-            self.id, self.fqdn, self.r#type, self.date, self.message
-        )
-    }
 }
 
 /// Builds a [`dm::CreateDnsV2`] enum variant from a record type and value.

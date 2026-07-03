@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: 2026 RAprogramm <andrey.rozanov.vl@gmail.com>
 // SPDX-License-Identifier: MIT
 
-use std::fmt;
+mod rows;
 
+use rows::{AddonRow, ClusterRow, NodeGroupRow, NodeRow, PresetRow};
 use rust_i18n::t;
 use tabled::Tabled;
 use timeweb_rs::{
@@ -20,142 +21,6 @@ fn fmt_i32(v: i32) -> String {
 /// Formats an f64 value as a string.
 fn fmt_f64(v: f64) -> String {
     v.to_string()
-}
-
-/// Compact row for the cluster list table.
-#[derive(Tabled)]
-struct ClusterRow {
-    #[tabled(rename = "ID")]
-    id:             i32,
-    #[tabled(rename = "Name")]
-    name:           String,
-    #[tabled(rename = "Status")]
-    status:         String,
-    #[tabled(rename = "Version")]
-    k8s_version:    String,
-    #[tabled(rename = "Driver")]
-    network_driver: String,
-    #[tabled(rename = "Created")]
-    created_at:     String
-}
-
-impl fmt::Display for ClusterRow {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} {} {} {} {} {}",
-            self.id,
-            self.name,
-            self.status,
-            self.k8s_version,
-            self.network_driver,
-            self.created_at
-        )
-    }
-}
-
-/// Compact row for the node group table.
-#[derive(Tabled)]
-struct NodeGroupRow {
-    #[tabled(rename = "ID")]
-    id:         i32,
-    #[tabled(rename = "Name")]
-    name:       String,
-    #[tabled(rename = "Node Count")]
-    node_count: i32,
-    #[tabled(rename = "Preset")]
-    preset_id:  i32,
-    #[tabled(rename = "Created")]
-    created_at: String
-}
-
-impl fmt::Display for NodeGroupRow {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} {} {} {} {}",
-            self.id, self.name, self.node_count, self.preset_id, self.created_at
-        )
-    }
-}
-
-/// Compact row for the node table.
-#[derive(Tabled)]
-struct NodeRow {
-    #[tabled(rename = "ID")]
-    id:      i32,
-    #[tabled(rename = "Type")]
-    type_:   String,
-    #[tabled(rename = "Status")]
-    status:  String,
-    #[tabled(rename = "CPU")]
-    cpu:     i32,
-    #[tabled(rename = "RAM (MB)")]
-    ram:     i32,
-    #[tabled(rename = "Disk (GB)")]
-    disk:    i32,
-    #[tabled(rename = "IP")]
-    node_ip: String
-}
-
-impl fmt::Display for NodeRow {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} {} {} {} {} {} {}",
-            self.id, self.type_, self.status, self.cpu, self.ram, self.disk, self.node_ip
-        )
-    }
-}
-
-/// Compact row for the addon table.
-#[derive(Tabled)]
-struct AddonRow {
-    #[tabled(rename = "ID")]
-    id:          i32,
-    #[tabled(rename = "Type")]
-    type_:       String,
-    #[tabled(rename = "Status")]
-    status:      String,
-    #[tabled(rename = "Version")]
-    version:     String,
-    #[tabled(rename = "Config Type")]
-    config_type: String
-}
-
-impl fmt::Display for AddonRow {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} {} {} {} {}",
-            self.id, self.type_, self.status, self.version, self.config_type
-        )
-    }
-}
-
-/// Compact row for the preset table.
-#[derive(Tabled)]
-struct PresetRow {
-    #[tabled(rename = "Type")]
-    preset_type: String,
-    #[tabled(rename = "CPU")]
-    cpu:         String,
-    #[tabled(rename = "RAM (MB)")]
-    ram:         String,
-    #[tabled(rename = "Disk (GB)")]
-    disk:        String,
-    #[tabled(rename = "Price")]
-    price:       String
-}
-
-impl fmt::Display for PresetRow {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} {} {} {} {}",
-            self.preset_type, self.cpu, self.ram, self.disk, self.price
-        )
-    }
 }
 
 /// Lists all Kubernetes clusters.
