@@ -1186,6 +1186,7 @@ async fn run_dashboard(
                     refresh_handle.abort();
                     refresh_handle =
                         spawn_refresh_loop(tx.clone(), token.clone(), theme, interval);
+                    app.token = Some(token.clone());
                     app.active_profile.clone_from(&profile);
                     app.is_loading = true;
                     app.log(

@@ -1661,6 +1661,21 @@ impl App {
         self.palette = Some(super::command_palette::CommandPalette::new(commands));
     }
 
+    /// Opens the command palette restricted to profile-switch entries, or
+    /// reports that no other profiles are configured.
+    pub fn open_profile_switcher(&mut self) {
+        let commands: Vec<_> = self
+            .build_palette_commands()
+            .into_iter()
+            .filter(|c| c.id.starts_with("profile:"))
+            .collect();
+        if commands.is_empty() {
+            self.status_message = Some(t!("app.no_other_profiles").to_string());
+            return;
+        }
+        self.palette = Some(super::command_palette::CommandPalette::new(commands));
+    }
+
     /// Closes the command palette.
     pub fn close_palette(&mut self) {
         self.palette = None;

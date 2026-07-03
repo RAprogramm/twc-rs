@@ -24,6 +24,9 @@ help.shortcut_filter:
 help.shortcut_palette:
   en: Command palette
   ru: Палитра команд
+help.shortcut_profile:
+  en: Switch profile
+  ru: Сменить профиль
 help.shortcut_refresh:
   en: Refresh now
   ru: Обновить сейчас

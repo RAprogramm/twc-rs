@@ -182,6 +182,10 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
             app.open_create_form();
             true
         }
+        KeyCode::Char('p') => {
+            app.open_profile_switcher();
+            true
+        }
         KeyCode::Esc => {
             if app.filter_active() {
                 app.filter_clear();
