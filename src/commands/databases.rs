@@ -210,7 +210,7 @@ pub async fn list(
             id:       fmt_id(d.id),
             name:     d.name.clone(),
             status:   format!("{:?}", d.status),
-            engine:   String::new(),
+            engine:   d.r#type.clone(),
             location: d.location.clone().unwrap_or_else(|| "-".to_string())
         })
         .collect();
