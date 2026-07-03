@@ -341,7 +341,8 @@ fn render_project_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
         (t!("details.buckets"), project.bucket_count),
         (t!("details.clusters"), project.cluster_count),
         (t!("details.balancers"), project.balancer_count),
-        (t!("details.dedicated"), project.dedicated_count)
+        (t!("details.dedicated"), project.dedicated_count),
+        (t!("details.apps"), project.app_count)
     ];
     let mut shown = 0;
     for (label, count) in counts {

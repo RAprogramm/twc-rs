@@ -1446,6 +1446,13 @@ async fn fetch_drill(
                     detail: String::new()
                 });
             }
+            for a in resp.apps.iter().flatten().flatten() {
+                items.push(DrillItem {
+                    kind:   "App".to_string(),
+                    name:   a.name.clone(),
+                    detail: format!("{:?}", a.status)
+                });
+            }
             Ok(DrillView {
                 title: format!("Project '{name}'  ({} resources)", items.len()),
                 items,
@@ -2065,7 +2072,12 @@ async fn refresh_all(
                             r.buckets.len() as i32,
                             r.clusters.len() as i32,
                             r.balancers.len() as i32,
-                            r.dedicated_servers.len() as i32
+                            r.dedicated_servers.len() as i32,
+                            r.apps
+                                .into_iter()
+                                .flatten()
+                                .next()
+                                .map_or(0, |v| v.len() as i32)
                         )
                     })
                     .map_err(|e| e.to_string())
@@ -2079,13 +2091,14 @@ async fn refresh_all(
                 ..Default::default()
             };
             match handle.await {
-                Ok(Ok((servers, databases, buckets, clusters, balancers, dedicated))) => {
+                Ok(Ok((servers, databases, buckets, clusters, balancers, dedicated, apps))) => {
                     summary.server_count = servers;
                     summary.database_count = databases;
                     summary.bucket_count = buckets;
                     summary.cluster_count = clusters;
                     summary.balancer_count = balancers;
                     summary.dedicated_count = dedicated;
+                    summary.app_count = apps;
                 }
                 Ok(Err(e)) => {
                     app.last_load_errors
