@@ -1603,6 +1603,37 @@ fn server_public_ip(server: &timeweb_rs::models::Vds) -> String {
     fallback.unwrap_or_default()
 }
 
+/// Describes what a floating IP is bound to, resolving server names from the
+/// already-fetched server list and falling back to `type #id` for other
+/// resource kinds.
+#[cfg(feature = "tui")]
+fn floating_ip_binding(
+    ip: &timeweb_rs::models::FloatingIp,
+    server_names: &std::collections::HashMap<i64, String>
+) -> String {
+    use timeweb_rs::models::FloatingIpResourceId;
+
+    let Some(resource_id) = ip.resource_id.as_deref() else {
+        return String::new();
+    };
+    let id_text = match resource_id {
+        FloatingIpResourceId::Number(n) => format!("{n}"),
+        FloatingIpResourceId::String(s) => s.clone()
+    };
+    let resource_type = ip.resource_type.clone().unwrap_or_default();
+    if resource_type == "server"
+        && let Ok(id) = id_text.parse::<i64>()
+        && let Some(name) = server_names.get(&id)
+    {
+        return name.clone();
+    }
+    if resource_type.is_empty() {
+        format!("#{id_text}")
+    } else {
+        format!("{resource_type} #{id_text}")
+    }
+}
+
 /// Sums the sizes of all disks attached to a server, converting the API's
 /// megabyte values to whole gigabytes.
 #[cfg(feature = "tui")]
@@ -1754,10 +1785,14 @@ async fn refresh_all(
     let mut account_id: i64 = 0;
     let mut login = String::new();
     let mut balance = String::new();
+    let mut account_status = String::from("active");
 
     if let Ok(resp) = account_res {
         account_id = resp.status.company_info.id;
         login = resp.status.login.clone().unwrap_or_default();
+        if resp.status.is_blocked || resp.status.is_permanent_blocked {
+            account_status = String::from("blocked");
+        }
     } else {
         has_error = true;
         app.error_message = Some("Failed to load account".to_string());
@@ -1773,10 +1808,15 @@ async fn refresh_all(
         login,
         account_id,
         balance,
-        status: String::from("active")
+        status: account_status
     });
 
+    let mut server_names: std::collections::HashMap<i64, String> =
+        std::collections::HashMap::new();
     if let Ok(resp) = servers_res {
+        for s in &resp.servers {
+            server_names.insert(s.id, s.name.clone());
+        }
         let summaries: Vec<ServerSummary> = resp
             .servers
             .iter()
@@ -1953,8 +1993,12 @@ async fn refresh_all(
             .map(|ip| FloatingIpSummary {
                 id:          ip.id.parse::<i32>().unwrap_or(0),
                 ip:          ip.ip.clone().unwrap_or_default(),
-                status:      String::new(),
-                server_name: String::new()
+                status:      if ip.resource_id.is_some() {
+                    String::from("attached")
+                } else {
+                    String::from("available")
+                },
+                server_name: floating_ip_binding(ip, &server_names)
             })
             .collect();
         app.update_floating_ips(summaries);

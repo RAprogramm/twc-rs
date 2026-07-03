@@ -127,6 +127,13 @@ fn chip(key: &str, label: &str, color: Color, palette: Palette) -> Line<'static>
     ])
 }
 
+/// Builds a status chip colored by the generic status classifier from
+/// [`crate::tui::widgets::resource_list::status_view`].
+fn status_chip(key: &str, status: &str, palette: Palette) -> Line<'static> {
+    let (color, label) = crate::tui::widgets::resource_list::status_view(status, &palette);
+    chip(key, &label, color, palette)
+}
+
 /// Builds a centered, dim empty-state notice.
 fn empty(message: &str, palette: Palette) -> Vec<Line<'static>> {
     vec![
@@ -219,12 +226,7 @@ fn render_database_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
             accent(palette),
             palette
         ),
-        chip(
-            &t!("details.status"),
-            &db.status.to_lowercase(),
-            palette.success,
-            palette
-        ),
+        status_chip(&t!("details.status"), &db.status, palette),
         kv(
             &t!("details.size"),
             format!("{} MB", db.size_mb),
@@ -291,12 +293,7 @@ fn render_k8s_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
             accent(palette),
             palette
         ),
-        chip(
-            &t!("details.status"),
-            &cluster.status.to_lowercase(),
-            palette.success,
-            palette
-        ),
+        status_chip(&t!("details.status"), &cluster.status, palette),
         Line::from(""),
         section(&t!("details.resources"), palette),
         kv(
@@ -380,12 +377,7 @@ fn render_balancer_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
             accent(palette),
             palette
         ),
-        chip(
-            &t!("details.status"),
-            &b.status.to_lowercase(),
-            palette.success,
-            palette
-        ),
+        status_chip(&t!("details.status"), &b.status, palette),
         kv(&t!("details.ip"), b.ip.clone(), warn(palette), palette),
         kv(
             &t!("details.location"),
@@ -439,12 +431,7 @@ fn render_domain_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
             accent(palette),
             palette
         ),
-        chip(
-            &t!("details.status"),
-            &d.status.to_lowercase(),
-            palette.success,
-            palette
-        ),
+        status_chip(&t!("details.status"), &d.status, palette),
         kv(
             &t!("details.auto_prolong"),
             if d.auto_prolong {
@@ -496,12 +483,7 @@ fn render_floating_ip_details(app: &App, palette: Palette) -> Vec<Line<'static>>
             accent(palette),
             palette
         ),
-        chip(
-            &t!("details.status"),
-            &f.status.to_lowercase(),
-            palette.success,
-            palette
-        ),
+        status_chip(&t!("details.status"), &f.status, palette),
         kv(
             &t!("details.bound_to"),
             f.server_name.clone(),
@@ -525,12 +507,7 @@ fn render_image_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
             accent(palette),
             palette
         ),
-        chip(
-            &t!("details.status"),
-            &i.status.to_lowercase(),
-            palette.success,
-            palette
-        ),
+        status_chip(&t!("details.status"), &i.status, palette),
         kv(
             &t!("details.size"),
             format!("{} MB", i.size_mb),
@@ -554,12 +531,7 @@ fn render_network_drive_details(app: &App, palette: Palette) -> Vec<Line<'static
             accent(palette),
             palette
         ),
-        chip(
-            &t!("details.status"),
-            &n.status.to_lowercase(),
-            palette.success,
-            palette
-        ),
+        status_chip(&t!("details.status"), &n.status, palette),
         kv(
             &t!("details.size"),
             format!("{} GB", n.size_gb),
@@ -614,12 +586,7 @@ fn render_dedicated_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
             accent(palette),
             palette
         ),
-        chip(
-            &t!("details.status"),
-            &d.status.to_lowercase(),
-            palette.success,
-            palette
-        ),
+        status_chip(&t!("details.status"), &d.status, palette),
         kv(&t!("details.ip"), d.ip.clone(), warn(palette), palette),
         Line::from(""),
         section(&t!("details.resources"), palette),
@@ -683,12 +650,7 @@ fn render_app_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
             accent(palette),
             palette
         ),
-        chip(
-            &t!("details.status"),
-            &a.status.to_lowercase(),
-            palette.success,
-            palette
-        ),
+        status_chip(&t!("details.status"), &a.status, palette),
         kv(&t!("details.ip"), a.ip.clone(), warn(palette), palette),
         kv(
             &t!("details.location"),
@@ -713,12 +675,7 @@ fn render_ai_agent_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
             accent(palette),
             palette
         ),
-        chip(
-            &t!("details.status"),
-            &a.status.to_lowercase(),
-            palette.success,
-            palette
-        ),
+        status_chip(&t!("details.status"), &a.status, palette),
         kv(
             &t!("details.tokens"),
             format!("{} / {}", a.tokens_used, a.tokens_total),
@@ -742,12 +699,7 @@ fn render_knowledge_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
             accent(palette),
             palette
         ),
-        chip(
-            &t!("details.status"),
-            &k.status.to_lowercase(),
-            palette.success,
-            palette
-        ),
+        status_chip(&t!("details.status"), &k.status, palette),
         kv(
             &t!("details.documents"),
             k.document_count.to_string(),

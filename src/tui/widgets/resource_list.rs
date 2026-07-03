@@ -65,6 +65,27 @@ pub fn server_status_view(status: &str, palette: &Palette) -> (&'static str, Col
     }
 }
 
+/// Maps an arbitrary resource status string to a display color and a
+/// human-readable lowercase label.
+///
+/// Works on the Debug names of the SDK's per-resource status enums
+/// (`Started`, `NoPaid`, `Failure`, ...), grouping them into healthy,
+/// failed, and transitional states; unknown states render as transitional.
+#[must_use]
+pub fn status_view(status: &str, palette: &Palette) -> (Color, String) {
+    let label = status.to_lowercase();
+    let color = match label.as_str() {
+        "on" | "started" | "active" | "running" | "ok" | "ready" | "created" | "deployed"
+        | "delivered" | "attached" | "available" | "success" | "finished" | "normal" => {
+            palette.success
+        }
+        "off" | "stopped" | "error" | "failure" | "failed" | "blocked" | "removed" | "damaged"
+        | "disabled" | "nopaid" | "startuperror" | "cancelled" | "expired" => palette.error,
+        _ => palette.warning
+    };
+    (color, label)
+}
+
 /// Computes the integral used-disk percentage of a container registry,
 /// treating a zero-sized disk as fully free.
 fn registry_used_percent(registry: &crate::tui::app::RegistrySummary) -> i64 {
@@ -203,14 +224,12 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
             .domains
             .iter()
             .map(|d| {
+                let (status_color, label) = status_view(&d.status, &palette);
                 let line = Line::from(vec![
                     Span::raw("\u{1F310} "),
                     Span::styled(&d.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
-                    Span::styled(
-                        format!("[{}]", d.status),
-                        Style::default().fg(palette.success)
-                    ),
+                    Span::styled(format!("[{label}]"), Style::default().fg(status_color)),
                 ]);
                 ListItem::new(line)
             })
@@ -293,11 +312,12 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
             .dedicated_servers
             .iter()
             .map(|d| {
+                let (status_color, label) = status_view(&d.status, &palette);
                 let line = Line::from(vec![
                     Span::raw("\u{1F5A5} "),
                     Span::styled(&d.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
-                    Span::styled(&d.status, Style::default().fg(palette.success)),
+                    Span::styled(format!("[{label}]"), Style::default().fg(status_color)),
                 ]);
                 ListItem::new(line)
             })
@@ -393,11 +413,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
         .filter_map(|&i| items.get(i).cloned())
         .collect();
 
-    let fallback = t!("resource_list.title_fallback").to_string();
-    let tab_name = ResourceTab::names()
-        .get(app.active_tab.index())
-        .copied()
-        .unwrap_or(fallback.as_str());
+    let tab_name = app.active_tab.display_name();
     let title = if app.filter_active() {
         let cursor = if app.filter_editing { "\u{2588}" } else { "" };
         format!(" {tab_name} ({})  /{}{cursor} ", items.len(), app.filter)
