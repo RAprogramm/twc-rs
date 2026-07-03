@@ -89,12 +89,30 @@ pub struct K8sSummary {
     pub disk_gb: i32
 }
 
-/// Summary of a single project.
-#[derive(Debug, Clone)]
+/// Summary of a single project with per-type resource counts.
+#[derive(Debug, Clone, Default)]
 pub struct ProjectSummary {
-    pub id:           i32,
-    pub name:         String,
-    pub server_count: i32
+    pub id:              i32,
+    pub name:            String,
+    pub server_count:    i32,
+    pub database_count:  i32,
+    pub bucket_count:    i32,
+    pub cluster_count:   i32,
+    pub balancer_count:  i32,
+    pub dedicated_count: i32
+}
+
+impl ProjectSummary {
+    /// Returns the total number of resources across all types.
+    #[must_use]
+    pub const fn resource_count(&self) -> i32 {
+        self.server_count
+            + self.database_count
+            + self.bucket_count
+            + self.cluster_count
+            + self.balancer_count
+            + self.dedicated_count
+    }
 }
 
 /// Summary of a single load balancer.

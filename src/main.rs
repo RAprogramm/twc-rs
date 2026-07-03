@@ -2053,21 +2053,50 @@ async fn refresh_all(
     if let Ok(resp) = projects_res {
         let mut count_handles = Vec::with_capacity(resp.projects.len());
         for p in &resp.projects {
-            let cfg = c.clone();
+            let task_cfg = c.clone();
             let project_id = p.id as i32;
             count_handles.push(tokio::spawn(async move {
-                timeweb_rs::apis::projects_api::get_all_project_resources(&cfg, project_id)
+                timeweb_rs::apis::projects_api::get_all_project_resources(&task_cfg, project_id)
                     .await
-                    .map_or(0, |r| r.servers.len() as i32)
+                    .map(|r| {
+                        (
+                            r.servers.len() as i32,
+                            r.databases.len() as i32,
+                            r.buckets.len() as i32,
+                            r.clusters.len() as i32,
+                            r.balancers.len() as i32,
+                            r.dedicated_servers.len() as i32
+                        )
+                    })
+                    .map_err(|e| e.to_string())
             }));
         }
         let mut summaries = Vec::with_capacity(resp.projects.len());
         for (p, handle) in resp.projects.iter().zip(count_handles) {
-            summaries.push(ProjectSummary {
-                id:           p.id as i32,
-                name:         p.name.clone(),
-                server_count: handle.await.unwrap_or(0)
-            });
+            let mut summary = ProjectSummary {
+                id: p.id as i32,
+                name: p.name.clone(),
+                ..Default::default()
+            };
+            match handle.await {
+                Ok(Ok((servers, databases, buckets, clusters, balancers, dedicated))) => {
+                    summary.server_count = servers;
+                    summary.database_count = databases;
+                    summary.bucket_count = buckets;
+                    summary.cluster_count = clusters;
+                    summary.balancer_count = balancers;
+                    summary.dedicated_count = dedicated;
+                }
+                Ok(Err(e)) => {
+                    app.last_load_errors
+                        .push(format!("project '{}' resources: {e}", p.name));
+                }
+                Err(e) => {
+                    app.last_load_errors
+                        .push(format!("project '{}' resources: {e}", p.name));
+                }
+            }
+            summaries.push(summary);
         }
         app.update_projects(summaries);
     }

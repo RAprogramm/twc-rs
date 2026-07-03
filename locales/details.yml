@@ -58,6 +58,24 @@ details.tokens:
 details.servers:
   en: "Servers"
   ru: "Серверы"
+details.databases:
+  en: "Databases"
+  ru: "Базы данных"
+details.buckets:
+  en: "S3 buckets"
+  ru: "S3-бакеты"
+details.clusters:
+  en: "K8s clusters"
+  ru: "Кластеры K8s"
+details.balancers:
+  en: "Balancers"
+  ru: "Балансировщики"
+details.dedicated:
+  en: "Dedicated"
+  ru: "Выделенные"
+details.total:
+  en: "Total"
+  ru: "Всего"
 details.value:
   en: "Value"
   ru: "Значение"

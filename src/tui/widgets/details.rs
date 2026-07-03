@@ -323,7 +323,7 @@ fn render_project_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
     }
 
     let project = &app.projects[app.selected_real_index().min(app.projects.len() - 1)];
-    vec![
+    let mut lines = vec![
         heading(&project.name, palette),
         rule(palette),
         kv(
@@ -332,13 +332,33 @@ fn render_project_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
             accent(palette),
             palette
         ),
-        kv(
-            &t!("details.servers"),
-            project.server_count.to_string(),
+        Line::from(""),
+        section(&t!("details.resources"), palette),
+    ];
+    let counts = [
+        (t!("details.servers"), project.server_count),
+        (t!("details.databases"), project.database_count),
+        (t!("details.buckets"), project.bucket_count),
+        (t!("details.clusters"), project.cluster_count),
+        (t!("details.balancers"), project.balancer_count),
+        (t!("details.dedicated"), project.dedicated_count)
+    ];
+    let mut shown = 0;
+    for (label, count) in counts {
+        if count > 0 {
+            lines.push(kv(&label, count.to_string(), name_style(palette), palette));
+            shown += 1;
+        }
+    }
+    if shown == 0 {
+        lines.push(kv(
+            &t!("details.total"),
+            "0".to_string(),
             name_style(palette),
             palette
-        ),
-    ]
+        ));
+    }
+    lines
 }
 
 fn render_string_details(
