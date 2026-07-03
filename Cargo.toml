@@ -48,7 +48,7 @@ auth = ["dep:open", "dep:tiny_http", "dep:keyring"]
 tui = ["dep:ratatui", "dep:crossterm", "dep:tokio-stream"]
 
 [dependencies]
-timeweb-rs = { version = "0.4", default-features = false, features = ["rustls"] }
+timeweb-rs = { version = "0.5", default-features = false, features = ["rustls"] }
 clap = { version = "4", features = ["derive", "env", "string"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 serde = { version = "1", features = ["derive"] }

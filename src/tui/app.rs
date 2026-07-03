@@ -99,7 +99,8 @@ pub struct ProjectSummary {
     pub bucket_count:    i32,
     pub cluster_count:   i32,
     pub balancer_count:  i32,
-    pub dedicated_count: i32
+    pub dedicated_count: i32,
+    pub app_count:       i32
 }
 
 impl ProjectSummary {
@@ -112,6 +113,7 @@ impl ProjectSummary {
             + self.cluster_count
             + self.balancer_count
             + self.dedicated_count
+            + self.app_count
     }
 }
 

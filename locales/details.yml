@@ -73,6 +73,9 @@ details.balancers:
 details.dedicated:
   en: "Dedicated"
   ru: "Выделенные"
+details.apps:
+  en: "Apps"
+  ru: "Приложения"
 details.total:
   en: "Total"
   ru: "Всего"
