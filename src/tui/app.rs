@@ -136,7 +136,7 @@ pub struct DomainSummary {
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct FirewallSummary {
-    pub id:     i32,
+    pub id:     String,
     pub name:   String,
     pub policy: String
 }
@@ -146,7 +146,7 @@ pub struct FirewallSummary {
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct FloatingIpSummary {
-    pub id:          i32,
+    pub id:          String,
     pub ip:          String,
     pub status:      String,
     pub server_name: String
@@ -157,7 +157,7 @@ pub struct FloatingIpSummary {
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct ImageSummary {
-    pub id:      i32,
+    pub id:      String,
     pub name:    String,
     pub size_mb: i64,
     pub status:  String
@@ -168,7 +168,7 @@ pub struct ImageSummary {
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct NetworkDriveSummary {
-    pub id:      i32,
+    pub id:      String,
     pub name:    String,
     pub size_gb: i64,
     pub status:  String
@@ -179,7 +179,7 @@ pub struct NetworkDriveSummary {
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct VpcSummary {
-    pub id:       i32,
+    pub id:       String,
     pub name:     String,
     pub subnet:   String,
     pub location: String
@@ -259,6 +259,8 @@ pub enum ActionKind {
     Reboot,
     /// Create a clone of the resource.
     Clone,
+    /// Create a backup of the resource.
+    Backup,
     /// Permanently delete the resource.
     Delete
 }
@@ -272,6 +274,7 @@ impl ActionKind {
             Self::Shutdown => "Shutdown",
             Self::Reboot => "Reboot",
             Self::Clone => "Clone",
+            Self::Backup => "Backup",
             Self::Delete => "Delete"
         }
     }
@@ -284,6 +287,7 @@ impl ActionKind {
             Self::Shutdown => t!("app.action_shutdown"),
             Self::Reboot => t!("app.action_reboot"),
             Self::Clone => t!("app.action_clone"),
+            Self::Backup => t!("app.action_backup"),
             Self::Delete => t!("app.action_delete")
         }
     }
@@ -304,8 +308,8 @@ pub struct PendingAction {
     pub tab:           ResourceTab,
     /// The action to perform.
     pub kind:          ActionKind,
-    /// Target resource id.
-    pub resource_id:   i32,
+    /// Target resource id (numeric or UUID, depending on the resource).
+    pub resource_id:   String,
     /// Target resource name, for display.
     pub resource_name: String
 }
@@ -391,8 +395,8 @@ pub struct CreateForm {
 pub struct ActionMenu {
     /// The resource category the menu targets.
     pub tab:           ResourceTab,
-    /// Target resource id.
-    pub resource_id:   i32,
+    /// Target resource id (numeric or UUID, depending on the resource).
+    pub resource_id:   String,
     /// Target resource name, for display.
     pub resource_name: String,
     /// Available actions, in display order.
@@ -517,11 +521,11 @@ impl ResourceTab {
     /// menu does not open for them.
     #[must_use]
     pub const fn actions(self) -> &'static [ActionKind] {
-        use ActionKind::{Clone, Delete, Reboot, Shutdown, Start};
+        use ActionKind::{Backup, Clone, Delete, Reboot, Shutdown, Start};
         match self {
             Self::Servers => &[Start, Shutdown, Reboot, Clone, Delete],
-            Self::Databases
-            | Self::S3
+            Self::Databases => &[Backup, Delete],
+            Self::S3
             | Self::Kubernetes
             | Self::Balancers
             | Self::Registry
@@ -529,7 +533,13 @@ impl ResourceTab {
             | Self::DedicatedServers
             | Self::AiAgents
             | Self::KnowledgeBases
-            | Self::Apps => &[Delete],
+            | Self::Apps
+            | Self::Domains
+            | Self::Firewall
+            | Self::FloatingIps
+            | Self::Images
+            | Self::NetworkDrives
+            | Self::Vpc => &[Delete],
             _ => &[]
         }
     }
@@ -757,6 +767,8 @@ impl App {
         };
         if let Some(form) = form {
             self.create_form = Some(form);
+        } else {
+            self.status_message = Some(t!("app.create_not_supported").to_string());
         }
     }
 
@@ -1329,26 +1341,74 @@ impl App {
     /// Returns the `(id, name)` of the selected item on the active tab,
     /// for tabs whose resources are addressable by a numeric id.
     #[must_use]
-    pub fn selected_resource(&self) -> Option<(i32, String)> {
+    pub fn selected_resource(&self) -> Option<(String, String)> {
         let real = *self.filtered_indices().get(self.selected)?;
         match self.active_tab {
-            ResourceTab::Servers => self.servers.get(real).map(|s| (s.id, s.name.clone())),
-            ResourceTab::Databases => self.databases.get(real).map(|d| (d.id, d.name.clone())),
-            ResourceTab::S3 => self.s3_storages.get(real).map(|s| (s.id, s.name.clone())),
-            ResourceTab::Kubernetes => self.k8s_clusters.get(real).map(|c| (c.id, c.name.clone())),
-            ResourceTab::Balancers => self.balancers.get(real).map(|b| (b.id, b.name.clone())),
-            ResourceTab::Registry => self.registries.get(real).map(|r| (r.id, r.name.clone())),
-            ResourceTab::Projects => self.projects.get(real).map(|p| (p.id, p.name.clone())),
+            ResourceTab::Servers => self
+                .servers
+                .get(real)
+                .map(|s| (s.id.to_string(), s.name.clone())),
+            ResourceTab::Databases => self
+                .databases
+                .get(real)
+                .map(|d| (d.id.to_string(), d.name.clone())),
+            ResourceTab::S3 => self
+                .s3_storages
+                .get(real)
+                .map(|s| (s.id.to_string(), s.name.clone())),
+            ResourceTab::Kubernetes => self
+                .k8s_clusters
+                .get(real)
+                .map(|c| (c.id.to_string(), c.name.clone())),
+            ResourceTab::Balancers => self
+                .balancers
+                .get(real)
+                .map(|b| (b.id.to_string(), b.name.clone())),
+            ResourceTab::Registry => self
+                .registries
+                .get(real)
+                .map(|r| (r.id.to_string(), r.name.clone())),
+            ResourceTab::Projects => self
+                .projects
+                .get(real)
+                .map(|p| (p.id.to_string(), p.name.clone())),
             ResourceTab::DedicatedServers => self
                 .dedicated_servers
                 .get(real)
-                .map(|d| (d.id, d.name.clone())),
-            ResourceTab::AiAgents => self.ai_agents.get(real).map(|a| (a.id, a.name.clone())),
-            ResourceTab::Apps => self.apps.get(real).map(|a| (a.id, a.name.clone())),
+                .map(|d| (d.id.to_string(), d.name.clone())),
+            ResourceTab::AiAgents => self
+                .ai_agents
+                .get(real)
+                .map(|a| (a.id.to_string(), a.name.clone())),
+            ResourceTab::Apps => self
+                .apps
+                .get(real)
+                .map(|a| (a.id.to_string(), a.name.clone())),
             ResourceTab::KnowledgeBases => self
                 .knowledge_bases
                 .get(real)
-                .map(|k| (k.id, k.name.clone())),
+                .map(|k| (k.id.to_string(), k.name.clone())),
+            ResourceTab::Domains => self
+                .domains
+                .get(real)
+                .map(|d| (d.id.to_string(), d.name.clone())),
+            ResourceTab::Firewall => self
+                .firewalls
+                .get(real)
+                .map(|f| (f.id.clone(), f.name.clone())),
+            ResourceTab::FloatingIps => self
+                .floating_ips
+                .get(real)
+                .map(|f| (f.id.clone(), f.ip.clone())),
+            ResourceTab::Images => self
+                .images
+                .get(real)
+                .map(|i| (i.id.clone(), i.name.clone())),
+            ResourceTab::NetworkDrives => self
+                .network_drives
+                .get(real)
+                .map(|n| (n.id.clone(), n.name.clone())),
+            ResourceTab::Vpc => self.vpcs.get(real).map(|v| (v.id.clone(), v.name.clone())),
             _ => None
         }
     }
@@ -1359,6 +1419,7 @@ impl App {
     pub fn open_action_menu(&mut self) {
         let actions = self.active_tab.actions();
         if actions.is_empty() {
+            self.status_message = Some(t!("app.no_actions").to_string());
             return;
         }
         if let Some((id, name)) = self.selected_resource() {
@@ -1388,6 +1449,7 @@ impl App {
     pub fn request_drill(&mut self) {
         if self.can_drill()
             && let Some((id, name)) = self.selected_resource()
+            && let Ok(id) = id.parse::<i32>()
         {
             self.drill_request = Some((self.active_tab, id, name));
         }

@@ -12,9 +12,18 @@ app.action_reboot:
 app.action_clone:
   en: Clone
   ru: Клонировать
+app.action_backup:
+  en: Backup
+  ru: Создать бэкап
 app.action_delete:
   en: Delete
   ru: Удалить
+app.no_actions:
+  en: No actions available for this resource
+  ru: Для этого ресурса нет доступных действий
+app.create_not_supported:
+  en: Creation is not supported here; use the CLI
+  ru: Создание здесь не поддерживается — используйте CLI
 app.widget_account:
   en: Account header
   ru: Шапка аккаунта

@@ -431,7 +431,7 @@ fn open_action_menu_on_servers_tab() {
     app.selected = 0;
     app.open_action_menu();
     let menu = app.action_menu().expect("menu should open");
-    assert_eq!(menu.resource_id, 7);
+    assert_eq!(menu.resource_id, "7");
     assert_eq!(menu.resource_name, "web");
     assert_eq!(menu.actions, ResourceTab::Servers.actions().to_vec());
     assert_eq!(menu.selected, 0);
@@ -470,7 +470,7 @@ fn menu_select_non_destructive_dispatches_directly() {
     assert!(!app.awaiting_confirm());
     let dispatched = app.take_dispatch().expect("non-destructive dispatches");
     assert_eq!(dispatched.kind, ActionKind::Start);
-    assert_eq!(dispatched.resource_id, 7);
+    assert_eq!(dispatched.resource_id, "7");
 }
 
 #[test]
@@ -524,12 +524,18 @@ fn menu_esc_closes_without_dispatch() {
 #[test]
 fn per_tab_action_sets() {
     assert_eq!(ResourceTab::Servers.actions().len(), 5);
-    assert_eq!(ResourceTab::Databases.actions(), &[ActionKind::Delete]);
+    assert_eq!(
+        ResourceTab::Databases.actions(),
+        &[ActionKind::Backup, ActionKind::Delete]
+    );
     assert_eq!(ResourceTab::Kubernetes.actions(), &[ActionKind::Delete]);
     assert_eq!(ResourceTab::Projects.actions(), &[ActionKind::Delete]);
     assert_eq!(ResourceTab::AiAgents.actions(), &[ActionKind::Delete]);
+    assert_eq!(ResourceTab::Domains.actions(), &[ActionKind::Delete]);
+    assert_eq!(ResourceTab::Firewall.actions(), &[ActionKind::Delete]);
+    assert_eq!(ResourceTab::Vpc.actions(), &[ActionKind::Delete]);
     assert!(ResourceTab::Finances.actions().is_empty());
-    assert!(ResourceTab::Domains.actions().is_empty());
+    assert!(ResourceTab::Mail.actions().is_empty());
 }
 
 #[test]
@@ -540,17 +546,18 @@ fn action_menu_works_for_databases() {
     app.open_action_menu();
     let menu = app.action_menu().expect("menu opens for databases");
     assert_eq!(menu.tab, ResourceTab::Databases);
-    assert_eq!(menu.resource_id, 42);
+    assert_eq!(menu.resource_id, "42");
     assert_eq!(menu.resource_name, "pg-prod");
-    assert_eq!(menu.actions, vec![ActionKind::Delete]);
+    assert_eq!(menu.actions, vec![ActionKind::Backup, ActionKind::Delete]);
 
+    app.menu_next();
     app.menu_select();
     assert!(app.awaiting_confirm());
     app.confirm_action();
     let dispatched = app.take_dispatch().expect("delete dispatched");
     assert_eq!(dispatched.tab, ResourceTab::Databases);
     assert_eq!(dispatched.kind, ActionKind::Delete);
-    assert_eq!(dispatched.resource_id, 42);
+    assert_eq!(dispatched.resource_id, "42");
 }
 
 #[test]
@@ -634,7 +641,7 @@ fn palette_run_action_command_dispatches() {
     app.run_command("action:reboot");
     let dispatched = app.take_dispatch().expect("reboot dispatched via palette");
     assert_eq!(dispatched.kind, ActionKind::Reboot);
-    assert_eq!(dispatched.resource_id, 7);
+    assert_eq!(dispatched.resource_id, "7");
 }
 
 #[test]
@@ -665,7 +672,7 @@ fn filter_narrows_list_and_maps_selection() {
 
     app.selected = 1;
     let (id, name) = app.selected_resource().expect("maps filtered selection");
-    assert_eq!(id, 3);
+    assert_eq!(id, "3");
     assert_eq!(name, "web-stage");
 
     app.filter_clear();

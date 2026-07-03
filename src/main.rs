@@ -1498,88 +1498,142 @@ async fn perform_create(
     }
 }
 
+/// Maps a `(tab, action)` pair to the matching Timeweb API call.
+///
+/// Resources with numeric ids parse [`tui::app::PendingAction::resource_id`]
+/// back to `i32`; resources addressed by UUID or FQDN pass it (or the
+/// resource name, for domains) through as-is.
+#[cfg(feature = "tui")]
+async fn dispatch_action(
+    config: &timeweb_rs::apis::configuration::Configuration,
+    pending: &tui::app::PendingAction
+) -> Result<(), String> {
+    use timeweb_rs::apis::{
+        ai_agents_api, apps_api, balancers_api, container_registry_api, databases_api,
+        dedicated_servers_api, domains_api, firewall_api, floating_ip_api, images_api,
+        knowledge_bases_api, kubernetes_api, network_drives_api, projects_api, s3_api,
+        servers_api, vpc_api
+    };
+    use tui::app::{ActionKind, ResourceTab};
+
+    let id = pending.resource_id.as_str();
+    let num = || {
+        id.parse::<i32>()
+            .map_err(|_| format!("invalid numeric id '{id}'"))
+    };
+    match (pending.tab, pending.kind) {
+        (ResourceTab::Servers, ActionKind::Start) => servers_api::start_server(config, num()?)
+            .await
+            .map_err(|e| e.to_string()),
+        (ResourceTab::Servers, ActionKind::Shutdown) => {
+            servers_api::shutdown_server(config, num()?)
+                .await
+                .map_err(|e| e.to_string())
+        }
+        (ResourceTab::Servers, ActionKind::Reboot) => servers_api::reboot_server(config, num()?)
+            .await
+            .map_err(|e| e.to_string()),
+        (ResourceTab::Servers, ActionKind::Clone) => servers_api::clone_server(config, num()?)
+            .await
+            .map(|_| ())
+            .map_err(|e| e.to_string()),
+        (ResourceTab::Servers, ActionKind::Delete) => {
+            servers_api::delete_server(config, num()?, None, None)
+                .await
+                .map(|_| ())
+                .map_err(|e| e.to_string())
+        }
+        (ResourceTab::Databases, ActionKind::Backup) => {
+            databases_api::create_database_backup(config, num()?, None)
+                .await
+                .map(|_| ())
+                .map_err(|e| e.to_string())
+        }
+        (ResourceTab::Databases, ActionKind::Delete) => {
+            databases_api::delete_database_cluster(config, num()?, None, None)
+                .await
+                .map(|_| ())
+                .map_err(|e| e.to_string())
+        }
+        (ResourceTab::S3, ActionKind::Delete) => {
+            s3_api::delete_storage(config, num()?, None, None)
+                .await
+                .map(|_| ())
+                .map_err(|e| e.to_string())
+        }
+        (ResourceTab::Kubernetes, ActionKind::Delete) => {
+            kubernetes_api::delete_cluster(config, num()?, None, None)
+                .await
+                .map(|_| ())
+                .map_err(|e| e.to_string())
+        }
+        (ResourceTab::Balancers, ActionKind::Delete) => {
+            balancers_api::delete_balancer(config, num()?, None, None)
+                .await
+                .map(|_| ())
+                .map_err(|e| e.to_string())
+        }
+        (ResourceTab::Registry, ActionKind::Delete) => {
+            container_registry_api::delete_registry(config, num()?)
+                .await
+                .map_err(|e| e.to_string())
+        }
+        (ResourceTab::Projects, ActionKind::Delete) => {
+            projects_api::delete_project(config, num()?)
+                .await
+                .map_err(|e| e.to_string())
+        }
+        (ResourceTab::DedicatedServers, ActionKind::Delete) => {
+            dedicated_servers_api::delete_dedicated_server(config, num()?)
+                .await
+                .map_err(|e| e.to_string())
+        }
+        (ResourceTab::AiAgents, ActionKind::Delete) => ai_agents_api::delete_agent(config, num()?)
+            .await
+            .map_err(|e| e.to_string()),
+        (ResourceTab::KnowledgeBases, ActionKind::Delete) => {
+            knowledge_bases_api::delete_knowledgebase(config, num()?)
+                .await
+                .map_err(|e| e.to_string())
+        }
+        (ResourceTab::Apps, ActionKind::Delete) => apps_api::delete_app(config, id)
+            .await
+            .map_err(|e| e.to_string()),
+        (ResourceTab::Domains, ActionKind::Delete) => {
+            domains_api::delete_domain(config, &pending.resource_name)
+                .await
+                .map_err(|e| e.to_string())
+        }
+        (ResourceTab::Firewall, ActionKind::Delete) => firewall_api::delete_group(config, id)
+            .await
+            .map_err(|e| e.to_string()),
+        (ResourceTab::FloatingIps, ActionKind::Delete) => {
+            floating_ip_api::delete_floating_ip(config, id)
+                .await
+                .map_err(|e| e.to_string())
+        }
+        (ResourceTab::Images, ActionKind::Delete) => images_api::delete_image(config, id)
+            .await
+            .map_err(|e| e.to_string()),
+        (ResourceTab::NetworkDrives, ActionKind::Delete) => {
+            network_drives_api::delete_network_drive(config, id)
+                .await
+                .map_err(|e| e.to_string())
+        }
+        (ResourceTab::Vpc, ActionKind::Delete) => vpc_api::delete_vpc(config, id)
+            .await
+            .map_err(|e| e.to_string()),
+        _ => Err("action not supported for this resource".to_string())
+    }
+}
+
 #[cfg(feature = "tui")]
 async fn perform_action(
     config: &timeweb_rs::apis::configuration::Configuration,
     app: &mut tui::app::App,
     pending: tui::app::PendingAction
 ) {
-    use timeweb_rs::apis::{
-        ai_agents_api, apps_api, balancers_api, container_registry_api, databases_api,
-        dedicated_servers_api, knowledge_bases_api, kubernetes_api, projects_api, s3_api,
-        servers_api
-    };
-    use tui::app::{ActionKind, ResourceTab};
-
-    let id = pending.resource_id;
-    let result = match (pending.tab, pending.kind) {
-        (ResourceTab::Servers, ActionKind::Start) => servers_api::start_server(config, id)
-            .await
-            .map_err(|e| e.to_string()),
-        (ResourceTab::Servers, ActionKind::Shutdown) => servers_api::shutdown_server(config, id)
-            .await
-            .map_err(|e| e.to_string()),
-        (ResourceTab::Servers, ActionKind::Reboot) => servers_api::reboot_server(config, id)
-            .await
-            .map_err(|e| e.to_string()),
-        (ResourceTab::Servers, ActionKind::Clone) => servers_api::clone_server(config, id)
-            .await
-            .map(|_| ())
-            .map_err(|e| e.to_string()),
-        (ResourceTab::Servers, ActionKind::Delete) => {
-            servers_api::delete_server(config, id, None, None)
-                .await
-                .map(|_| ())
-                .map_err(|e| e.to_string())
-        }
-        (ResourceTab::Databases, ActionKind::Delete) => {
-            databases_api::delete_database_cluster(config, id, None, None)
-                .await
-                .map(|_| ())
-                .map_err(|e| e.to_string())
-        }
-        (ResourceTab::S3, ActionKind::Delete) => s3_api::delete_storage(config, id, None, None)
-            .await
-            .map(|_| ())
-            .map_err(|e| e.to_string()),
-        (ResourceTab::Kubernetes, ActionKind::Delete) => {
-            kubernetes_api::delete_cluster(config, id, None, None)
-                .await
-                .map(|_| ())
-                .map_err(|e| e.to_string())
-        }
-        (ResourceTab::Balancers, ActionKind::Delete) => {
-            balancers_api::delete_balancer(config, id, None, None)
-                .await
-                .map(|_| ())
-                .map_err(|e| e.to_string())
-        }
-        (ResourceTab::Registry, ActionKind::Delete) => {
-            container_registry_api::delete_registry(config, id)
-                .await
-                .map_err(|e| e.to_string())
-        }
-        (ResourceTab::Projects, ActionKind::Delete) => projects_api::delete_project(config, id)
-            .await
-            .map_err(|e| e.to_string()),
-        (ResourceTab::DedicatedServers, ActionKind::Delete) => {
-            dedicated_servers_api::delete_dedicated_server(config, id)
-                .await
-                .map_err(|e| e.to_string())
-        }
-        (ResourceTab::AiAgents, ActionKind::Delete) => ai_agents_api::delete_agent(config, id)
-            .await
-            .map_err(|e| e.to_string()),
-        (ResourceTab::KnowledgeBases, ActionKind::Delete) => {
-            knowledge_bases_api::delete_knowledgebase(config, id)
-                .await
-                .map_err(|e| e.to_string())
-        }
-        (ResourceTab::Apps, ActionKind::Delete) => apps_api::delete_app(config, &id.to_string())
-            .await
-            .map_err(|e| e.to_string()),
-        _ => Err("action not supported for this resource".to_string())
-    };
+    let result = dispatch_action(config, &pending).await;
 
     match result {
         Ok(()) => {
@@ -2063,7 +2117,7 @@ async fn refresh_all(
         let summaries: Vec<FirewallSummary> = groups
             .iter()
             .map(|g| FirewallSummary {
-                id:     g.id.parse::<i32>().unwrap_or(0),
+                id:     g.id.clone(),
                 name:   g.name.clone(),
                 policy: g.policy.to_string()
             })
@@ -2076,7 +2130,7 @@ async fn refresh_all(
             .ips
             .iter()
             .map(|ip| FloatingIpSummary {
-                id:          ip.id.parse::<i32>().unwrap_or(0),
+                id:          ip.id.clone(),
                 ip:          ip.ip.clone().unwrap_or_default(),
                 status:      if ip.resource_id.is_some() {
                     String::from("attached")
@@ -2093,7 +2147,7 @@ async fn refresh_all(
         let summaries: Vec<ImageSummary> = images
             .iter()
             .map(|img| ImageSummary {
-                id:      img.id.parse::<i32>().unwrap_or(0),
+                id:      img.id.clone(),
                 name:    img.name.clone(),
                 size_mb: i64::from(img.size),
                 status:  format!("{:?}", img.status)
@@ -2107,7 +2161,7 @@ async fn refresh_all(
             .network_drives
             .iter()
             .map(|nd| NetworkDriveSummary {
-                id:      nd.id.parse::<i32>().unwrap_or(0),
+                id:      nd.id.clone(),
                 name:    nd.name.clone(),
                 size_gb: nd.size as i64,
                 status:  format!("{:?}", nd.status)
@@ -2121,7 +2175,7 @@ async fn refresh_all(
             .vpcs
             .iter()
             .map(|v| VpcSummary {
-                id:       v.id.parse::<i32>().unwrap_or(0),
+                id:       v.id.clone(),
                 name:     v.name.clone(),
                 subnet:   v.subnet_v4.clone(),
                 location: v.location.clone()
