@@ -630,6 +630,7 @@ pub struct App {
     pub language:          crate::config::Language,
     pub stats_subject:     Option<String>,
     pub stats_loaded_for:  Option<String>,
+    pub stats_requested:   Option<Instant>,
     pub create_form:       Option<CreateForm>,
     pub create_request:    Option<CreateForm>,
     pub profiles:          Vec<String>,
@@ -710,6 +711,7 @@ impl App {
             language: crate::config::Language::default(),
             stats_subject: None,
             stats_loaded_for: None,
+            stats_requested: None,
             create_form: None,
             create_request: None,
             profiles: Vec::new(),
@@ -823,12 +825,16 @@ impl App {
         self.create_request.take()
     }
 
+    /// Interval between live statistics refreshes for the selected resource.
+    const STATS_REFRESH: Duration = Duration::from_secs(30);
+
     /// Polls the selected resource for live statistics.
     ///
-    /// Returns a [`StatsRequest`] when the selected resource changed and
-    /// exposes live statistics (servers and apps). Returns `None` when
-    /// nothing changed; clears the metrics panel when the selection moved
-    /// to a resource without live statistics.
+    /// Returns a [`StatsRequest`] when the selected resource changed or the
+    /// current series is older than [`Self::STATS_REFRESH`], keeping the
+    /// sparklines live. Returns `None` while the data is fresh; clears the
+    /// metrics panel when the selection moved to a resource without live
+    /// statistics.
     pub fn poll_stats_request(&mut self) -> Option<StatsRequest> {
         let idx = self.selected_real_index();
         let target = match self.active_tab {
@@ -844,18 +850,23 @@ impl App {
         };
 
         let target_id = target.as_ref().map(|(id, _)| id.clone());
-        if target_id == self.stats_loaded_for {
+        let fresh = self
+            .stats_requested
+            .is_some_and(|at| at.elapsed() < Self::STATS_REFRESH);
+        if target_id == self.stats_loaded_for && fresh {
             return None;
         }
         self.stats_loaded_for = target_id;
 
         if let Some((id, name)) = target {
+            self.stats_requested = Some(Instant::now());
             Some(StatsRequest {
                 tab: self.active_tab,
                 id,
                 name
             })
         } else {
+            self.stats_requested = None;
             self.clear_stats();
             None
         }
