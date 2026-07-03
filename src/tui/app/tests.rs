@@ -31,8 +31,8 @@ fn make_s3(id: i32, name: &str) -> S3Summary {
         id,
         name: name.to_string(),
         region: "ru-1".to_string(),
-        size_bytes: 1_000_000_000,
-        bucket_count: 3
+        size_kb: 1_000_000,
+        object_count: 3
     }
 }
 
@@ -42,7 +42,9 @@ fn make_k8s(id: i32, name: &str) -> K8sSummary {
         name: name.to_string(),
         status: "running".to_string(),
         version: "1.28".to_string(),
-        node_count: 3
+        cpu: 4,
+        ram_mb: 8192,
+        disk_gb: 100
     }
 }
 

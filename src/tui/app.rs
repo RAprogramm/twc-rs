@@ -73,18 +73,20 @@ pub struct S3Summary {
     pub id:           i32,
     pub name:         String,
     pub region:       String,
-    pub size_bytes:   i64,
-    pub bucket_count: i32
+    pub size_kb:      i64,
+    pub object_count: i64
 }
 
 /// Summary of a single Kubernetes cluster.
 #[derive(Debug, Clone)]
 pub struct K8sSummary {
-    pub id:         i32,
-    pub name:       String,
-    pub status:     String,
-    pub version:    String,
-    pub node_count: i32
+    pub id:      i32,
+    pub name:    String,
+    pub status:  String,
+    pub version: String,
+    pub cpu:     i32,
+    pub ram_mb:  i32,
+    pub disk_gb: i32
 }
 
 /// Summary of a single project.
@@ -112,10 +114,10 @@ pub struct BalancerSummary {
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct RegistrySummary {
-    pub id:               i32,
-    pub name:             String,
-    pub region:           String,
-    pub repository_count: i32
+    pub id:        i32,
+    pub name:      String,
+    pub disk_used: i64,
+    pub disk_size: i64
 }
 
 /// Summary of a single domain.
@@ -134,10 +136,9 @@ pub struct DomainSummary {
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct FirewallSummary {
-    pub id:             i32,
-    pub name:           String,
-    pub rule_count:     i32,
-    pub resource_count: i32
+    pub id:     i32,
+    pub name:   String,
+    pub policy: String
 }
 
 /// Summary of a single floating IP.
@@ -178,10 +179,10 @@ pub struct NetworkDriveSummary {
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct VpcSummary {
-    pub id:           i32,
-    pub name:         String,
-    pub subnet_count: i32,
-    pub status:       String
+    pub id:       i32,
+    pub name:     String,
+    pub subnet:   String,
+    pub location: String
 }
 
 /// Summary of a single dedicated server.
@@ -189,12 +190,13 @@ pub struct VpcSummary {
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct DedicatedServerSummary {
-    pub id:      i32,
-    pub name:    String,
-    pub status:  String,
-    pub cpu:     i32,
-    pub ram_mb:  i32,
-    pub disk_gb: i64
+    pub id:     i32,
+    pub name:   String,
+    pub status: String,
+    pub cpu:    String,
+    pub ram:    String,
+    pub disk:   String,
+    pub ip:     String
 }
 
 /// Summary of a single mail service.
@@ -202,10 +204,9 @@ pub struct DedicatedServerSummary {
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct MailSummary {
-    pub id:            i32,
-    pub name:          String,
-    pub mailbox_count: i32,
-    pub status:        String
+    pub name:    String,
+    pub owner:   String,
+    pub comment: String
 }
 
 /// Summary of a single application.
@@ -213,10 +214,11 @@ pub struct MailSummary {
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct AppSummary {
-    pub id:           i32,
-    pub name:         String,
-    pub status:       String,
-    pub deploy_count: i32
+    pub id:       i32,
+    pub name:     String,
+    pub status:   String,
+    pub ip:       String,
+    pub location: String
 }
 
 /// Summary of a single AI agent.
@@ -224,10 +226,11 @@ pub struct AppSummary {
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct AiAgentSummary {
-    pub id:     i32,
-    pub name:   String,
-    pub status: String,
-    pub model:  String
+    pub id:           i32,
+    pub name:         String,
+    pub status:       String,
+    pub tokens_used:  i64,
+    pub tokens_total: i64
 }
 
 /// Summary of a single knowledge base.

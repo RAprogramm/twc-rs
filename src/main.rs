@@ -1580,6 +1580,69 @@ async fn perform_action(
     }
 }
 
+/// Extracts the primary public IPv4 address of a server, preferring the
+/// address marked as main and falling back to the first public one.
+#[cfg(feature = "tui")]
+fn server_public_ip(server: &timeweb_rs::models::Vds) -> String {
+    use timeweb_rs::models::vds_networks_inner::Type;
+
+    let mut fallback = None;
+    for network in &server.networks {
+        if !matches!(network.r#type, Type::Public) {
+            continue;
+        }
+        for ip in network.ips.iter().flatten() {
+            if ip.is_main {
+                return ip.ip.clone();
+            }
+            if fallback.is_none() {
+                fallback = Some(ip.ip.clone());
+            }
+        }
+    }
+    fallback.unwrap_or_default()
+}
+
+/// Describes what a floating IP is bound to, resolving server names from the
+/// already-fetched server list and falling back to `type #id` for other
+/// resource kinds.
+#[cfg(feature = "tui")]
+fn floating_ip_binding(
+    ip: &timeweb_rs::models::FloatingIp,
+    server_names: &std::collections::HashMap<i64, String>
+) -> String {
+    use timeweb_rs::models::FloatingIpResourceId;
+
+    let Some(resource_id) = ip.resource_id.as_deref() else {
+        return String::new();
+    };
+    let id_text = match resource_id {
+        FloatingIpResourceId::Number(n) => format!("{n}"),
+        FloatingIpResourceId::String(s) => s.clone()
+    };
+    let resource_type = ip.resource_type.clone().unwrap_or_default();
+    if resource_type == "server"
+        && let Ok(id) = id_text.parse::<i64>()
+        && let Some(name) = server_names.get(&id)
+    {
+        return name.clone();
+    }
+    if resource_type.is_empty() {
+        format!("#{id_text}")
+    } else {
+        format!("{resource_type} #{id_text}")
+    }
+}
+
+/// Sums the sizes of all disks attached to a server, converting the API's
+/// megabyte values to whole gigabytes.
+#[cfg(feature = "tui")]
+#[expect(clippy::cast_possible_truncation)]
+fn server_disk_gb(server: &timeweb_rs::models::Vds) -> i32 {
+    let total_mb: f64 = server.disks.iter().map(|d| d.size).sum();
+    (total_mb / 1024.0).round() as i32
+}
+
 #[cfg(feature = "tui")]
 #[expect(clippy::too_many_lines)]
 #[expect(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
@@ -1722,10 +1785,14 @@ async fn refresh_all(
     let mut account_id: i64 = 0;
     let mut login = String::new();
     let mut balance = String::new();
+    let mut account_status = String::from("active");
 
     if let Ok(resp) = account_res {
         account_id = resp.status.company_info.id;
         login = resp.status.login.clone().unwrap_or_default();
+        if resp.status.is_blocked || resp.status.is_permanent_blocked {
+            account_status = String::from("blocked");
+        }
     } else {
         has_error = true;
         app.error_message = Some("Failed to load account".to_string());
@@ -1741,10 +1808,15 @@ async fn refresh_all(
         login,
         account_id,
         balance,
-        status: String::from("active")
+        status: account_status
     });
 
+    let mut server_names: std::collections::HashMap<i64, String> =
+        std::collections::HashMap::new();
     if let Ok(resp) = servers_res {
+        for s in &resp.servers {
+            server_names.insert(s.id, s.name.clone());
+        }
         let summaries: Vec<ServerSummary> = resp
             .servers
             .iter()
@@ -1754,8 +1826,8 @@ async fn refresh_all(
                 status:   format!("{:?}", s.status),
                 cpu:      s.cpu as i32,
                 ram_mb:   s.ram as i32,
-                disk_gb:  0,
-                ip:       String::new(),
+                disk_gb:  server_disk_gb(s),
+                ip:       server_public_ip(s),
                 location: s.location.clone()
             })
             .collect();
@@ -1774,7 +1846,11 @@ async fn refresh_all(
                 name:    d.name.clone(),
                 status:  format!("{:?}", d.status),
                 engine:  d.r#type.clone(),
-                size_mb: 0
+                size_mb: d
+                    .disk
+                    .as_ref()
+                    .and_then(|disk| disk.as_deref())
+                    .map_or(0, |disk| (disk.size / 1024.0) as i64)
             })
             .collect();
         app.update_databases(summaries);
@@ -1790,8 +1866,8 @@ async fn refresh_all(
                 id:           b.id as i32,
                 name:         b.name.clone(),
                 region:       b.location.clone(),
-                size_bytes:   b.disk_stats.size as i64,
-                bucket_count: 0
+                size_kb:      b.disk_stats.size as i64,
+                object_count: b.object_amount as i64
             })
             .collect();
         app.update_s3(summaries);
@@ -1804,11 +1880,13 @@ async fn refresh_all(
             .clusters
             .iter()
             .map(|c| K8sSummary {
-                id:         c.id,
-                name:       c.name.clone(),
-                status:     c.status.clone(),
-                version:    c.k8s_version.clone(),
-                node_count: c.cpu.unwrap_or(0)
+                id:      c.id,
+                name:    c.name.clone(),
+                status:  c.status.clone(),
+                version: c.k8s_version.clone(),
+                cpu:     c.cpu.unwrap_or(0),
+                ram_mb:  c.ram.unwrap_or(0),
+                disk_gb: c.disk.unwrap_or(0)
             })
             .collect();
         app.update_k8s(summaries);
@@ -1817,15 +1895,24 @@ async fn refresh_all(
     }
 
     if let Ok(resp) = projects_res {
-        let summaries: Vec<ProjectSummary> = resp
-            .projects
-            .iter()
-            .map(|p| ProjectSummary {
+        let mut count_handles = Vec::with_capacity(resp.projects.len());
+        for p in &resp.projects {
+            let cfg = c.clone();
+            let project_id = p.id as i32;
+            count_handles.push(tokio::spawn(async move {
+                timeweb_rs::apis::projects_api::get_all_project_resources(&cfg, project_id)
+                    .await
+                    .map_or(0, |r| r.servers.len() as i32)
+            }));
+        }
+        let mut summaries = Vec::with_capacity(resp.projects.len());
+        for (p, handle) in resp.projects.iter().zip(count_handles) {
+            summaries.push(ProjectSummary {
                 id:           p.id as i32,
                 name:         p.name.clone(),
-                server_count: 0
-            })
-            .collect();
+                server_count: handle.await.unwrap_or(0)
+            });
+        }
         app.update_projects(summaries);
     } else if !has_error {
         app.status_message = Some("No projects available".to_string());
@@ -1853,10 +1940,10 @@ async fn refresh_all(
             let summaries: Vec<RegistrySummary> = registries
                 .iter()
                 .map(|r| RegistrySummary {
-                    id:               r.id,
-                    name:             r.name.clone(),
-                    region:           String::new(),
-                    repository_count: 0
+                    id:        r.id,
+                    name:      r.name.clone(),
+                    disk_used: i64::from(r.disk_stats.used),
+                    disk_size: i64::from(r.disk_stats.size)
                 })
                 .collect();
             app.update_registries(summaries);
@@ -1889,10 +1976,9 @@ async fn refresh_all(
             .groups
             .iter()
             .map(|g| FirewallSummary {
-                id:             g.id.parse::<i32>().unwrap_or(0),
-                name:           g.name.clone(),
-                rule_count:     0,
-                resource_count: 0
+                id:     g.id.parse::<i32>().unwrap_or(0),
+                name:   g.name.clone(),
+                policy: g.policy.to_string()
             })
             .collect();
         app.update_firewalls(summaries);
@@ -1907,8 +1993,12 @@ async fn refresh_all(
             .map(|ip| FloatingIpSummary {
                 id:          ip.id.parse::<i32>().unwrap_or(0),
                 ip:          ip.ip.clone().unwrap_or_default(),
-                status:      String::new(),
-                server_name: String::new()
+                status:      if ip.resource_id.is_some() {
+                    String::from("attached")
+                } else {
+                    String::from("available")
+                },
+                server_name: floating_ip_binding(ip, &server_names)
             })
             .collect();
         app.update_floating_ips(summaries);
@@ -1953,10 +2043,10 @@ async fn refresh_all(
             .vpcs
             .iter()
             .map(|v| VpcSummary {
-                id:           v.id.parse::<i32>().unwrap_or(0),
-                name:         v.name.clone(),
-                subnet_count: v.busy_address.len() as i32,
-                status:       String::new()
+                id:       v.id.parse::<i32>().unwrap_or(0),
+                name:     v.name.clone(),
+                subnet:   v.subnet_v4.clone(),
+                location: v.location.clone()
             })
             .collect();
         app.update_vpcs(summaries);
@@ -1969,12 +2059,13 @@ async fn refresh_all(
             .dedicated_servers
             .iter()
             .map(|ds| DedicatedServerSummary {
-                id:      ds.id as i32,
-                name:    ds.name.clone(),
-                status:  format!("{:?}", ds.status),
-                cpu:     0,
-                ram_mb:  0,
-                disk_gb: 0
+                id:     ds.id as i32,
+                name:   ds.name.clone(),
+                status: format!("{:?}", ds.status),
+                cpu:    ds.cpu_description.clone(),
+                ram:    ds.ram_description.clone(),
+                disk:   ds.hdd_description.clone(),
+                ip:     ds.ip.clone().unwrap_or_default()
             })
             .collect();
         app.update_dedicated_servers(summaries);
@@ -1987,10 +2078,9 @@ async fn refresh_all(
             .mailboxes
             .iter()
             .map(|m| MailSummary {
-                id:            0,
-                name:          m.fqdn.clone(),
-                mailbox_count: 1,
-                status:        String::new()
+                name:    format!("{}@{}", m.mailbox, m.fqdn),
+                owner:   m.owner_full_name.clone(),
+                comment: m.comment.clone()
             })
             .collect();
         app.update_mails(summaries);
@@ -2003,10 +2093,11 @@ async fn refresh_all(
             .apps
             .iter()
             .map(|a| AppSummary {
-                id:           a.id as i32,
-                name:         a.name.clone(),
-                status:       format!("{:?}", a.status),
-                deploy_count: 0
+                id:       a.id as i32,
+                name:     a.name.clone(),
+                status:   format!("{:?}", a.status),
+                ip:       a.ip.clone().unwrap_or_default(),
+                location: a.location.clone().unwrap_or_default()
             })
             .collect();
         app.update_apps(summaries);
@@ -2019,10 +2110,11 @@ async fn refresh_all(
             .agents
             .iter()
             .map(|a| AiAgentSummary {
-                id:     a.id as i32,
-                name:   a.name.clone(),
-                status: format!("{:?}", a.status),
-                model:  String::new()
+                id:           a.id as i32,
+                name:         a.name.clone(),
+                status:       format!("{:?}", a.status),
+                tokens_used:  a.used_tokens as i64,
+                tokens_total: a.total_tokens as i64
             })
             .collect();
         app.update_ai_agents(summaries);
@@ -2037,7 +2129,7 @@ async fn refresh_all(
             .map(|kb| KnowledgeBaseSummary {
                 id:             kb.id as i32,
                 name:           kb.name.clone(),
-                document_count: 0,
+                document_count: kb.documents_count as i32,
                 status:         format!("{:?}", kb.status)
             })
             .collect();

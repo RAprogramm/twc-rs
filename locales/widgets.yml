@@ -94,21 +94,9 @@ resource_list.status_removing:
 resource_list.count_servers:
   en: "%{n} servers"
   ru: "%{n} серверов"
-resource_list.count_repos:
-  en: "%{n} repos"
-  ru: "%{n} репозиториев"
-resource_list.count_rules:
-  en: "%{n} rules"
-  ru: "%{n} правил"
-resource_list.count_subnets:
-  en: "%{n} subnets"
-  ru: "%{n} подсетей"
-resource_list.count_deploys:
-  en: "%{n} deploys"
-  ru: "%{n} развёртываний"
-resource_list.count_mailboxes:
-  en: "%{n} mailboxes"
-  ru: "%{n} ящиков"
+resource_list.disk_used:
+  en: "%{pct}% disk"
+  ru: "%{pct}% диска"
 resource_list.count_docs:
   en: "%{n} docs"
   ru: "%{n} документов"

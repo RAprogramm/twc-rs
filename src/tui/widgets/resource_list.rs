@@ -65,6 +65,37 @@ pub fn server_status_view(status: &str, palette: &Palette) -> (&'static str, Col
     }
 }
 
+/// Maps an arbitrary resource status string to a display color and a
+/// human-readable lowercase label.
+///
+/// Works on the Debug names of the SDK's per-resource status enums
+/// (`Started`, `NoPaid`, `Failure`, ...), grouping them into healthy,
+/// failed, and transitional states; unknown states render as transitional.
+#[must_use]
+pub fn status_view(status: &str, palette: &Palette) -> (Color, String) {
+    let label = status.to_lowercase();
+    let color = match label.as_str() {
+        "on" | "started" | "active" | "running" | "ok" | "ready" | "created" | "deployed"
+        | "delivered" | "attached" | "available" | "success" | "finished" | "normal" => {
+            palette.success
+        }
+        "off" | "stopped" | "error" | "failure" | "failed" | "blocked" | "removed" | "damaged"
+        | "disabled" | "nopaid" | "startuperror" | "cancelled" | "expired" => palette.error,
+        _ => palette.warning
+    };
+    (color, label)
+}
+
+/// Computes the integral used-disk percentage of a container registry,
+/// treating a zero-sized disk as fully free.
+fn registry_used_percent(registry: &crate::tui::app::RegistrySummary) -> i64 {
+    if registry.disk_size <= 0 {
+        0
+    } else {
+        registry.disk_used * 100 / registry.disk_size
+    }
+}
+
 /// Renders the resource list panel with a given border color.
 ///
 /// # Arguments
@@ -181,7 +212,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
                     Span::styled(
                         format!(
                             "[{}]",
-                            t!("resource_list.count_repos", n => r.repository_count)
+                            t!("resource_list.disk_used", pct => registry_used_percent(r))
                         ),
                         Style::default().fg(palette.accent)
                     ),
@@ -193,14 +224,12 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
             .domains
             .iter()
             .map(|d| {
+                let (status_color, label) = status_view(&d.status, &palette);
                 let line = Line::from(vec![
                     Span::raw("\u{1F310} "),
                     Span::styled(&d.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
-                    Span::styled(
-                        format!("[{}]", d.status),
-                        Style::default().fg(palette.success)
-                    ),
+                    Span::styled(format!("[{label}]"), Style::default().fg(status_color)),
                 ]);
                 ListItem::new(line)
             })
@@ -214,7 +243,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
                     Span::styled(&f.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
                     Span::styled(
-                        format!("[{}]", t!("resource_list.count_rules", n => f.rule_count)),
+                        format!("[{}]", f.policy),
                         Style::default().fg(palette.accent)
                     ),
                 ]);
@@ -274,13 +303,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
                     Span::raw("\u{1F517} "),
                     Span::styled(&v.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
-                    Span::styled(
-                        format!(
-                            "[{}]",
-                            t!("resource_list.count_subnets", n => v.subnet_count)
-                        ),
-                        Style::default().fg(palette.warning)
-                    ),
+                    Span::styled(v.subnet.clone(), Style::default().fg(palette.warning)),
                 ]);
                 ListItem::new(line)
             })
@@ -289,11 +312,12 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
             .dedicated_servers
             .iter()
             .map(|d| {
+                let (status_color, label) = status_view(&d.status, &palette);
                 let line = Line::from(vec![
                     Span::raw("\u{1F5A5} "),
                     Span::styled(&d.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
-                    Span::styled(&d.status, Style::default().fg(palette.success)),
+                    Span::styled(format!("[{label}]"), Style::default().fg(status_color)),
                 ]);
                 ListItem::new(line)
             })
@@ -306,13 +330,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
                     Span::raw("\u{1F4E7} "),
                     Span::styled(&m.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
-                    Span::styled(
-                        format!(
-                            "[{}]",
-                            t!("resource_list.count_mailboxes", n => m.mailbox_count)
-                        ),
-                        Style::default().fg(palette.accent)
-                    ),
+                    Span::styled(m.owner.clone(), Style::default().fg(palette.dim)),
                 ]);
                 ListItem::new(line)
             })
@@ -325,13 +343,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
                     Span::raw("\u{1F680} "),
                     Span::styled(&a.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
-                    Span::styled(
-                        format!(
-                            "[{}]",
-                            t!("resource_list.count_deploys", n => a.deploy_count)
-                        ),
-                        Style::default().fg(palette.accent)
-                    ),
+                    Span::styled(a.location.clone(), Style::default().fg(palette.warning)),
                 ]);
                 ListItem::new(line)
             })
@@ -344,7 +356,10 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
                     Span::raw("\u{1F916} "),
                     Span::styled(&a.name, Style::default().fg(palette.fg)),
                     Span::raw("  "),
-                    Span::styled(&a.model, Style::default().fg(palette.warning)),
+                    Span::styled(
+                        format!("[{}/{}]", a.tokens_used, a.tokens_total),
+                        Style::default().fg(palette.warning)
+                    ),
                 ]);
                 ListItem::new(line)
             })
@@ -398,11 +413,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
         .filter_map(|&i| items.get(i).cloned())
         .collect();
 
-    let fallback = t!("resource_list.title_fallback").to_string();
-    let tab_name = ResourceTab::names()
-        .get(app.active_tab.index())
-        .copied()
-        .unwrap_or(fallback.as_str());
+    let tab_name = app.active_tab.display_name();
     let title = if app.filter_active() {
         let cursor = if app.filter_editing { "\u{2588}" } else { "" };
         format!(" {tab_name} ({})  /{}{cursor} ", items.len(), app.filter)
