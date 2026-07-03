@@ -5,6 +5,23 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0](https://github.com/RAprogramm/twc-rs/compare/v0.4.0...v0.5.0) - 2026-07-03
+
+### Other
+
+- #65 refactor: move table row types into per-resource rows modules ([52ccd04](https://github.com/RAprogramm/twc-rs/commit/52ccd047d85950224bcf6097d0aaa6f4375fed97))
+
+- #63 refactor: split details renderers and ui overlays into submodules ([0a074f6](https://github.com/RAprogramm/twc-rs/commit/0a074f65b65d8e8043e2d78c1f0499f9fe392cb6))
+
+- #61 refactor: split cli.rs into per-resource subcommand modules ([cb3cc16](https://github.com/RAprogramm/twc-rs/commit/cb3cc16954f4bd136af915f7b369d2876f3d35cb))
+
+- #59 refactor: split tui app state into focused submodules ([f3f5d66](https://github.com/RAprogramm/twc-rs/commit/f3f5d663161436a3bbabf641b68cb5a30ffa8f10))
+
+- #57 refactor: split main.rs into auth_cli, cli_dispatch and dashboard modules ([ecb762c](https://github.com/RAprogramm/twc-rs/commit/ecb762ce311af5eb281100a4ec83ce6607ecbbbb))
+
+- #54 fix: split ssh key body reading from upload so tests never block on stdin ([c67f501](https://github.com/RAprogramm/twc-rs/commit/c67f5018afdfa7e5e0e3bc6310b8a760ee5be22b))
+
+
 ## [0.4.0](https://github.com/RAprogramm/twc-rs/compare/v0.3.8...v0.4.0) - 2026-07-03
 
 ### Other
