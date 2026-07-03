@@ -1,10 +1,12 @@
 // SPDX-FileCopyrightText: 2026 RAprogramm <andrey.rozanov.vl@gmail.com>
 // SPDX-License-Identifier: MIT
 
-use std::fmt;
+mod rows;
 
+use rows::{
+    BackupRow, ConfiguratorRow, DiskRow, IpRow, LogRow, OsRow, PresetRow, ServerRow, SoftwareRow
+};
 use rust_i18n::t;
-use tabled::Tabled;
 use timeweb_rs::{
     apis::{configuration::Configuration, servers_api},
     models
@@ -97,35 +99,6 @@ pub async fn create(
         )
     );
     Ok(())
-}
-
-/// Compact row for the server list table.
-#[derive(Tabled)]
-struct ServerRow {
-    #[tabled(rename = "ID")]
-    id:       String,
-    #[tabled(rename = "Name")]
-    name:     String,
-    #[tabled(rename = "Status")]
-    status:   String,
-    #[tabled(rename = "CPU")]
-    cpu:      String,
-    #[tabled(rename = "RAM (MB)")]
-    ram:      String,
-    #[tabled(rename = "OS")]
-    os:       String,
-    #[tabled(rename = "Location")]
-    location: String
-}
-
-impl fmt::Display for ServerRow {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} {} {} {} {} {} {}",
-            self.id, self.name, self.status, self.cpu, self.ram, self.os, self.location
-        )
-    }
 }
 
 /// Lists all cloud servers.
@@ -311,35 +284,6 @@ pub async fn reset_password(config: &Configuration, id: i32) -> Result<(), TwcEr
     Ok(())
 }
 
-/// Compact row for the server preset list table.
-#[derive(Tabled)]
-struct PresetRow {
-    #[tabled(rename = "ID")]
-    id:          String,
-    #[tabled(rename = "Location")]
-    location:    String,
-    #[tabled(rename = "CPU")]
-    cpu:         String,
-    #[tabled(rename = "RAM (MB)")]
-    ram:         String,
-    #[tabled(rename = "Disk (GB)")]
-    disk:        String,
-    #[tabled(rename = "Price")]
-    price:       String,
-    #[tabled(rename = "Description")]
-    description: String
-}
-
-impl fmt::Display for PresetRow {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} {} {} {} {} {} {}",
-            self.id, self.location, self.cpu, self.ram, self.disk, self.price, self.description
-        )
-    }
-}
-
 /// Lists available server presets (ready-made configurations).
 ///
 /// # Errors
@@ -382,29 +326,6 @@ pub async fn list_presets(config: &Configuration, format: OutputFormat) -> Resul
         }
     }
     Ok(())
-}
-
-/// Compact row for the OS image list table.
-#[derive(Tabled)]
-struct OsRow {
-    #[tabled(rename = "ID")]
-    id:      String,
-    #[tabled(rename = "Family")]
-    family:  String,
-    #[tabled(rename = "Name")]
-    name:    String,
-    #[tabled(rename = "Version")]
-    version: String
-}
-
-impl fmt::Display for OsRow {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} {} {} {}",
-            self.id, self.family, self.name, self.version
-        )
-    }
 }
 
 /// Lists installable operating system images.
@@ -450,23 +371,6 @@ pub async fn list_os(config: &Configuration, format: OutputFormat) -> Result<(),
     Ok(())
 }
 
-/// Compact row for the software list table.
-#[derive(Tabled)]
-struct SoftwareRow {
-    #[tabled(rename = "ID")]
-    id:            String,
-    #[tabled(rename = "Name")]
-    name:          String,
-    #[tabled(rename = "Installations")]
-    installations: String
-}
-
-impl fmt::Display for SoftwareRow {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} {} {}", self.id, self.name, self.installations)
-    }
-}
-
 /// Lists available pre-installable software.
 ///
 /// # Errors
@@ -507,29 +411,6 @@ pub async fn list_software(config: &Configuration, format: OutputFormat) -> Resu
         }
     }
     Ok(())
-}
-
-/// Compact row for the configurator list table.
-#[derive(Tabled)]
-struct ConfiguratorRow {
-    #[tabled(rename = "ID")]
-    id:            String,
-    #[tabled(rename = "Location")]
-    location:      String,
-    #[tabled(rename = "Disk Type")]
-    disk_type:     String,
-    #[tabled(rename = "CPU Frequency")]
-    cpu_frequency: String
-}
-
-impl fmt::Display for ConfiguratorRow {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} {} {} {}",
-            self.id, self.location, self.disk_type, self.cpu_frequency
-        )
-    }
 }
 
 /// Lists server configurators (custom-build options).
@@ -574,31 +455,6 @@ pub async fn list_configurators(
         }
     }
     Ok(())
-}
-
-/// Compact row for the server disk list table.
-#[derive(Tabled)]
-struct DiskRow {
-    #[tabled(rename = "ID")]
-    id:     String,
-    #[tabled(rename = "Size (MB)")]
-    size:   String,
-    #[tabled(rename = "Used (MB)")]
-    used:   String,
-    #[tabled(rename = "Type")]
-    r#type: String,
-    #[tabled(rename = "Status")]
-    status: String
-}
-
-impl fmt::Display for DiskRow {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} {} {} {} {}",
-            self.id, self.size, self.used, self.r#type, self.status
-        )
-    }
 }
 
 /// Lists the disks attached to a server.
@@ -651,29 +507,6 @@ pub async fn list_disks(
     Ok(())
 }
 
-/// Compact row for the server IP list table.
-#[derive(Tabled)]
-struct IpRow {
-    #[tabled(rename = "IP")]
-    ip:      String,
-    #[tabled(rename = "Type")]
-    r#type:  String,
-    #[tabled(rename = "PTR")]
-    ptr:     String,
-    #[tabled(rename = "Main")]
-    is_main: String
-}
-
-impl fmt::Display for IpRow {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} {} {} {}",
-            self.ip, self.r#type, self.ptr, self.is_main
-        )
-    }
-}
-
 /// Lists the IP addresses of a server.
 ///
 /// # Overview
@@ -721,23 +554,6 @@ pub async fn list_ips(
         }
     }
     Ok(())
-}
-
-/// Compact row for the server log/history table.
-#[derive(Tabled)]
-struct LogRow {
-    #[tabled(rename = "ID")]
-    id:        String,
-    #[tabled(rename = "Logged At")]
-    logged_at: String,
-    #[tabled(rename = "Event")]
-    event:     String
-}
-
-impl fmt::Display for LogRow {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} {} {}", self.id, self.logged_at, self.event)
-    }
 }
 
 /// Shows the recent action history (logs) of a server.
@@ -923,31 +739,6 @@ pub async fn set(
     servers_api::update_server(config, id, body).await?;
     println!("{}", t!("cli.server_updated", id => id));
     Ok(())
-}
-
-/// Compact row for the server disk-backup list table.
-#[derive(Tabled, serde::Serialize)]
-struct BackupRow {
-    #[tabled(rename = "ID")]
-    id:         String,
-    #[tabled(rename = "Disk ID")]
-    disk_id:    String,
-    #[tabled(rename = "Status")]
-    status:     String,
-    #[tabled(rename = "Created At")]
-    created_at: String,
-    #[tabled(rename = "Size (MB)")]
-    size:       String
-}
-
-impl fmt::Display for BackupRow {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} {} {} {} {}",
-            self.id, self.disk_id, self.status, self.created_at, self.size
-        )
-    }
 }
 
 /// Lists the disk backups of a server.
