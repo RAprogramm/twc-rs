@@ -1232,8 +1232,26 @@ fn spawn_stats_fetch(
 ) {
     tokio::spawn(async move {
         let config = authenticated(token);
-        if let Some(stats) = fetch_resource_stats(&config, &req).await {
-            let _ = tx.send(tui::event::AppEvent::Stats(Box::new(stats)));
+        match fetch_resource_stats(&config, &req).await {
+            Ok(stats) => {
+                if stats.cpu.is_empty()
+                    && stats.ram.is_empty()
+                    && stats.net_in.is_empty()
+                    && stats.net_out.is_empty()
+                {
+                    let _ = tx.send(tui::event::AppEvent::StatsError(format!(
+                        "stats {}: no data points returned",
+                        req.name
+                    )));
+                }
+                let _ = tx.send(tui::event::AppEvent::Stats(Box::new(stats)));
+            }
+            Err(e) => {
+                let _ = tx.send(tui::event::AppEvent::StatsError(format!(
+                    "stats {}: {e}",
+                    req.name
+                )));
+            }
         }
     });
 }
@@ -1252,14 +1270,21 @@ const fn tail_skip(len: usize) -> usize {
 async fn fetch_resource_stats(
     config: &timeweb_rs::apis::configuration::Configuration,
     req: &tui::app::StatsRequest
-) -> Option<tui::app::ResourceStats> {
+) -> Result<tui::app::ResourceStats, String> {
     use tui::app::ResourceTab;
 
     match req.tab {
         ResourceTab::Servers => fetch_server_stats(config, req).await,
         ResourceTab::Apps => fetch_app_stats(config, req).await,
-        _ => None
+        _ => Err("live statistics are not available for this resource".to_string())
     }
+}
+
+/// Formats a UTC timestamp the way the statistics endpoints expect: ISO 8601
+/// without a timezone offset (`2023-05-25T14:35:38`).
+#[cfg(feature = "tui")]
+fn stats_timestamp(at: chrono::DateTime<chrono::Utc>) -> String {
+    at.format("%Y-%m-%dT%H:%M:%S").to_string()
 }
 
 /// Fetches server statistics via the current endpoint, which reports CPU load
@@ -1268,17 +1293,20 @@ async fn fetch_resource_stats(
 async fn fetch_server_stats(
     config: &timeweb_rs::apis::configuration::Configuration,
     req: &tui::app::StatsRequest
-) -> Option<tui::app::ResourceStats> {
-    let id: i32 = req.id.parse().ok()?;
+) -> Result<tui::app::ResourceStats, String> {
+    let id: i32 = req
+        .id
+        .parse()
+        .map_err(|_| format!("invalid server id {}", req.id))?;
     let now = chrono::Utc::now();
-    let time_from = (now - chrono::Duration::hours(24)).to_rfc3339();
+    let time_from = stats_timestamp(now - chrono::Duration::hours(24));
     let keys = "system.cpu.util;network.request;network.response";
 
     let resp = timeweb_rs::apis::servers_api::get_server_statistics_new(
         config, id, &time_from, "24", keys
     )
     .await
-    .ok()?;
+    .map_err(|e| e.to_string())?;
 
     let mut stats = tui::app::ResourceStats {
         id: req.id.clone(),
@@ -1305,7 +1333,7 @@ async fn fetch_server_stats(
         }
     }
 
-    Some(stats)
+    Ok(stats)
 }
 
 /// Fetches app statistics, which report CPU load, RAM usage and network
@@ -1314,14 +1342,14 @@ async fn fetch_server_stats(
 async fn fetch_app_stats(
     config: &timeweb_rs::apis::configuration::Configuration,
     req: &tui::app::StatsRequest
-) -> Option<tui::app::ResourceStats> {
+) -> Result<tui::app::ResourceStats, String> {
     let now = chrono::Utc::now();
-    let from = (now - chrono::Duration::hours(24)).to_rfc3339();
-    let to = now.to_rfc3339();
+    let from = stats_timestamp(now - chrono::Duration::hours(24));
+    let to = stats_timestamp(now);
 
     let resp = timeweb_rs::apis::apps_api::get_app_statistics(config, &req.id, &from, &to)
         .await
-        .ok()?;
+        .map_err(|e| e.to_string())?;
 
     let cpu: Vec<f64> = resp
         .cpu
@@ -1353,7 +1381,7 @@ async fn fetch_app_stats(
         .map(|n| n.outgoing)
         .collect();
 
-    Some(tui::app::ResourceStats {
+    Ok(tui::app::ResourceStats {
         id: req.id.clone(),
         subject: req.name.clone(),
         cpu,

@@ -28,7 +28,9 @@ pub enum AppEvent {
     /// A freshly fetched data snapshot from the background refresh task.
     Data(Box<super::app::DashboardData>),
     /// Live statistics for the selected resource.
-    Stats(Box<super::app::ResourceStats>)
+    Stats(Box<super::app::ResourceStats>),
+    /// A statistics fetch failed; logged without blocking the dashboard.
+    StatsError(String)
 }
 
 /// Processes a single [`AppEvent`] and updates the [`App`] state.
@@ -56,6 +58,10 @@ pub fn handle_event(app: &mut App, event: AppEvent) -> bool {
         }
         AppEvent::Stats(stats) => {
             app.apply_stats(*stats);
+            true
+        }
+        AppEvent::StatsError(msg) => {
+            app.log(super::app::LogLevel::Warn, msg);
             true
         }
     }
