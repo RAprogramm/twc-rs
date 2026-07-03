@@ -5,6 +5,31 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0](https://github.com/RAprogramm/twc-rs/compare/v0.3.8...v0.4.0) - 2026-07-03
+
+### Other
+
+- #52 feat: count and drill project apps via timeweb-rs 0.5 ([9db2eeb](https://github.com/RAprogramm/twc-rs/commit/9db2eebbf089d9ebbf3a3986a517a85073490b63))
+
+- #50 fix: count all project resource types instead of servers only ([144d823](https://github.com/RAprogramm/twc-rs/commit/144d823dca5fd07003d5f87d3eb97eba640d8a1c))
+
+- #42 feat: show active profile in header, add profile switcher key, fix stale token info after switch ([94f1ce5](https://github.com/RAprogramm/twc-rs/commit/94f1ce5b0da5dce06939b6fbded238a671c193c6))
+
+- #41 feat: database backup action, delete for domains, firewall, floating ips, images, network drives and vpcs, feedback on unsupported enter and create ([4703948](https://github.com/RAprogramm/twc-rs/commit/4703948fa66e44f58f4f7038b60b8d1ceb61393c))
+
+- #46 fix: remove databases restart command that deleted the cluster ([e31d555](https://github.com/RAprogramm/twc-rs/commit/e31d55559d8c6bc6f202e9dd0707309c143531ee))
+
+- #40 fix: correct stats timestamp format, surface stats errors in events log, refresh sparklines every 30s ([ae11eee](https://github.com/RAprogramm/twc-rs/commit/ae11eeedb4776e85064d468616a4cb40c3fc0580))
+
+- #39 fix: paginate all dashboard list fetches and surface load failures instead of fake empty states ([d487c81](https://github.com/RAprogramm/twc-rs/commit/d487c81b7bdbfb4953af7e3f6b7742d93393fa45))
+
+- #37 fix: floating ip binding info, real account status, status-aware chip colors, localized list title ([40c9e0b](https://github.com/RAprogramm/twc-rs/commit/40c9e0b743087e6af3535781d1453e6bafb80b65))
+
+- #37 fix: honest dashboard fields for k8s, registry, firewall, vpc, dedicated, mail, apps, ai agents, knowledge bases and real project server counts ([1665a98](https://github.com/RAprogramm/twc-rs/commit/1665a987f9e8c925f913d4a7abb35d7d48f782ef))
+
+- #37 fix: map real server ip and disk, database size, s3 objects in dashboard ([019c594](https://github.com/RAprogramm/twc-rs/commit/019c594a4540a04c690e8ffefa07abdd955bf649))
+
+
 ## [0.3.8](https://github.com/RAprogramm/twc-rs/compare/v0.3.7...v0.3.8) - 2026-07-01
 
 ### Documentation
