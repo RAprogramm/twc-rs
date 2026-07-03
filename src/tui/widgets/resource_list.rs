@@ -180,7 +180,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
                     Span::styled(
                         format!(
                             "[{}]",
-                            t!("resource_list.count_servers", n => p.server_count)
+                            t!("resource_list.count_resources", n => p.resource_count())
                         ),
                         Style::default().fg(palette.dim)
                     ),

@@ -52,7 +52,8 @@ fn make_project(id: i32, name: &str) -> ProjectSummary {
     ProjectSummary {
         id,
         name: name.to_string(),
-        server_count: 2
+        server_count: 2,
+        ..Default::default()
     }
 }
 

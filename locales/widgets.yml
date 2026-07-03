@@ -91,9 +91,9 @@ resource_list.status_installing:
 resource_list.status_removing:
   en: removing
   ru: удаление
-resource_list.count_servers:
-  en: "%{n} servers"
-  ru: "%{n} серверов"
+resource_list.count_resources:
+  en: "%{n} resources"
+  ru: "%{n} ресурсов"
 resource_list.disk_used:
   en: "%{pct}% disk"
   ru: "%{pct}% диска"
