@@ -1603,6 +1603,35 @@ fn server_public_ip(server: &timeweb_rs::models::Vds) -> String {
     fallback.unwrap_or_default()
 }
 
+/// Fetches every page of a paginated list endpoint, advancing the offset by
+/// the number of collected items until `meta.total` is reached or a page
+/// comes back empty.
+#[cfg(feature = "tui")]
+#[expect(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
+async fn fetch_all_pages<'a, T, E, F>(mut fetch_page: F) -> Result<Vec<T>, E>
+where
+    F: FnMut(
+        i32,
+        i32
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = Result<(Vec<T>, i32), E>> + Send + 'a>
+    >
+{
+    const PAGE_LIMIT: i32 = 100;
+
+    let mut items: Vec<T> = Vec::new();
+    loop {
+        let (page, total) = fetch_page(PAGE_LIMIT, items.len() as i32).await?;
+        if page.is_empty() {
+            return Ok(items);
+        }
+        items.extend(page);
+        if items.len() as i32 >= total {
+            return Ok(items);
+        }
+    }
+}
+
 /// Describes what a floating IP is bound to, resolving server names from the
 /// already-fetched server list and falling back to `type #id` for other
 /// resource kinds.
@@ -1658,7 +1687,7 @@ async fn refresh_all(
     };
 
     let c = config.clone();
-    let mut has_error = false;
+    let cfg = &c;
 
     let (
         account_res,
@@ -1684,21 +1713,86 @@ async fn refresh_all(
         finances_res
     ) = tokio::join!(
         timeweb_rs::apis::account_api::get_account_status(&c),
-        timeweb_rs::apis::servers_api::get_servers(&c, None, None),
-        timeweb_rs::apis::databases_api::get_database_clusters(&c, None, None),
+        fetch_all_pages(move |limit, offset| {
+            Box::pin(async move {
+                timeweb_rs::apis::servers_api::get_servers(cfg, Some(limit), Some(offset))
+                    .await
+                    .map(|r| (r.servers, r.meta.total))
+            })
+        }),
+        fetch_all_pages(move |limit, offset| {
+            Box::pin(async move {
+                timeweb_rs::apis::databases_api::get_database_clusters(
+                    cfg,
+                    Some(limit),
+                    Some(offset)
+                )
+                .await
+                .map(|r| (r.dbs, r.meta.total))
+            })
+        }),
         timeweb_rs::apis::s3_api::get_storages(&c),
-        timeweb_rs::apis::kubernetes_api::get_clusters(&c, None, None),
+        fetch_all_pages(move |limit, offset| {
+            Box::pin(async move {
+                timeweb_rs::apis::kubernetes_api::get_clusters(cfg, Some(limit), Some(offset))
+                    .await
+                    .map(|r| (r.clusters, r.meta.total))
+            })
+        }),
         timeweb_rs::apis::projects_api::get_projects(&c),
-        timeweb_rs::apis::balancers_api::get_balancers(&c, None, None),
+        fetch_all_pages(move |limit, offset| {
+            Box::pin(async move {
+                timeweb_rs::apis::balancers_api::get_balancers(cfg, Some(limit), Some(offset))
+                    .await
+                    .map(|r| (r.balancers, r.meta.total))
+            })
+        }),
         timeweb_rs::apis::container_registry_api::get_registries(&c),
-        timeweb_rs::apis::domains_api::get_domains(&c, None, None, None, None, None, None),
-        timeweb_rs::apis::firewall_api::get_groups(&c, None, None),
+        fetch_all_pages(move |limit, offset| {
+            Box::pin(async move {
+                timeweb_rs::apis::domains_api::get_domains(
+                    cfg,
+                    Some(limit),
+                    Some(offset),
+                    None,
+                    None,
+                    None,
+                    None
+                )
+                .await
+                .map(|r| (r.domains, r.meta.total))
+            })
+        }),
+        fetch_all_pages(move |limit, offset| {
+            Box::pin(async move {
+                timeweb_rs::apis::firewall_api::get_groups(cfg, Some(limit), Some(offset))
+                    .await
+                    .map(|r| (r.groups, r.meta.total))
+            })
+        }),
         timeweb_rs::apis::floating_ip_api::get_floating_ips(&c),
-        timeweb_rs::apis::images_api::get_images(&c, None, None),
+        fetch_all_pages(move |limit, offset| {
+            Box::pin(async move {
+                timeweb_rs::apis::images_api::get_images(cfg, Some(limit), Some(offset))
+                    .await
+                    .map(|r| (r.images, r.meta.total))
+            })
+        }),
         timeweb_rs::apis::network_drives_api::get_network_drives(&c),
         timeweb_rs::apis::vpc_api::get_vpcs(&c),
         timeweb_rs::apis::dedicated_servers_api::get_dedicated_servers(&c),
-        timeweb_rs::apis::mail_api::get_all_mailboxes_v2(&c, None, None, None),
+        fetch_all_pages(move |limit, offset| {
+            Box::pin(async move {
+                timeweb_rs::apis::mail_api::get_all_mailboxes_v2(
+                    cfg,
+                    Some(limit),
+                    Some(offset),
+                    None
+                )
+                .await
+                .map(|r| (r.mailboxes, r.meta.total))
+            })
+        }),
         timeweb_rs::apis::apps_api::get_apps(&c),
         timeweb_rs::apis::ai_agents_api::get_agents(&c),
         timeweb_rs::apis::knowledge_bases_api::get_knowledgebases_v2(&c),
@@ -1793,16 +1887,10 @@ async fn refresh_all(
         if resp.status.is_blocked || resp.status.is_permanent_blocked {
             account_status = String::from("blocked");
         }
-    } else {
-        has_error = true;
-        app.error_message = Some("Failed to load account".to_string());
     }
     if let Ok(ref resp) = finances_res {
         let f = &resp.finances;
         balance = format!("{:.2} {}", f.balance, f.currency);
-    } else {
-        has_error = true;
-        app.error_message = Some("Failed to load balance".to_string());
     }
     app.update_account(AccountInfo {
         login,
@@ -1813,12 +1901,11 @@ async fn refresh_all(
 
     let mut server_names: std::collections::HashMap<i64, String> =
         std::collections::HashMap::new();
-    if let Ok(resp) = servers_res {
-        for s in &resp.servers {
+    if let Ok(servers) = servers_res {
+        for s in &servers {
             server_names.insert(s.id, s.name.clone());
         }
-        let summaries: Vec<ServerSummary> = resp
-            .servers
+        let summaries: Vec<ServerSummary> = servers
             .iter()
             .map(|s| ServerSummary {
                 id:       s.id as i32,
@@ -1832,14 +1919,10 @@ async fn refresh_all(
             })
             .collect();
         app.update_servers(summaries);
-    } else {
-        has_error = true;
-        app.error_message = Some("Failed to load servers".to_string());
     }
 
-    if let Ok(resp) = dbs_res {
-        let summaries: Vec<DatabaseSummary> = resp
-            .dbs
+    if let Ok(dbs) = dbs_res {
+        let summaries: Vec<DatabaseSummary> = dbs
             .iter()
             .map(|d| DatabaseSummary {
                 id:      d.id as i32,
@@ -1854,8 +1937,6 @@ async fn refresh_all(
             })
             .collect();
         app.update_databases(summaries);
-    } else if !has_error {
-        app.status_message = Some("No databases available".to_string());
     }
 
     if let Ok(resp) = s3_res {
@@ -1871,13 +1952,10 @@ async fn refresh_all(
             })
             .collect();
         app.update_s3(summaries);
-    } else if !has_error {
-        app.status_message = Some("No S3 storages available".to_string());
     }
 
-    if let Ok(resp) = k8s_res {
-        let summaries: Vec<K8sSummary> = resp
-            .clusters
+    if let Ok(clusters) = k8s_res {
+        let summaries: Vec<K8sSummary> = clusters
             .iter()
             .map(|c| K8sSummary {
                 id:      c.id,
@@ -1890,8 +1968,6 @@ async fn refresh_all(
             })
             .collect();
         app.update_k8s(summaries);
-    } else if !has_error {
-        app.status_message = Some("No Kubernetes clusters available".to_string());
     }
 
     if let Ok(resp) = projects_res {
@@ -1914,13 +1990,10 @@ async fn refresh_all(
             });
         }
         app.update_projects(summaries);
-    } else if !has_error {
-        app.status_message = Some("No projects available".to_string());
     }
 
-    if let Ok(resp) = balancers_res {
-        let summaries: Vec<BalancerSummary> = resp
-            .balancers
+    if let Ok(balancers) = balancers_res {
+        let summaries: Vec<BalancerSummary> = balancers
             .iter()
             .map(|b| BalancerSummary {
                 id:       b.id as i32,
@@ -1931,33 +2004,25 @@ async fn refresh_all(
             })
             .collect();
         app.update_balancers(summaries);
-    } else if !has_error {
-        app.status_message = Some("No balancers available".to_string());
     }
 
-    if let Ok(resp) = registries_res {
-        if let Some(registries) = resp.container_registry_list {
-            let summaries: Vec<RegistrySummary> = registries
-                .iter()
-                .map(|r| RegistrySummary {
-                    id:        r.id,
-                    name:      r.name.clone(),
-                    disk_used: i64::from(r.disk_stats.used),
-                    disk_size: i64::from(r.disk_stats.size)
-                })
-                .collect();
-            app.update_registries(summaries);
-        } else if !has_error {
-            app.status_message = Some("No registries available".to_string());
-        }
-    } else {
-        has_error = true;
-        app.error_message = Some("Failed to load registries".to_string());
+    if let Ok(resp) = registries_res
+        && let Some(registries) = resp.container_registry_list
+    {
+        let summaries: Vec<RegistrySummary> = registries
+            .iter()
+            .map(|r| RegistrySummary {
+                id:        r.id,
+                name:      r.name.clone(),
+                disk_used: i64::from(r.disk_stats.used),
+                disk_size: i64::from(r.disk_stats.size)
+            })
+            .collect();
+        app.update_registries(summaries);
     }
 
-    if let Ok(resp) = domains_res {
-        let summaries: Vec<DomainSummary> = resp
-            .domains
+    if let Ok(domains) = domains_res {
+        let summaries: Vec<DomainSummary> = domains
             .iter()
             .map(|d| DomainSummary {
                 id:           d.id as i32,
@@ -1967,13 +2032,10 @@ async fn refresh_all(
             })
             .collect();
         app.update_domains(summaries);
-    } else if !has_error {
-        app.status_message = Some("No domains available".to_string());
     }
 
-    if let Ok(resp) = firewalls_res {
-        let summaries: Vec<FirewallSummary> = resp
-            .groups
+    if let Ok(groups) = firewalls_res {
+        let summaries: Vec<FirewallSummary> = groups
             .iter()
             .map(|g| FirewallSummary {
                 id:     g.id.parse::<i32>().unwrap_or(0),
@@ -1982,8 +2044,6 @@ async fn refresh_all(
             })
             .collect();
         app.update_firewalls(summaries);
-    } else if !has_error {
-        app.status_message = Some("No firewalls available".to_string());
     }
 
     if let Ok(resp) = floating_ips_res {
@@ -2002,13 +2062,10 @@ async fn refresh_all(
             })
             .collect();
         app.update_floating_ips(summaries);
-    } else if !has_error {
-        app.status_message = Some("No floating IPs available".to_string());
     }
 
-    if let Ok(resp) = images_res {
-        let summaries: Vec<ImageSummary> = resp
-            .images
+    if let Ok(images) = images_res {
+        let summaries: Vec<ImageSummary> = images
             .iter()
             .map(|img| ImageSummary {
                 id:      img.id.parse::<i32>().unwrap_or(0),
@@ -2018,8 +2075,6 @@ async fn refresh_all(
             })
             .collect();
         app.update_images(summaries);
-    } else if !has_error {
-        app.status_message = Some("No images available".to_string());
     }
 
     if let Ok(resp) = network_drives_res {
@@ -2034,8 +2089,6 @@ async fn refresh_all(
             })
             .collect();
         app.update_network_drives(summaries);
-    } else if !has_error {
-        app.status_message = Some("No network drives available".to_string());
     }
 
     if let Ok(resp) = vpcs_res {
@@ -2050,8 +2103,6 @@ async fn refresh_all(
             })
             .collect();
         app.update_vpcs(summaries);
-    } else if !has_error {
-        app.status_message = Some("No VPCs available".to_string());
     }
 
     if let Ok(resp) = dedicated_servers_res {
@@ -2069,13 +2120,10 @@ async fn refresh_all(
             })
             .collect();
         app.update_dedicated_servers(summaries);
-    } else if !has_error {
-        app.status_message = Some("No dedicated servers available".to_string());
     }
 
-    if let Ok(resp) = mails_res {
-        let summaries: Vec<MailSummary> = resp
-            .mailboxes
+    if let Ok(mailboxes) = mails_res {
+        let summaries: Vec<MailSummary> = mailboxes
             .iter()
             .map(|m| MailSummary {
                 name:    format!("{}@{}", m.mailbox, m.fqdn),
@@ -2084,8 +2132,6 @@ async fn refresh_all(
             })
             .collect();
         app.update_mails(summaries);
-    } else if !has_error {
-        app.status_message = Some("No mailboxes available".to_string());
     }
 
     if let Ok(resp) = apps_res {
@@ -2101,8 +2147,6 @@ async fn refresh_all(
             })
             .collect();
         app.update_apps(summaries);
-    } else if !has_error {
-        app.status_message = Some("No apps available".to_string());
     }
 
     if let Ok(resp) = ai_agents_res {
@@ -2118,8 +2162,6 @@ async fn refresh_all(
             })
             .collect();
         app.update_ai_agents(summaries);
-    } else if !has_error {
-        app.status_message = Some("No AI agents available".to_string());
     }
 
     if let Ok(resp) = knowledge_bases_res {
@@ -2134,27 +2176,26 @@ async fn refresh_all(
             })
             .collect();
         app.update_knowledge_bases(summaries);
-    } else if !has_error {
-        app.status_message = Some("No knowledge bases available".to_string());
     }
 
     if let Ok(resp) = ssh_keys_res {
         let keys: Vec<String> = resp.ssh_keys.iter().map(|k| k.name.clone()).collect();
         app.update_ssh_keys(keys);
-    } else if !has_error {
-        app.status_message = Some("No SSH keys available".to_string());
     }
 
     if let Ok(resp) = finances_res {
         let f = resp.finances;
         let data = vec![format!("Balance: {:.2} {}", f.balance, f.currency)];
         app.update_finances(data);
-    } else if !has_error {
-        app.status_message = Some("No finance data available".to_string());
     }
 
-    if !has_error {
+    if app.last_load_errors.is_empty() {
         app.status_message = Some("Resources loaded successfully".to_string());
+    } else {
+        app.error_message = Some(format!(
+            "{} resource loads failed \u{2014} see events log",
+            app.last_load_errors.len()
+        ));
     }
 }
 
