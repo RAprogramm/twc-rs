@@ -128,17 +128,40 @@ pub async fn add(
     file_path: Option<&str>,
     is_default: bool
 ) -> Result<(), TwcError> {
-    let body = if let Some(path) = file_path {
-        fs::read_to_string(path)
-            .map_err(|e| TwcError::Io(format!("failed to read {path}: {e}")))?
+    let body = read_key_body(file_path)?;
+    add_key(config, name, body, is_default).await
+}
+
+/// Reads the public key body from a file, or from stdin when no path is
+/// given.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Io`] when the file or stdin cannot be read.
+fn read_key_body(file_path: Option<&str>) -> Result<String, TwcError> {
+    if let Some(path) = file_path {
+        fs::read_to_string(path).map_err(|e| TwcError::Io(format!("failed to read {path}: {e}")))
     } else {
         let mut buf = String::new();
         std::io::stdin()
             .read_to_string(&mut buf)
             .map_err(|e| TwcError::Io(format!("failed to read stdin: {e}")))?;
-        buf
-    };
+        Ok(buf)
+    }
+}
 
+/// Uploads an already-read public key body to the Timeweb Cloud API.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Io`] when the body is empty or
+/// [`TwcError::Api`] on API failure.
+pub async fn add_key(
+    config: &Configuration,
+    name: &str,
+    body: String,
+    is_default: bool
+) -> Result<(), TwcError> {
     let body = body.trim().to_string();
     if body.is_empty() {
         return Err(TwcError::Io("SSH key body is empty".to_string()));

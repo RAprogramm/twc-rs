@@ -81,10 +81,23 @@ async fn list_quiet_format_fake_token() {
 }
 
 #[tokio::test]
-async fn add_with_fake_token_returns_error() {
+async fn add_key_with_fake_token_returns_error() {
     let config = timeweb_rs::authenticated("fake-token");
-    let result = add(&config, "my-key", None, false).await;
+    let result = add_key(
+        &config,
+        "my-key",
+        "ssh-rsa AAAA test@host".to_string(),
+        false
+    )
+    .await;
     assert!(result.is_err());
+}
+
+#[tokio::test]
+async fn add_key_with_empty_body_is_io_error() {
+    let config = timeweb_rs::authenticated("fake-token");
+    let result = add_key(&config, "my-key", "   ".to_string(), false).await;
+    assert!(matches!(result, Err(TwcError::Io(_))));
 }
 
 #[tokio::test]
