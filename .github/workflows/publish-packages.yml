@@ -9,6 +9,11 @@ on:
         description: "Release tag to publish (e.g. v0.2.1)"
         required: true
         type: string
+      pkgrel:
+        description: "Package release number (bump when republishing the same version)"
+        required: false
+        default: "1"
+        type: string
 
 permissions:
   contents: read
@@ -43,10 +48,12 @@ jobs:
         env:
           TAG: ${{ steps.meta.outputs.tag }}
           VERSION: ${{ steps.meta.outputs.version }}
+          PKGREL: ${{ github.event.inputs.pkgrel || '1' }}
         run: |
           set -euo pipefail
           archive="twc-rs-${TAG}-x86_64-unknown-linux-gnu"
           url="https://github.com/RAprogramm/twc-rs/releases/download/${TAG}/${archive}.sha256"
+          license_checksum="$(curl -fsSL "https://raw.githubusercontent.com/RAprogramm/twc-rs/${TAG}/LICENSE" | sha256sum | awk '{print $1}')"
           # The Release workflow builds and uploads the binaries in parallel with
           # this job, so the .sha256 asset may not exist yet. Wait for it instead
           # of failing on the race.
@@ -64,7 +71,8 @@ jobs:
             exit 1
           fi
           sed -i "s/^pkgver=.*/pkgver=${VERSION}/" packaging/PKGBUILD
-          sed -i "s/^sha256sums=.*/sha256sums=('${checksum}')/" packaging/PKGBUILD
+          sed -i "s/^pkgrel=.*/pkgrel=${PKGREL}/" packaging/PKGBUILD
+          sed -i "s/^sha256sums=.*/sha256sums=('${checksum}' '${license_checksum}')/" packaging/PKGBUILD
           cat packaging/PKGBUILD
       - name: Publish to AUR
         if: steps.guard.outputs.ok == 'true'
