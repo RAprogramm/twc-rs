@@ -44,8 +44,7 @@ fn is_executable(path: &Path) -> bool {
     {
         use std::os::unix::fs::PermissionsExt;
         path.metadata()
-            .map(|m| m.is_file() && m.permissions().mode() & 0o111 != 0)
-            .unwrap_or(false)
+            .is_ok_and(|m| m.is_file() && m.permissions().mode() & 0o111 != 0)
     }
     #[cfg(not(unix))]
     {
@@ -90,8 +89,10 @@ fn binary_version(path: &Path) -> String {
         .ok()
         .filter(|out| out.status.success())
         .and_then(|out| String::from_utf8(out.stdout).ok())
-        .map(|s| s.trim().to_owned())
-        .unwrap_or_else(|| t!("cli.doctor_version_unknown").into_owned())
+        .map_or_else(
+            || t!("cli.doctor_version_unknown").into_owned(),
+            |s| s.trim().to_owned()
+        )
 }
 
 /// Checks the local installation for conflicting copies of the binary.
@@ -122,7 +123,7 @@ pub fn run(format: OutputFormat) -> Result<(), TwcError> {
             path:          path.display().to_string(),
             version:       binary_version(path),
             first_in_path: index == 0,
-            running:       path.canonicalize().map(|p| p == current).unwrap_or(false)
+            running:       path.canonicalize().is_ok_and(|p| p == current)
         })
         .collect();
 
