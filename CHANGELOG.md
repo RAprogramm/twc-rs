@@ -5,6 +5,19 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0](https://github.com/RAprogramm/twc-rs/compare/v0.5.1...v0.6.0) - 2026-07-05
+
+### Other
+
+- #77 feat: add apps logs, list-deploys and deploy-logs commands ([#78](https://github.com/RAprogramm/twc-rs/pull/78)) ([da6d17c](https://github.com/RAprogramm/twc-rs/commit/da6d17c5b9ed0429329f730cbb4e2860699d46b1))
+
+- #75 fix: adopt untracked completion files via backup array ([#76](https://github.com/RAprogramm/twc-rs/pull/76)) ([447fc9d](https://github.com/RAprogramm/twc-rs/commit/447fc9db86b00a6a3b89a4859706dadc3e67467d))
+
+- #73 fix: drop pre_upgrade scriptlet and document one-time AUR upgrade step ([#74](https://github.com/RAprogramm/twc-rs/pull/74)) ([5fc2d56](https://github.com/RAprogramm/twc-rs/commit/5fc2d56ecea15c47550d3772870a99477c3cbc7b))
+
+- #70 fix: install completions into shell vendor paths and package LICENSE ([#71](https://github.com/RAprogramm/twc-rs/pull/71)) ([6c6fc19](https://github.com/RAprogramm/twc-rs/commit/6c6fc193b719cdd451145d2fff793ce85c1dd50d))
+
+
 ## [0.5.1](https://github.com/RAprogramm/twc-rs/compare/v0.5.0...v0.5.1) - 2026-07-03
 
 ### Other
