@@ -223,18 +223,6 @@ Supported shells: `bash`, `zsh`, `fish`, `powershell`, `elvish`, `nushell`. The
 AUR package ships completions for `bash`, `zsh`, `fish` and `nushell` in the
 standard vendor directories, so they work out of the box.
 
-> [!NOTE]
-> Upgrading the AUR package from `0.5.1-1` or older: those releases copied
-> completions into the vendor directories outside of pacman's tracking, so the
-> upgrade aborts with a file conflict. Remove the untracked copies once and
-> retry:
->
-> ```sh
-> sudo rm -f /usr/share/bash-completion/completions/twc-rs \
->   /usr/share/zsh/site-functions/_twc-rs \
->   /usr/share/fish/vendor_completions.d/twc-rs.fish \
->   /usr/share/nushell/vendor/autoload/twc-rs.nu
-> ```
 
 <p align="right"><a href="#top">↑ back to top</a></p>
 
