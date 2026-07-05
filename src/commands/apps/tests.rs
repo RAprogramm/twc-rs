@@ -74,6 +74,18 @@ fn embedded_rfc3339_ignores_date_like_noise() {
 }
 
 #[test]
+fn last_line_timestamp_scans_from_the_end() {
+    let input = lines(&[
+        "2026-07-05T09:00:00Z first",
+        r#"{"timestamp":"2026-07-05T23:00:00Z","message":"last"}"#,
+        "continuation without timestamp"
+    ]);
+    let last = last_line_timestamp(&input).expect("stamped lines exist");
+    assert_eq!(last.to_rfc3339(), "2026-07-05T23:00:00+00:00");
+    assert!(last_line_timestamp(&lines(&["no stamps here"])).is_none());
+}
+
+#[test]
 fn filter_applies_since_to_json_lines() {
     let input = lines(&[
         r#"{"timestamp":"2026-07-05T09:00:00Z","message":"old"}"#,
