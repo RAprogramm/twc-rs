@@ -4,6 +4,9 @@
 //! App platform subcommands and creation arguments.
 
 use clap::Subcommand;
+use clap_complete::engine::ArgValueCompleter;
+
+use super::completers::complete_app;
 
 /// Cloud apps subcommands.
 #[derive(Subcommand, Debug)]
@@ -13,7 +16,11 @@ pub enum AppsCommands {
     /// Show detailed info for a single app.
     Info {
         /// App name or numeric ID.
-        #[arg(value_name = "APP", required_unless_present = "id")]
+        #[arg(
+            value_name = "APP",
+            required_unless_present = "id",
+            add = ArgValueCompleter::new(complete_app)
+        )]
         app: Option<String>,
         /// App ID (legacy alias of the positional selector).
         #[arg(long, conflicts_with = "app")]
@@ -22,7 +29,11 @@ pub enum AppsCommands {
     /// Delete an app.
     Delete {
         /// App name or numeric ID.
-        #[arg(value_name = "APP", required_unless_present = "id")]
+        #[arg(
+            value_name = "APP",
+            required_unless_present = "id",
+            add = ArgValueCompleter::new(complete_app)
+        )]
         app: Option<String>,
         /// App ID (legacy alias of the positional selector).
         #[arg(long, conflicts_with = "app")]
@@ -43,7 +54,11 @@ pub enum AppsCommands {
     /// Show runtime logs of an app.
     Logs {
         /// App name or numeric ID.
-        #[arg(value_name = "APP", required_unless_present = "id")]
+        #[arg(
+            value_name = "APP",
+            required_unless_present = "id",
+            add = ArgValueCompleter::new(complete_app)
+        )]
         app:   Option<String>,
         /// App ID (legacy alias of the positional selector).
         #[arg(long, conflicts_with = "app")]
@@ -62,7 +77,11 @@ pub enum AppsCommands {
     /// List deploys of an app, newest first.
     ListDeploys {
         /// App name or numeric ID.
-        #[arg(value_name = "APP", required_unless_present = "id")]
+        #[arg(
+            value_name = "APP",
+            required_unless_present = "id",
+            add = ArgValueCompleter::new(complete_app)
+        )]
         app: Option<String>,
         /// App ID (legacy alias of the positional selector).
         #[arg(long, conflicts_with = "app")]
@@ -71,7 +90,11 @@ pub enum AppsCommands {
     /// Show build/deploy logs of a deploy (the latest one by default).
     DeployLogs {
         /// App name or numeric ID.
-        #[arg(value_name = "APP", required_unless_present = "id")]
+        #[arg(
+            value_name = "APP",
+            required_unless_present = "id",
+            add = ArgValueCompleter::new(complete_app)
+        )]
         app:       Option<String>,
         /// App ID (legacy alias of the positional selector).
         #[arg(long, conflicts_with = "app")]

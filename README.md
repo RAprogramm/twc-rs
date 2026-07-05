@@ -227,6 +227,23 @@ Supported shells: `bash`, `zsh`, `fish`, `powershell`, `elvish`, `nushell`. The
 AUR package ships completions for `bash`, `zsh`, `fish` and `nushell` in the
 standard vendor directories, so they work out of the box.
 
+### Dynamic completions
+
+Static scripts complete commands and flags; the **dynamic** engine also
+completes live values — `twc-rs apps logs <TAB>` offers your actual apps by
+name and ID, fetched from the API (silently skipped when offline). Register it
+instead of (or on top of) the static script:
+
+| Shell | Add to |
+|---|---|
+| bash | `echo 'source <(COMPLETE=bash twc-rs)' >> ~/.bashrc` |
+| zsh | `echo 'source <(COMPLETE=zsh twc-rs)' >> ~/.zshrc` |
+| fish | `echo 'COMPLETE=fish twc-rs \| source' >> ~/.config/fish/config.fish` |
+| elvish | `echo 'eval (E:COMPLETE=elvish twc-rs \| slurp)' >> ~/.elvish/rc.elv` |
+| powershell | `$env:COMPLETE = "powershell"; twc-rs \| Out-String \| Invoke-Expression; Remove-Item Env:\COMPLETE` in `$PROFILE` |
+
+Nushell keeps the static script (the dynamic engine does not support it yet).
+
 
 <p align="right"><a href="#top">↑ back to top</a></p>
 

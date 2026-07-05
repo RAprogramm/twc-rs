@@ -227,6 +227,24 @@ twc-rs completions bash    > /etc/bash_completion.d/twc-rs
 `nushell`. AUR-пакет ставит автодополнение для `bash`, `zsh`, `fish` и `nushell`
 в стандартные системные каталоги — оно работает сразу после установки.
 
+### Динамическое автодополнение
+
+Статические скрипты дополняют команды и флаги; **динамический** движок
+дополняет ещё и живые значения — `twc-rs apps logs <TAB>` предложит твои
+реальные приложения по имени и ID прямо из API (при отсутствии сети просто
+промолчит). Подключение вместо (или поверх) статического скрипта:
+
+| Оболочка | Добавить в |
+|---|---|
+| bash | `echo 'source <(COMPLETE=bash twc-rs)' >> ~/.bashrc` |
+| zsh | `echo 'source <(COMPLETE=zsh twc-rs)' >> ~/.zshrc` |
+| fish | `echo 'COMPLETE=fish twc-rs \| source' >> ~/.config/fish/config.fish` |
+| elvish | `echo 'eval (E:COMPLETE=elvish twc-rs \| slurp)' >> ~/.elvish/rc.elv` |
+| powershell | `$env:COMPLETE = "powershell"; twc-rs \| Out-String \| Invoke-Expression; Remove-Item Env:\COMPLETE` в `$PROFILE` |
+
+Nushell остаётся на статическом скрипте (динамический движок его пока не
+поддерживает).
+
 
 <p align="right"><a href="#top">↑ наверх</a></p>
 
