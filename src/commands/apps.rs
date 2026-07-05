@@ -92,6 +92,56 @@ pub async fn list(config: &Configuration, format: OutputFormat) -> Result<(), Tw
     Ok(())
 }
 
+/// Resolves an app selector — a numeric ID or an exact app name — to an ID.
+///
+/// Numeric selectors pass through without a network round-trip; anything else
+/// is matched against the names returned by the apps list endpoint.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] on network failures, when no app carries the
+/// name, or when several apps share it.
+pub async fn resolve_app(config: &Configuration, selector: &str) -> Result<String, TwcError> {
+    if is_numeric_selector(selector) {
+        return Ok(selector.to_owned());
+    }
+    let resp = apps_api::get_apps(config).await?;
+    let apps: Vec<(String, String)> = resp
+        .apps
+        .iter()
+        .map(|a| (fmt_id(a.id), a.name.clone()))
+        .collect();
+    match_app_selector(&apps, selector)
+}
+
+/// Returns `true` when the selector consists solely of ASCII digits.
+fn is_numeric_selector(selector: &str) -> bool {
+    !selector.is_empty() && selector.bytes().all(|b| b.is_ascii_digit())
+}
+
+/// Picks the single app whose name equals `selector` from `(id, name)` pairs.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] when the name matches zero or several apps.
+fn match_app_selector(apps: &[(String, String)], selector: &str) -> Result<String, TwcError> {
+    let mut ids = apps
+        .iter()
+        .filter(|(_, name)| name == selector)
+        .map(|(id, _)| id.clone());
+    let Some(first) = ids.next() else {
+        return Err(TwcError::Api(
+            t!("cli.app_not_found", name => selector).into_owned()
+        ));
+    };
+    if ids.next().is_some() {
+        return Err(TwcError::Api(
+            t!("cli.app_ambiguous", name => selector).into_owned()
+        ));
+    }
+    Ok(first)
+}
+
 /// Shows detailed info for a single app.
 ///
 /// # Overview

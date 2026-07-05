@@ -13,6 +13,33 @@ fn utc_bound(raw: &str) -> Option<DateTime<Local>> {
 }
 
 #[test]
+fn numeric_selector_detects_ids() {
+    assert!(is_numeric_selector("219311"));
+    assert!(!is_numeric_selector("aura_api_mos"));
+    assert!(!is_numeric_selector("219311a"));
+    assert!(!is_numeric_selector(""));
+}
+
+#[test]
+fn match_app_selector_resolves_unique_name() {
+    let apps = vec![
+        ("189492".to_owned(), "rori-shop-api".to_owned()),
+        ("219311".to_owned(), "aura_api_mos".to_owned()),
+    ];
+    assert_eq!(match_app_selector(&apps, "aura_api_mos").unwrap(), "219311");
+}
+
+#[test]
+fn match_app_selector_rejects_unknown_and_ambiguous_names() {
+    let apps = vec![
+        ("1".to_owned(), "twin".to_owned()),
+        ("2".to_owned(), "twin".to_owned()),
+    ];
+    assert!(match_app_selector(&apps, "absent").is_err());
+    assert!(match_app_selector(&apps, "twin").is_err());
+}
+
+#[test]
 fn line_timestamp_parses_rfc3339_prefix() {
     let ts = line_timestamp("2026-07-05T10:00:00Z app started");
     assert!(ts.is_some());
