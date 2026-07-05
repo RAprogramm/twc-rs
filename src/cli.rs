@@ -1,7 +1,20 @@
 // SPDX-FileCopyrightText: 2026 RAprogramm <andrey.rozanov.vl@gmail.com>
 // SPDX-License-Identifier: MIT
 
-use clap::{Parser, Subcommand, ValueEnum};
+use clap::{
+    Parser, Subcommand, ValueEnum,
+    builder::styling::{AnsiColor, Effects, Styles}
+};
+
+/// ANSI color scheme applied to every `--help` screen and error message.
+const HELP_STYLES: Styles = Styles::styled()
+    .header(AnsiColor::Yellow.on_default().effects(Effects::BOLD))
+    .usage(AnsiColor::Yellow.on_default().effects(Effects::BOLD))
+    .literal(AnsiColor::Cyan.on_default().effects(Effects::BOLD))
+    .placeholder(AnsiColor::Green.on_default())
+    .error(AnsiColor::Red.on_default().effects(Effects::BOLD))
+    .valid(AnsiColor::Green.on_default())
+    .invalid(AnsiColor::Red.on_default());
 
 mod apps;
 mod balancers;
@@ -64,25 +77,27 @@ pub enum ShellArg {
 #[command(
     name = "twc-rs",
     version,
-    about = "Timeweb Cloud CLI — manage servers, SSH keys, and projects"
+    about = "Timeweb Cloud CLI — servers, databases, S3, Kubernetes, apps and more",
+    styles = HELP_STYLES
 )]
 pub struct Cli {
-    /// Output format: table (default), json, or quiet.
+    /// Output format: table (default), json, yaml, or quiet.
     #[arg(
         short,
         long,
         global = true,
         default_value = "table",
-        env = "TWC_OUTPUT"
+        env = "TWC_OUTPUT",
+        display_order = 900
     )]
     pub format: String,
 
     /// API token override (overrides config file and `TWC_TOKEN` env).
-    #[arg(short, long, global = true, env = "TWC_TOKEN")]
+    #[arg(short, long, global = true, env = "TWC_TOKEN", display_order = 901)]
     pub token: Option<String>,
 
     /// Use a named profile's token from the config file.
-    #[arg(long, global = true, env = "TWC_PROFILE")]
+    #[arg(long, global = true, env = "TWC_PROFILE", display_order = 902)]
     pub profile: Option<String>,
 
     #[command(subcommand)]
