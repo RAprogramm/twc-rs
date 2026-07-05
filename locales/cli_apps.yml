@@ -21,6 +21,12 @@ cli.no_deploys:
 cli.no_deploy_logs:
   en: "No deploy logs found."
   ru: "Логи деплоя не найдены."
+cli.app_not_found:
+  en: "No app named '%{name}' found."
+  ru: "Приложение с именем «%{name}» не найдено."
+cli.app_ambiguous:
+  en: "Several apps are named '%{name}'; use the numeric ID instead."
+  ru: "Несколько приложений с именем «%{name}»; укажите числовой ID."
 cli.app_invalid_since:
   en: "Invalid --since value '%{value}': expected YYYY-MM-DD or an RFC 3339 timestamp."
   ru: "Неверное значение --since '%{value}': ожидается YYYY-MM-DD или метка времени RFC 3339."

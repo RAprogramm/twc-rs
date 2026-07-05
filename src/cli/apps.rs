@@ -12,15 +12,21 @@ pub enum AppsCommands {
     List,
     /// Show detailed info for a single app.
     Info {
-        /// App ID.
-        #[arg(long)]
-        id: String
+        /// App name or numeric ID.
+        #[arg(value_name = "APP", required_unless_present = "id")]
+        app: Option<String>,
+        /// App ID (legacy alias of the positional selector).
+        #[arg(long, conflicts_with = "app")]
+        id:  Option<String>
     },
-    /// Delete an app by ID.
+    /// Delete an app.
     Delete {
-        /// App ID.
-        #[arg(long)]
-        id: String
+        /// App name or numeric ID.
+        #[arg(value_name = "APP", required_unless_present = "id")]
+        app: Option<String>,
+        /// App ID (legacy alias of the positional selector).
+        #[arg(long, conflicts_with = "app")]
+        id:  Option<String>
     },
     /// List available app presets (tariffs).
     ListPresets,
@@ -36,9 +42,12 @@ pub enum AppsCommands {
     Create(Box<AppCreateArgs>),
     /// Show runtime logs of an app.
     Logs {
-        /// App ID.
-        #[arg(long)]
-        id:    String,
+        /// App name or numeric ID.
+        #[arg(value_name = "APP", required_unless_present = "id")]
+        app:   Option<String>,
+        /// App ID (legacy alias of the positional selector).
+        #[arg(long, conflicts_with = "app")]
+        id:    Option<String>,
         /// Show only the last N lines (applied after date filters).
         #[arg(long)]
         tail:  Option<usize>,
@@ -52,15 +61,21 @@ pub enum AppsCommands {
     },
     /// List deploys of an app, newest first.
     ListDeploys {
-        /// App ID.
-        #[arg(long)]
-        id: String
+        /// App name or numeric ID.
+        #[arg(value_name = "APP", required_unless_present = "id")]
+        app: Option<String>,
+        /// App ID (legacy alias of the positional selector).
+        #[arg(long, conflicts_with = "app")]
+        id:  Option<String>
     },
     /// Show build/deploy logs of a deploy (the latest one by default).
     DeployLogs {
-        /// App ID.
-        #[arg(long)]
-        id:        String,
+        /// App name or numeric ID.
+        #[arg(value_name = "APP", required_unless_present = "id")]
+        app:       Option<String>,
+        /// App ID (legacy alias of the positional selector).
+        #[arg(long, conflicts_with = "app")]
+        id:        Option<String>,
         /// Deploy ID (UUID); defaults to the most recent deploy.
         #[arg(long)]
         deploy_id: Option<String>,

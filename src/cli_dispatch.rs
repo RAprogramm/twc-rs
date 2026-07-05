@@ -110,6 +110,14 @@ pub(crate) async fn handle_server(
     }
 }
 
+/// Merges the positional app selector with the legacy `--id` flag.
+///
+/// clap guarantees at least one of the two is present, so the fallback empty
+/// string is unreachable in practice.
+fn app_selector(app: Option<String>, id: Option<String>) -> String {
+    app.or(id).unwrap_or_default()
+}
+
 /// Dispatches an apps subcommand (boxed at the call site to keep `run` small).
 pub(crate) async fn handle_apps(
     cmd: AppsCommands,
@@ -119,30 +127,50 @@ pub(crate) async fn handle_apps(
     match cmd {
         AppsCommands::List => commands::apps::list(config, format).await,
         AppsCommands::Info {
+            app,
             id
-        } => commands::apps::info(config, &id, format).await,
+        } => {
+            let id = commands::apps::resolve_app(config, &app_selector(app, id)).await?;
+            commands::apps::info(config, &id, format).await
+        }
         AppsCommands::Delete {
+            app,
             id
-        } => commands::apps::delete(config, &id).await,
+        } => {
+            let id = commands::apps::resolve_app(config, &app_selector(app, id)).await?;
+            commands::apps::delete(config, &id).await
+        }
         AppsCommands::ListPresets => commands::apps::list_presets(config, format).await,
         AppsCommands::ListVcsProviders => commands::apps::list_vcs_providers(config, format).await,
         AppsCommands::ListRepositories {
             provider_id
         } => commands::apps::list_repositories(config, &provider_id, format).await,
         AppsCommands::Logs {
+            app,
             id,
             tail,
             since,
             today
-        } => commands::apps::logs(config, &id, tail, since.as_deref(), today, format).await,
+        } => {
+            let id = commands::apps::resolve_app(config, &app_selector(app, id)).await?;
+            commands::apps::logs(config, &id, tail, since.as_deref(), today, format).await
+        }
         AppsCommands::ListDeploys {
+            app,
             id
-        } => commands::apps::list_deploys(config, &id, format).await,
+        } => {
+            let id = commands::apps::resolve_app(config, &app_selector(app, id)).await?;
+            commands::apps::list_deploys(config, &id, format).await
+        }
         AppsCommands::DeployLogs {
+            app,
             id,
             deploy_id,
             debug
-        } => commands::apps::deploy_logs(config, &id, deploy_id.as_deref(), debug, format).await,
+        } => {
+            let id = commands::apps::resolve_app(config, &app_selector(app, id)).await?;
+            commands::apps::deploy_logs(config, &id, deploy_id.as_deref(), debug, format).await
+        }
         AppsCommands::Create(args) => {
             commands::apps::create(
                 config,
