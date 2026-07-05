@@ -80,7 +80,6 @@ jobs:
         with:
           pkgname: twc-rs-bin
           pkgbuild: ./packaging/PKGBUILD
-          assets: ./packaging/twc-rs-bin.install
           commit_username: RAprogramm
           commit_email: andrey.rozanov.vl@gmail.com
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
