@@ -1,0 +1,14 @@
+_version: 2
+
+cli.doctor_ok:
+  en: "Single installation — no conflicts."
+  ru: "Установка одна — конфликтов нет."
+cli.doctor_conflict:
+  en: "WARNING: %{count} copies of twc-rs are in PATH; '%{active}' shadows the rest. Remove the extra copies (a cargo copy is removed with 'cargo uninstall twc-rs')."
+  ru: "ВНИМАНИЕ: в PATH найдено копий twc-rs: %{count}; '%{active}' перекрывает остальные. Удалите лишние копии (копия из cargo удаляется командой 'cargo uninstall twc-rs')."
+cli.doctor_not_in_path:
+  en: "twc-rs is not present in PATH."
+  ru: "twc-rs отсутствует в PATH."
+cli.doctor_version_unknown:
+  en: "unknown"
+  ru: "неизвестно"

@@ -172,7 +172,10 @@ pub enum Commands {
         /// Target shell.
         #[arg(value_enum)]
         shell: ShellArg
-    }
+    },
+
+    /// Check the local installation for conflicting copies in PATH.
+    Doctor
 }
 
 #[cfg(test)]
