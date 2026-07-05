@@ -191,6 +191,10 @@ twc-rs server info --id 12345             # server details
 twc-rs database list -f json              # JSON output
 twc-rs ssh attach --server 12345 --key 42 # attach an SSH key to a server
 twc-rs project resources --id 678         # drill into a project
+twc-rs apps logs --id 42 --today          # app runtime logs (also --since, --tail)
+twc-rs apps list-deploys --id 42          # deploy history, newest first
+twc-rs apps deploy-logs --id 42           # build/deploy logs of the latest deploy
+twc-rs doctor                             # detect conflicting installs in PATH
 twc-rs dashboard                          # interactive TUI (k9s-style)
 ```
 
