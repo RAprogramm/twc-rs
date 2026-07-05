@@ -89,8 +89,10 @@ fn binary_version(path: &Path) -> String {
         .ok()
         .filter(|out| out.status.success())
         .and_then(|out| String::from_utf8(out.stdout).ok())
-        .map(|s| s.trim().to_owned())
-        .unwrap_or_else(|| t!("cli.doctor_version_unknown").into_owned())
+        .map_or_else(
+            || t!("cli.doctor_version_unknown").into_owned(),
+            |s| s.trim().to_owned()
+        )
 }
 
 /// Checks the local installation for conflicting copies of the binary.
