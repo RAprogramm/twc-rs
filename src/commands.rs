@@ -5,6 +5,7 @@ pub mod account;
 pub mod apps;
 pub mod balancers;
 pub mod databases;
+pub mod doctor;
 pub mod domains;
 pub mod firewall;
 pub mod floating_ips;

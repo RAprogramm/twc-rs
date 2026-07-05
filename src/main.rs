@@ -50,6 +50,7 @@ async fn run() -> Result<(), TwcError> {
     let format = OutputFormat::parse(&cli.format).map_err(TwcError::Api)?;
 
     match cli.command {
+        Commands::Doctor => commands::doctor::run(format),
         Commands::Completions {
             shell
         } => {
