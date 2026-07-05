@@ -27,6 +27,9 @@ cli.app_not_found:
 cli.app_ambiguous:
   en: "Several apps are named '%{name}'; use the numeric ID instead."
   ru: "Несколько приложений с именем «%{name}»; укажите числовой ID."
+cli.no_app_logs_since:
+  en: "No log lines since %{since}; the most recent line was logged at %{last}."
+  ru: "Логов с %{since} нет; последняя строка записана %{last}."
 cli.app_invalid_since:
   en: "Invalid --since value '%{value}': expected YYYY-MM-DD or an RFC 3339 timestamp."
   ru: "Неверное значение --since '%{value}': ожидается YYYY-MM-DD или метка времени RFC 3339."

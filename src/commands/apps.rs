@@ -671,6 +671,11 @@ fn embedded_rfc3339(line: &str) -> Option<DateTime<FixedOffset>> {
     None
 }
 
+/// Timestamp of the most recent stamped line, scanning from the end.
+fn last_line_timestamp(lines: &[String]) -> Option<DateTime<FixedOffset>> {
+    lines.iter().rev().find_map(|line| line_timestamp(line))
+}
+
 /// Applies `since` and `tail` filters to raw log lines.
 ///
 /// A line without its own timestamp inherits the timestamp of the closest
@@ -760,6 +765,21 @@ pub async fn logs(
     let bound = resolve_since(since, today)?;
     let resp = apps_api::get_app_logs(config, id).await?;
     let lines = filter_log_lines(&resp.app_logs, bound, tail);
+    if lines.is_empty()
+        && matches!(format, OutputFormat::Table)
+        && let Some(bound) = bound
+        && let Some(last) = last_line_timestamp(&resp.app_logs)
+    {
+        println!(
+            "{}",
+            t!(
+                "cli.no_app_logs_since",
+                since => bound.format("%Y-%m-%d %H:%M:%S").to_string(),
+                last => last.with_timezone(&Local).format("%Y-%m-%d %H:%M:%S").to_string()
+            )
+        );
+        return Ok(());
+    }
     print_log_lines(&lines, "cli.no_app_logs", format)
 }
 
