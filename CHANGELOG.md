@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1](https://github.com/RAprogramm/twc-rs/compare/v0.7.0...v0.7.1) - 2026-07-05
+
+### Other
+
+- #84 docs: document apps logs, list-deploys, deploy-logs and doctor commands ([#85](https://github.com/RAprogramm/twc-rs/pull/85)) ([36a3117](https://github.com/RAprogramm/twc-rs/commit/36a3117584fca4eef1c36c11a0ff87c98b2c3d20))
+
+
 ## [0.7.0](https://github.com/RAprogramm/twc-rs/compare/v0.6.0...v0.7.0) - 2026-07-05
 
 ### Other
