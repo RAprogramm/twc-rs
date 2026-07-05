@@ -33,7 +33,41 @@ pub enum AppsCommands {
         provider_id: String
     },
     /// Create a new app from a connected VCS repository.
-    Create(Box<AppCreateArgs>)
+    Create(Box<AppCreateArgs>),
+    /// Show runtime logs of an app.
+    Logs {
+        /// App ID.
+        #[arg(long)]
+        id:    String,
+        /// Show only the last N lines (applied after date filters).
+        #[arg(long)]
+        tail:  Option<usize>,
+        /// Show only lines logged at or after this moment; accepts
+        /// `YYYY-MM-DD` (local midnight) or an RFC 3339 timestamp.
+        #[arg(long, conflicts_with = "today")]
+        since: Option<String>,
+        /// Show only lines logged today (local time).
+        #[arg(long)]
+        today: bool
+    },
+    /// List deploys of an app, newest first.
+    ListDeploys {
+        /// App ID.
+        #[arg(long)]
+        id: String
+    },
+    /// Show build/deploy logs of a deploy (the latest one by default).
+    DeployLogs {
+        /// App ID.
+        #[arg(long)]
+        id:        String,
+        /// Deploy ID (UUID); defaults to the most recent deploy.
+        #[arg(long)]
+        deploy_id: Option<String>,
+        /// Include debug output.
+        #[arg(long)]
+        debug:     bool
+    }
 }
 
 /// Arguments for `apps create` (boxed in the enum to keep variant sizes even).

@@ -12,3 +12,15 @@ cli.no_vcs_providers:
 cli.no_repositories:
   en: "No repositories found."
   ru: "Репозитории не найдены."
+cli.no_app_logs:
+  en: "No app logs found."
+  ru: "Логи приложения не найдены."
+cli.no_deploys:
+  en: "No deploys found."
+  ru: "Деплои не найдены."
+cli.no_deploy_logs:
+  en: "No deploy logs found."
+  ru: "Логи деплоя не найдены."
+cli.app_invalid_since:
+  en: "Invalid --since value '%{value}': expected YYYY-MM-DD or an RFC 3339 timestamp."
+  ru: "Неверное значение --since '%{value}': ожидается YYYY-MM-DD или метка времени RFC 3339."

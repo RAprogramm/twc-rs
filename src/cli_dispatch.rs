@@ -129,6 +129,20 @@ pub(crate) async fn handle_apps(
         AppsCommands::ListRepositories {
             provider_id
         } => commands::apps::list_repositories(config, &provider_id, format).await,
+        AppsCommands::Logs {
+            id,
+            tail,
+            since,
+            today
+        } => commands::apps::logs(config, &id, tail, since.as_deref(), today, format).await,
+        AppsCommands::ListDeploys {
+            id
+        } => commands::apps::list_deploys(config, &id, format).await,
+        AppsCommands::DeployLogs {
+            id,
+            deploy_id,
+            debug
+        } => commands::apps::deploy_logs(config, &id, deploy_id.as_deref(), debug, format).await,
         AppsCommands::Create(args) => {
             commands::apps::create(
                 config,
