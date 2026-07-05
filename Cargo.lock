@@ -1806,9 +1806,9 @@ dependencies = [
 
 [[package]]
 name = "keyring"
-version = "4.1.2"
+version = "4.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8fef88805a7ddbc8f9cf52bfa8dba90b3f80dff23a1e1533cd4f1d8e8d448fc8"
+checksum = "d1daef93704e6f6506d5b273175189bf8a5e00371930387fb77fd871e15c0d94"
 dependencies = [
  "apple-native-keyring-store",
  "keyring-core",
@@ -3656,9 +3656,9 @@ dependencies = [
 
 [[package]]
 name = "timeweb-rs"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f538a692097936586534f46b4606785a2e79872c814b87498ab2a2d61d0e3ba"
+checksum = "4f5a827ca99a6130a44d8cb1c0a6508b571aca1f747f8027a1297844208deaf7"
 dependencies = [
  "chrono",
  "reqwest",

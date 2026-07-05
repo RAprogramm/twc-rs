@@ -3,6 +3,7 @@
 
 use std::fmt;
 
+use chrono::{DateTime, FixedOffset, Local, NaiveDate, TimeZone};
 use rust_i18n::t;
 use tabled::Tabled;
 use timeweb_rs::{
@@ -514,3 +515,262 @@ pub async fn create(
     }
     Ok(())
 }
+
+/// Lower bound for log filtering resolved from `--since` / `--today`.
+///
+/// Accepts `YYYY-MM-DD` (interpreted as local midnight) or a full RFC 3339
+/// timestamp. `--today` resolves to the current local midnight.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] when the value is neither a date nor an RFC 3339
+/// timestamp.
+fn resolve_since(since: Option<&str>, today: bool) -> Result<Option<DateTime<Local>>, TwcError> {
+    if today {
+        let midnight = Local::now()
+            .date_naive()
+            .and_hms_opt(0, 0, 0)
+            .and_then(|naive| Local.from_local_datetime(&naive).single());
+        return Ok(midnight);
+    }
+    let Some(raw) = since else {
+        return Ok(None);
+    };
+    if let Ok(ts) = DateTime::parse_from_rfc3339(raw) {
+        return Ok(Some(ts.with_timezone(&Local)));
+    }
+    if let Ok(date) = NaiveDate::parse_from_str(raw, "%Y-%m-%d") {
+        let midnight = date
+            .and_hms_opt(0, 0, 0)
+            .and_then(|naive| Local.from_local_datetime(&naive).single());
+        return Ok(midnight);
+    }
+    Err(TwcError::Api(
+        t!("cli.app_invalid_since", value => raw).into_owned()
+    ))
+}
+
+/// Removes ANSI CSI escape sequences from a log line.
+///
+/// App runtime logs arrive colorized (`ESC[2m2026-07-05T07:13:30Z…`), so the
+/// leading timestamp is wrapped in styling sequences that must be dropped
+/// before parsing.
+fn strip_ansi(line: &str) -> String {
+    let mut out = String::with_capacity(line.len());
+    let mut chars = line.chars().peekable();
+    while let Some(c) = chars.next() {
+        if c != '\u{1b}' {
+            out.push(c);
+            continue;
+        }
+        if chars.peek() == Some(&'[') {
+            chars.next();
+            for esc in chars.by_ref() {
+                if esc.is_ascii_alphabetic() {
+                    break;
+                }
+            }
+        }
+    }
+    out
+}
+
+/// Timestamp parsed from the beginning of a log line, if present.
+///
+/// Log lines start with an RFC 3339 timestamp (possibly wrapped in ANSI
+/// styling); continuation lines (stack traces, wrapped output) do not carry
+/// one and return `None`.
+fn line_timestamp(line: &str) -> Option<DateTime<FixedOffset>> {
+    let clean = strip_ansi(line);
+    let head = clean.split_whitespace().next()?;
+    DateTime::parse_from_rfc3339(head).ok()
+}
+
+/// Applies `since` and `tail` filters to raw log lines.
+///
+/// A line without its own timestamp inherits the timestamp of the closest
+/// preceding stamped line, so multi-line entries stay intact. Lines seen
+/// before any stamped line are kept only when no lower bound is set.
+fn filter_log_lines(
+    lines: &[String],
+    since: Option<DateTime<Local>>,
+    tail: Option<usize>
+) -> Vec<String> {
+    let mut kept: Vec<String> = Vec::with_capacity(lines.len());
+    let mut current: Option<DateTime<Local>> = None;
+    for line in lines {
+        if let Some(ts) = line_timestamp(line) {
+            current = Some(ts.with_timezone(&Local));
+        }
+        let keep = match since {
+            None => true,
+            Some(bound) => current.is_some_and(|ts| ts >= bound)
+        };
+        if keep {
+            kept.push(line.clone());
+        }
+    }
+    if let Some(n) = tail {
+        let skip = kept.len().saturating_sub(n);
+        kept.drain(..skip);
+    }
+    kept
+}
+
+/// Prints filtered log lines in the requested output format.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] when serialization fails.
+fn print_log_lines(
+    lines: &[String],
+    empty_key: &str,
+    format: OutputFormat
+) -> Result<(), TwcError> {
+    match format {
+        OutputFormat::Table => {
+            if lines.is_empty() {
+                println!("{}", t!(empty_key));
+            } else {
+                for line in lines {
+                    println!("{line}");
+                }
+            }
+        }
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out = crate::output::serialized(format, &lines)
+                .transpose()?
+                .unwrap_or_default();
+            println!("{out}");
+        }
+        OutputFormat::Quiet => {
+            for line in lines {
+                println!("{line}");
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Shows runtime logs of an app with optional date and tail filters.
+///
+/// # Overview
+///
+/// Fetches all runtime log lines of the app (the API has no server-side
+/// pagination for app logs) and applies `--since`/`--today` and `--tail`
+/// filters on the client before printing.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] on network or API failures, or when the
+/// `--since` value cannot be parsed.
+pub async fn logs(
+    config: &Configuration,
+    id: &str,
+    tail: Option<usize>,
+    since: Option<&str>,
+    today: bool,
+    format: OutputFormat
+) -> Result<(), TwcError> {
+    let bound = resolve_since(since, today)?;
+    let resp = apps_api::get_app_logs(config, id).await?;
+    let lines = filter_log_lines(&resp.app_logs, bound, tail);
+    print_log_lines(&lines, "cli.no_app_logs", format)
+}
+
+/// Compact row for the deploys table.
+#[derive(Tabled)]
+struct DeployRow {
+    #[tabled(rename = "ID")]
+    id:         String,
+    #[tabled(rename = "Status")]
+    status:     String,
+    #[tabled(rename = "Commit")]
+    commit:     String,
+    #[tabled(rename = "Message")]
+    message:    String,
+    #[tabled(rename = "Started")]
+    started_at: String,
+    #[tabled(rename = "Ended")]
+    ended_at:   String
+}
+
+/// Lists deploys of an app, newest first.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] on network or API failures.
+pub async fn list_deploys(
+    config: &Configuration,
+    id: &str,
+    format: OutputFormat
+) -> Result<(), TwcError> {
+    let resp = apps_api::get_app_deploys(config, id, None, None).await?;
+    let mut deploys = resp.deploys.clone().unwrap_or_default();
+    deploys.sort_by(|a, b| b.started_at.cmp(&a.started_at));
+
+    let rows: Vec<DeployRow> = deploys
+        .iter()
+        .map(|d| DeployRow {
+            id:         d.id.to_string(),
+            status:     format!("{:?}", d.status),
+            commit:     d.commit_sha.chars().take(10).collect(),
+            message:    d.commit_msg.lines().next().unwrap_or_default().to_owned(),
+            started_at: d.started_at.clone(),
+            ended_at:   d.ended_at.clone().unwrap_or_default()
+        })
+        .collect();
+
+    match format {
+        OutputFormat::Table => {
+            if rows.is_empty() {
+                println!("{}", t!("cli.no_deploys"));
+            } else {
+                println!("{}", crate::output::render_table(&rows));
+            }
+        }
+        OutputFormat::Json | OutputFormat::Yaml => {
+            let out = crate::output::serialized(format, &deploys)
+                .transpose()?
+                .unwrap_or_default();
+            println!("{out}");
+        }
+        OutputFormat::Quiet => {
+            for d in &deploys {
+                println!("{}\t{:?}", d.id, d.status);
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Shows build/deploy logs of a deploy, defaulting to the most recent one.
+///
+/// # Errors
+///
+/// Returns [`TwcError::Api`] on network or API failures, or when the app has
+/// no deploys to default to.
+pub async fn deploy_logs(
+    config: &Configuration,
+    id: &str,
+    deploy_id: Option<&str>,
+    debug: bool,
+    format: OutputFormat
+) -> Result<(), TwcError> {
+    let target = if let Some(explicit) = deploy_id {
+        explicit.to_owned()
+    } else {
+        let resp = apps_api::get_app_deploys(config, id, None, None).await?;
+        resp.deploys
+            .unwrap_or_default()
+            .iter()
+            .max_by(|a, b| a.started_at.cmp(&b.started_at))
+            .map(|d| d.id.to_string())
+            .ok_or_else(|| TwcError::Api(t!("cli.no_deploys").into_owned()))?
+    };
+    let resp = apps_api::get_deploy_logs(config, id, &target, Some(debug)).await?;
+    print_log_lines(&resp.deploy_logs, "cli.no_deploy_logs", format)
+}
+
+#[cfg(test)]
+mod tests;
