@@ -27,6 +27,38 @@ fn line_timestamp_parses_ansi_wrapped_prefix() {
 }
 
 #[test]
+fn line_timestamp_parses_json_embedded_timestamp() {
+    let line = r#"{"timestamp":"2026-07-05T23:10:58.424430Z","level":"INFO","message":"ok"}"#;
+    let ts = line_timestamp(line).expect("embedded timestamp must parse");
+    assert_eq!(ts.to_rfc3339(), "2026-07-05T23:10:58.424430+00:00");
+}
+
+#[test]
+fn line_timestamp_parses_json_with_offset_timestamp() {
+    let line = r#"{"level":"warn","time":"2026-07-05T12:30:00+03:00","msg":"x"}"#;
+    assert!(line_timestamp(line).is_some());
+}
+
+#[test]
+fn embedded_rfc3339_ignores_date_like_noise() {
+    assert!(embedded_rfc3339("build 2026-07-05 finished in 12s").is_none());
+    assert!(embedded_rfc3339("id 1234-56-78T90 garbage").is_none());
+    assert!(embedded_rfc3339("").is_none());
+}
+
+#[test]
+fn filter_applies_since_to_json_lines() {
+    let input = lines(&[
+        r#"{"timestamp":"2026-07-05T09:00:00Z","message":"old"}"#,
+        r#"{"timestamp":"2026-07-05T23:00:00Z","message":"new"}"#
+    ]);
+    let bound = utc_bound("2026-07-05T14:00:00Z");
+    let kept = filter_log_lines(&input, bound, None);
+    assert_eq!(kept.len(), 1);
+    assert!(kept[0].contains("new"));
+}
+
+#[test]
 fn strip_ansi_removes_csi_sequences() {
     let line = "\u{1b}[2m2026-07-05T07:13:30Z\u{1b}[0m \u{1b}[33mWARN\u{1b}[0m ok";
     assert_eq!(strip_ansi(line), "2026-07-05T07:13:30Z WARN ok");
