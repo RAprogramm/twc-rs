@@ -575,15 +575,50 @@ fn strip_ansi(line: &str) -> String {
     out
 }
 
-/// Timestamp parsed from the beginning of a log line, if present.
+/// Timestamp parsed from a log line, if present.
 ///
-/// Log lines start with an RFC 3339 timestamp (possibly wrapped in ANSI
-/// styling); continuation lines (stack traces, wrapped output) do not carry
-/// one and return `None`.
+/// Plain runtime lines start with an RFC 3339 timestamp (possibly wrapped in
+/// ANSI styling). Structured JSON lines (`{"timestamp":"…"}`) carry it inside
+/// the payload instead, so the first embedded RFC 3339 substring is used as a
+/// fallback. Continuation lines (stack traces, wrapped output) have no
+/// timestamp at all and return `None`.
 fn line_timestamp(line: &str) -> Option<DateTime<FixedOffset>> {
     let clean = strip_ansi(line);
-    let head = clean.split_whitespace().next()?;
-    DateTime::parse_from_rfc3339(head).ok()
+    clean
+        .split_whitespace()
+        .next()
+        .and_then(|head| DateTime::parse_from_rfc3339(head).ok())
+        .or_else(|| embedded_rfc3339(&clean))
+}
+
+/// Finds and parses the first RFC 3339 timestamp embedded anywhere in `line`.
+///
+/// Locates a `YYYY-MM-DDT` shaped anchor, extends it across the characters an
+/// RFC 3339 timestamp may contain and hands the slice to the strict parser,
+/// so arbitrary digits in the line cannot produce false positives.
+fn embedded_rfc3339(line: &str) -> Option<DateTime<FixedOffset>> {
+    let bytes = line.as_bytes();
+    for (start, window) in bytes.windows(11).enumerate() {
+        let anchored = window[4] == b'-'
+            && window[7] == b'-'
+            && window[10] == b'T'
+            && window[..4].iter().all(u8::is_ascii_digit)
+            && window[5..7].iter().all(u8::is_ascii_digit)
+            && window[8..10].iter().all(u8::is_ascii_digit);
+        if !anchored {
+            continue;
+        }
+        let tail = &line[start..];
+        let end = tail
+            .find(|c: char| {
+                !(c.is_ascii_digit() || matches!(c, '-' | ':' | '.' | 'T' | 'Z' | '+'))
+            })
+            .unwrap_or(tail.len());
+        if let Ok(ts) = DateTime::parse_from_rfc3339(&tail[..end]) {
+            return Some(ts);
+        }
+    }
+    None
 }
 
 /// Applies `since` and `tail` filters to raw log lines.
