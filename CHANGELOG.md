@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0](https://github.com/RAprogramm/twc-rs/compare/v0.6.0...v0.7.0) - 2026-07-05
+
+### Other
+
+- #79 feat: add doctor command detecting conflicting installations in PATH ([#80](https://github.com/RAprogramm/twc-rs/pull/80)) ([a5d2d80](https://github.com/RAprogramm/twc-rs/commit/a5d2d8023dc3a13dd73ab68620018532d0d702b5))
+
+
 ## [0.6.0](https://github.com/RAprogramm/twc-rs/compare/v0.5.1...v0.6.0) - 2026-07-05
 
 ### Other
