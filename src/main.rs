@@ -34,9 +34,15 @@ use output::OutputFormat;
 use rust_i18n::t;
 use timeweb_rs::authenticated;
 
-#[tokio::main]
-async fn main() {
-    if let Err(e) = run().await {
+fn main() {
+    use clap::CommandFactory as _;
+    clap_complete::env::CompleteEnv::with_factory(Cli::command).complete();
+
+    let Ok(runtime) = tokio::runtime::Runtime::new() else {
+        eprintln!("Error: failed to start the async runtime");
+        std::process::exit(1);
+    };
+    if let Err(e) = runtime.block_on(run()) {
         eprintln!("Error: {e}");
         std::process::exit(1);
     }

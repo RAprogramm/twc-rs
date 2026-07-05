@@ -18,6 +18,7 @@ const HELP_STYLES: Styles = Styles::styled()
 
 mod apps;
 mod balancers;
+pub mod completers;
 mod databases;
 mod domains;
 mod firewall;
