@@ -223,17 +223,6 @@ twc-rs completions bash    > /etc/bash_completion.d/twc-rs
 `nushell`. AUR-пакет ставит автодополнение для `bash`, `zsh`, `fish` и `nushell`
 в стандартные системные каталоги — оно работает сразу после установки.
 
-> [!NOTE]
-> Обновление AUR-пакета с `0.5.1-1` и старше: те выпуски копировали
-> автодополнение в системные каталоги мимо pacman, поэтому обновление
-> завершается конфликтом файлов. Один раз удалите неучтённые копии и повторите:
->
-> ```sh
-> sudo rm -f /usr/share/bash-completion/completions/twc-rs \
->   /usr/share/zsh/site-functions/_twc-rs \
->   /usr/share/fish/vendor_completions.d/twc-rs.fish \
->   /usr/share/nushell/vendor/autoload/twc-rs.nu
-> ```
 
 <p align="right"><a href="#top">↑ наверх</a></p>
 
