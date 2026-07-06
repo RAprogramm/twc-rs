@@ -68,3 +68,16 @@ jobs:
           command: release-pr
         env:
           GITHUB_TOKEN: ${{ steps.app_token.outputs.token }}
+      - name: Enable auto-merge on the release PR
+        env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+        run: |
+          pr=$(gh pr list --repo "$GITHUB_REPOSITORY" --state open \
+            --json number,headRefName \
+            --jq '[.[] | select(.headRefName | startswith("release-plz-"))][0].number // empty')
+          if [ -n "$pr" ]; then
+            gh pr merge --auto --squash "$pr" --repo "$GITHUB_REPOSITORY"
+            echo "auto-merge enabled on release PR #$pr"
+          else
+            echo "no open release PR"
+          fi
