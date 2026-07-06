@@ -57,6 +57,8 @@ so the same invocation completes in single-digit milliseconds.
 | Localization — English + Russian (CLI & TUI) | yes | English only |
 | Named profiles (`--profile`) | yes | yes |
 | Installation self-check (`doctor` finds conflicting copies in `PATH`) | yes | no |
+| Address apps by name, not just numeric ID | yes | no |
+| Dynamic shell completion of live resource values (app names/IDs from the API) | yes | no |
 | Shell completions | bash, zsh, fish, powershell, elvish, **nushell** | bash, zsh, fish, powershell |
 
 ## Command coverage
@@ -68,7 +70,7 @@ Near-complete parity with the official CLI across all resource groups
 | Group | Status |
 |---|---|
 | account | full — status, finances (`show`), access restrictions |
-| apps | full — list, info, create, delete, presets, repositories, vcs-providers, logs (`--tail`/`--since`/`--today`), list-deploys, deploy-logs |
+| apps | full — list, info, create, delete, presets, repositories, vcs-providers, logs (`--tail`/`--since`/`--today`), list-deploys, deploy-logs; per-app commands accept the app name or ID |
 | balancer | full — list/info/create/update/delete, rules, IPs (backends), presets |
 | database | full — list/info/create/update/delete, backups, users, presets, types, instances |
 | domain | full — list/info/add/delete, DNS records, subdomains, name servers |
