@@ -81,6 +81,8 @@ and import startup before any application code runs.
 The headline feature the Python CLI does not have: a live, k9s-style TUI
 (`twc-rs dashboard`).
 
+![twc-rs dashboard demo](docs/demo/dashboard.gif)
+
 | Key | Action |
 |---|---|
 | `h` / `l` | switch resource tabs |
@@ -185,6 +187,8 @@ twc-rs --profile staging server list
 Every resource type is a subcommand; run `twc-rs <group> --help` to see its
 actions and flags.
 
+![twc-rs apps list demo](docs/demo/apps-list.gif)
+
 ```sh
 twc-rs server list                        # list cloud servers
 twc-rs server info --id 12345             # server details
@@ -231,8 +235,11 @@ standard vendor directories, so they work out of the box.
 
 Static scripts complete commands and flags; the **dynamic** engine also
 completes live values — `twc-rs apps logs <TAB>` offers your actual apps by
-name and ID, fetched from the API (silently skipped when offline). Register it
-instead of (or on top of) the static script:
+name and ID, fetched from the API (silently skipped when offline).
+
+![twc-rs dynamic completion demo](docs/demo/completions.gif)
+
+Register it instead of (or on top of) the static script:
 
 | Shell | Add to |
 |---|---|
