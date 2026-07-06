@@ -19,6 +19,7 @@ SPDX-License-Identifier: MIT
 [![CI](https://github.com/RAprogramm/twc-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/RAprogramm/twc-rs/actions/workflows/ci.yml)
 [![Security](https://github.com/RAprogramm/twc-rs/actions/workflows/security.yml/badge.svg)](https://github.com/RAprogramm/twc-rs/actions/workflows/security.yml)
 [![release-plz](https://github.com/RAprogramm/twc-rs/actions/workflows/release-plz.yml/badge.svg)](https://github.com/RAprogramm/twc-rs/actions/workflows/release-plz.yml)
+[![docs](https://img.shields.io/badge/docs-raprogramm.github.io%2Ftwc--rs-blue)](https://raprogramm.github.io/twc-rs/)
 [![license](https://img.shields.io/crates/l/twc-rs.svg?color=blue)](LICENSE)
 [![MSRV](https://img.shields.io/badge/MSRV-1.96-blue.svg?logo=rust)](Cargo.toml)
 [![platforms](https://img.shields.io/badge/platforms-linux%20%7C%20macos%20%7C%20windows-informational?logo=linux)](#supported-platforms)
@@ -205,7 +206,9 @@ twc-rs dashboard                          # интерактивный TUI (в �
 Группы ресурсов: `server`, `database`, `s3`, `kubernetes`, `registry`,
 `balancer`, `domain`, `firewall`, `apps`, `image`, `ip`, `vpc`, `ssh`,
 `project`, `account`. Полное покрытие команд относительно официального CLI — в
-[docs/COMPARISON.md](docs/COMPARISON.md).
+[docs/COMPARISON.md](docs/COMPARISON.md), а полный справочник CLI —
+автогенерируемый из определений команд при каждом деплое — на
+**[raprogramm.github.io/twc-rs](https://raprogramm.github.io/twc-rs/)**.
 
 Глобальные флаги:
 

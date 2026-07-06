@@ -1,0 +1,19 @@
+[book]
+title = "twc-rs"
+description = "Fast single-binary CLI and interactive TUI dashboard for Timeweb Cloud"
+authors = ["RAprogramm"]
+language = "en"
+src = "src"
+
+[build]
+create-missing = false
+
+[output.html]
+git-repository-url = "https://github.com/RAprogramm/twc-rs"
+edit-url-template = "https://github.com/RAprogramm/twc-rs/edit/main/docs/book/{path}"
+default-theme = "ayu"
+preferred-dark-theme = "ayu"
+
+[output.html.fold]
+enable = true
+level = 1
