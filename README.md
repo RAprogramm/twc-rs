@@ -200,6 +200,7 @@ twc-rs apps logs my-api --today           # app runtime logs by name or ID (also
 twc-rs apps list-deploys my-api           # deploy history, newest first
 twc-rs apps deploy-logs my-api            # build/deploy logs of the latest deploy
 twc-rs doctor                             # detect conflicting installs in PATH
+twc-rs update                             # self-update via the detected package manager
 twc-rs dashboard                          # interactive TUI (k9s-style)
 ```
 

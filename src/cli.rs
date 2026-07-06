@@ -191,7 +191,14 @@ pub enum Commands {
     },
 
     /// Check the local installation for conflicting copies in PATH.
-    Doctor
+    Doctor,
+
+    /// Check for a newer release and update via the detected install channel.
+    Update {
+        /// Only report the versions and the update command; install nothing.
+        #[arg(long)]
+        check: bool
+    }
 }
 
 #[cfg(test)]
