@@ -12,6 +12,7 @@ documentation = "https://docs.rs/twc-rs"
 readme = "README.md"
 keywords = ["timeweb", "cloud", "cli", "tui", "devops"]
 categories = ["command-line-utilities"]
+exclude = ["docs/", "benches/", ".github/", "packaging/"]
 
 [package.metadata.deb]
 maintainer = "RAprogramm <andrey.rozanov.vl@gmail.com>"
