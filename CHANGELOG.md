@@ -5,6 +5,18 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.1](https://github.com/RAprogramm/twc-rs/compare/v0.8.0...v0.8.1) - 2026-07-06
+
+### Added
+
+- GitHub Pages book with docgen-generated CLI reference (#102) ([#101](https://github.com/RAprogramm/twc-rs/issues/101)) ([de1b99e](https://github.com/RAprogramm/twc-rs/commit/de1b99e0636773a71d6e7f7c7a71c61d5406bce1))
+
+
+### Fixed
+
+- Classify changelog entries despite issue-number commit prefix (#105) ([#104](https://github.com/RAprogramm/twc-rs/issues/104)) ([7e4fa07](https://github.com/RAprogramm/twc-rs/commit/7e4fa07a93a61cd071652349ad5c9bf3583fd87c))
+
+
 ## [0.8.0](https://github.com/RAprogramm/twc-rs/compare/v0.7.0...v0.8.0) - 2026-07-06
 
 ### Other
