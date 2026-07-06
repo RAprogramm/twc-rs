@@ -43,6 +43,13 @@ body = """
 protect_breaking_commits = true
 sort_commits = "newest"
 
+# Commit subjects follow "#<issue> type: description". Move the leading issue
+# reference into a trailing link so the conventional-commit parsers below can
+# classify the type and the changelog keeps the issue cross-reference.
+commit_preprocessors = [
+  { pattern = '^#(\d+) (.*)', replace = '$2 ([#$1](https://github.com/RAprogramm/twc-rs/issues/$1))' },
+]
+
 commit_parsers = [
   { message = "^feat", group = "<!-- 0 -->Added" },
   { message = "^fix", group = "<!-- 1 -->Fixed" },
