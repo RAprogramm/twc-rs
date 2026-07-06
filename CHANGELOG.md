@@ -5,6 +5,27 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0](https://github.com/RAprogramm/twc-rs/compare/v0.7.0...v0.8.0) - 2026-07-06
+
+### Other
+
+- #99 docs: embed demo GIFs into README sections ([#100](https://github.com/RAprogramm/twc-rs/pull/100)) ([d17c8d4](https://github.com/RAprogramm/twc-rs/commit/d17c8d4385445b3e5303883328b14f6c83a2ffc6))
+
+- #97 docs: refresh examples for name selectors and dynamic completion ([#98](https://github.com/RAprogramm/twc-rs/pull/98)) ([de85486](https://github.com/RAprogramm/twc-rs/commit/de85486f78532ceff568f8588e31fb02f132ce88))
+
+- #93 feat: dynamic shell completion serving live app names and IDs ([#96](https://github.com/RAprogramm/twc-rs/pull/96)) ([daf88a2](https://github.com/RAprogramm/twc-rs/commit/daf88a2c0cc05db61f028bc3a2b733d749034c36))
+
+- #92 feat: report last log timestamp when date filter yields nothing ([#95](https://github.com/RAprogramm/twc-rs/pull/95)) ([8844fed](https://github.com/RAprogramm/twc-rs/commit/8844fed50612079383bf37a9736bf442659a9964))
+
+- #91 feat: address apps by name or numeric ID via positional selector ([#94](https://github.com/RAprogramm/twc-rs/pull/94)) ([c9a4a6e](https://github.com/RAprogramm/twc-rs/commit/c9a4a6e67df645b72d82a90ed396a372799a1165))
+
+- #88 fix: stamp JSON log lines via embedded RFC 3339 timestamp fallback ([#89](https://github.com/RAprogramm/twc-rs/pull/89)) ([6a6012c](https://github.com/RAprogramm/twc-rs/commit/6a6012c0ea3cfd014e87b1c12fcd364db34405fc))
+
+- #86 feat: colorize help output and group global flags last ([#87](https://github.com/RAprogramm/twc-rs/pull/87)) ([3497410](https://github.com/RAprogramm/twc-rs/commit/3497410bfa46692278b758e15bccd3b7b693fd82))
+
+- #84 docs: document apps logs, list-deploys, deploy-logs and doctor commands ([#85](https://github.com/RAprogramm/twc-rs/pull/85)) ([36a3117](https://github.com/RAprogramm/twc-rs/commit/36a3117584fca4eef1c36c11a0ff87c98b2c3d20))
+
+
 ## [0.7.0](https://github.com/RAprogramm/twc-rs/compare/v0.6.0...v0.7.0) - 2026-07-05
 
 ### Other
