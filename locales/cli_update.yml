@@ -1,0 +1,35 @@
+_version: 2
+
+cli.update_current:
+  en: "Current version: %{current} — latest release: %{latest}"
+  ru: "Текущая версия: %{current} — последний релиз: %{latest}"
+cli.update_up_to_date:
+  en: "Already up to date."
+  ru: "Уже установлена последняя версия."
+cli.update_available:
+  en: "Update available: %{current} -> %{latest}"
+  ru: "Доступно обновление: %{current} -> %{latest}"
+cli.update_channel:
+  en: "Detected install channel: %{channel}"
+  ru: "Определён канал установки: %{channel}"
+cli.update_running:
+  en: "Running: %{command}"
+  ru: "Выполняю: %{command}"
+cli.update_done:
+  en: "Update finished. Run 'twc-rs --version' to verify."
+  ru: "Обновление завершено. Проверьте: 'twc-rs --version'."
+cli.update_failed:
+  en: "Update command exited with an error; run it manually: %{command}"
+  ru: "Команда обновления завершилась с ошибкой; выполните вручную: %{command}"
+cli.update_do:
+  en: "To update, run: %{command}"
+  ru: "Для обновления выполните: %{command}"
+cli.update_instruction_deb:
+  en: "Installed from a .deb package. Download the new one and install it:\n  curl -fsSLO https://github.com/RAprogramm/twc-rs/releases/latest/download/twc-rs_%{latest}-1_amd64.deb\n  sudo apt install ./twc-rs_%{latest}-1_amd64.deb"
+  ru: "Установлено из .deb-пакета. Скачайте новый и установите:\n  curl -fsSLO https://github.com/RAprogramm/twc-rs/releases/latest/download/twc-rs_%{latest}-1_amd64.deb\n  sudo apt install ./twc-rs_%{latest}-1_amd64.deb"
+cli.update_instruction_unknown:
+  en: "Could not detect the install channel. Download the archive for your platform from https://github.com/RAprogramm/twc-rs/releases/latest and replace the binary at %{path}."
+  ru: "Не удалось определить канал установки. Скачайте архив под вашу платформу с https://github.com/RAprogramm/twc-rs/releases/latest и замените бинарник по пути %{path}."
+cli.update_no_aur_helper:
+  en: "Installed via the AUR package, but no AUR helper (paru/yay) was found. Update manually:\n  git clone https://aur.archlinux.org/twc-rs-bin.git && cd twc-rs-bin && makepkg -si"
+  ru: "Установлено из AUR, но AUR-хелпер (paru/yay) не найден. Обновите вручную:\n  git clone https://aur.archlinux.org/twc-rs-bin.git && cd twc-rs-bin && makepkg -si"

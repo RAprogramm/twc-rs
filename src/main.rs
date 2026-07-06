@@ -57,6 +57,9 @@ async fn run() -> Result<(), TwcError> {
 
     match cli.command {
         Commands::Doctor => commands::doctor::run(format),
+        Commands::Update {
+            check
+        } => commands::update::run(check).await,
         Commands::Completions {
             shell
         } => {

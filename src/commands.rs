@@ -16,4 +16,5 @@ pub mod registry;
 pub mod s3;
 pub mod servers;
 pub mod ssh_keys;
+pub mod update;
 pub mod vpc;
