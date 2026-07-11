@@ -16,6 +16,7 @@ mod data;
 mod drill;
 mod forms;
 mod navigation;
+mod overview;
 mod palette;
 mod stats;
 mod summaries;
@@ -26,6 +27,7 @@ mod tests;
 pub use actions::{ActionKind, ActionMenu, PendingAction};
 pub use drill::{DrillItem, DrillView};
 pub use forms::CreateForm;
+pub use overview::OverviewCard;
 pub use stats::{ResourceStats, StatsRequest};
 pub use summaries::*;
 pub use tabs::ResourceTab;
@@ -54,6 +56,16 @@ pub enum FocusDir {
     Right,
     Up,
     Down
+}
+
+/// The top-level screen shown in the dashboard content area.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum DashboardView {
+    /// Landing screen: Projects and Services zones as cards.
+    #[default]
+    Overview,
+    /// The classic per-category resource list with details.
+    Resources
 }
 
 /// Holds all runtime state for the TUI dashboard.
@@ -115,6 +127,9 @@ pub struct App {
     pub initial_tab_set:   bool,
     pub detail_scroll:     u16,
     pub focus_active:      bool,
+    pub view:              DashboardView,
+    pub overview_selected: usize,
+    pub overview_cols:     usize,
     pub language:          crate::config::Language,
     pub stats_subject:     Option<String>,
     pub stats_loaded_for:  Option<String>,
@@ -199,6 +214,9 @@ impl App {
             initial_tab_set: false,
             detail_scroll: 0,
             focus_active: false,
+            view: DashboardView::default(),
+            overview_selected: 0,
+            overview_cols: 1,
             language: crate::config::Language::default(),
             stats_subject: None,
             stats_loaded_for: None,

@@ -1,0 +1,8 @@
+_version: 2
+
+overview.projects:
+  en: "Projects"
+  ru: "Проекты"
+overview.services:
+  en: "Services"
+  ru: "Сервисы"

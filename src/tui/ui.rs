@@ -40,6 +40,12 @@ pub fn draw(frame: &mut Frame, app: &App) {
     let palette = app.theme.palette();
 
     let show_account = app.is_widget_enabled("account") && size.height >= 16;
+
+    if app.view == crate::tui::app::DashboardView::Overview {
+        draw_overview(frame, size, app, &palette, show_account);
+        return draw_modals(frame, size, app, &palette);
+    }
+
     let show_events = app.is_widget_enabled("events") && size.height >= 24;
 
     let mut constraints = Vec::with_capacity(5);
@@ -77,24 +83,55 @@ pub fn draw(frame: &mut Frame, app: &App) {
 
     render_status_bar(frame, main_chunks[idx], app, &palette);
 
+    draw_modals(frame, size, app, &palette);
+}
+
+/// Renders the overview landing screen: account header, the card zones, and the
+/// status bar.
+fn draw_overview(frame: &mut Frame, size: Rect, app: &App, palette: &Palette, show_account: bool) {
+    let mut constraints = Vec::with_capacity(3);
+    if show_account {
+        constraints.push(Constraint::Length(3));
+    }
+    constraints.push(Constraint::Min(6));
+    constraints.push(Constraint::Length(3));
+
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(constraints)
+        .split(size);
+
+    let mut idx = 0;
+    if show_account {
+        AccountWidget::new(true).render(frame, chunks[idx], app);
+        idx += 1;
+    }
+    crate::tui::widgets::overview::render(frame, chunks[idx], app, *palette);
+    idx += 1;
+    render_status_bar(frame, chunks[idx], app, palette);
+}
+
+/// Renders the floating overlays (help, menus, dialogs, palette) shared by all
+/// views.
+fn draw_modals(frame: &mut Frame, size: Rect, app: &App, palette: &Palette) {
     if app.show_help {
         HelpWidget::new().render(frame, size, app);
     }
 
     if app.action_menu_open() {
-        render_action_menu(frame, size, app, &palette);
+        render_action_menu(frame, size, app, palette);
     }
 
     if app.awaiting_confirm() {
-        render_confirm(frame, size, app, &palette);
+        render_confirm(frame, size, app, palette);
     }
 
     if let Some(form) = app.create_form.as_ref() {
-        render_create_form(frame, size, form, &palette);
+        render_create_form(frame, size, form, palette);
     }
 
     if let Some(cp) = app.palette.as_ref() {
-        crate::tui::command_palette::render(frame, size, &palette, cp);
+        crate::tui::command_palette::render(frame, size, palette, cp);
     }
 }
 

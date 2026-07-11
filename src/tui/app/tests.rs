@@ -302,6 +302,7 @@ fn handle_key_quit() {
 #[test]
 fn handle_key_tab() {
     let mut app = App::new(5);
+    app.view = DashboardView::Resources;
     let event = AppEvent::Key(crossterm::event::KeyEvent {
         code:      KeyCode::Tab,
         modifiers: crossterm::event::KeyModifiers::NONE,
@@ -316,6 +317,7 @@ fn handle_key_tab() {
 #[test]
 fn handle_key_vim_k() {
     let mut app = App::new(5);
+    app.view = DashboardView::Resources;
     app.servers = vec![
         make_server(1, "s1", "running"),
         make_server(2, "s2", "running"),
@@ -336,6 +338,7 @@ fn handle_key_vim_k() {
 #[test]
 fn handle_key_vim_j() {
     let mut app = App::new(5);
+    app.view = DashboardView::Resources;
     app.servers = vec![
         make_server(1, "s1", "running"),
         make_server(2, "s2", "running"),
@@ -364,6 +367,7 @@ fn key_event(code: KeyCode) -> AppEvent {
 #[test]
 fn handle_key_tab_switches_next() {
     let mut app = App::new(5);
+    app.view = DashboardView::Resources;
     assert!(crate::tui::event::handle_event(
         &mut app,
         key_event(KeyCode::Tab)
@@ -374,6 +378,7 @@ fn handle_key_tab_switches_next() {
 #[test]
 fn handle_key_backtab_switches_previous() {
     let mut app = App::new(5);
+    app.view = DashboardView::Resources;
     assert!(crate::tui::event::handle_event(
         &mut app,
         key_event(KeyCode::BackTab)
@@ -399,6 +404,7 @@ fn handle_key_vim_h_l_no_longer_switch_tabs() {
 #[test]
 fn handle_key_g() {
     let mut app = App::new(5);
+    app.view = DashboardView::Resources;
     app.servers = vec![
         make_server(1, "s1", "running"),
         make_server(2, "s2", "running"),
@@ -419,6 +425,7 @@ fn handle_key_g() {
 #[test]
 fn handle_key_dollar() {
     let mut app = App::new(5);
+    app.view = DashboardView::Resources;
     app.servers = vec![
         make_server(1, "s1", "running"),
         make_server(2, "s2", "running"),
@@ -520,6 +527,7 @@ fn menu_select_destructive_requires_confirm() {
 #[test]
 fn enter_opens_menu_then_runs_action() {
     let mut app = App::new(5);
+    app.view = DashboardView::Resources;
     app.servers = vec![make_server(7, "web", "On")];
     app.activate_focus();
 
@@ -880,6 +888,7 @@ fn select_initial_tab_all_empty_stays() {
 #[test]
 fn arrows_move_focus_between_widgets() {
     let mut app = App::new(5);
+    app.view = DashboardView::Resources;
     assert_eq!(app.focus, Focus::ResourceList);
     assert!(!app.focus_active);
     crate::tui::event::handle_event(&mut app, key_event(KeyCode::Right));
@@ -891,6 +900,7 @@ fn arrows_move_focus_between_widgets() {
 #[test]
 fn enter_activates_focused_widget() {
     let mut app = App::new(5);
+    app.view = DashboardView::Resources;
     crate::tui::event::handle_event(&mut app, key_event(KeyCode::Enter));
     assert!(app.focus_active);
     crate::tui::event::handle_event(&mut app, key_event(KeyCode::Esc));
@@ -900,6 +910,7 @@ fn enter_activates_focused_widget() {
 #[test]
 fn active_details_scrolls_with_down_up() {
     let mut app = App::new(5);
+    app.view = DashboardView::Resources;
     app.focus = Focus::Details;
     app.activate_focus();
     crate::tui::event::handle_event(&mut app, key_event(KeyCode::Down));
@@ -912,6 +923,7 @@ fn active_details_scrolls_with_down_up() {
 #[test]
 fn active_list_selects_not_scrolls() {
     let mut app = App::new(5);
+    app.view = DashboardView::Resources;
     app.servers = vec![make_server(1, "s1", "on"), make_server(2, "s2", "on")];
     app.activate_focus();
     crate::tui::event::handle_event(&mut app, key_event(KeyCode::Down));
@@ -922,6 +934,7 @@ fn active_list_selects_not_scrolls() {
 #[test]
 fn inactive_down_moves_focus_not_selection() {
     let mut app = App::new(5);
+    app.view = DashboardView::Resources;
     app.servers = vec![make_server(1, "s1", "on"), make_server(2, "s2", "on")];
     crate::tui::event::handle_event(&mut app, key_event(KeyCode::Down));
     assert_eq!(app.selected, 0);
@@ -938,4 +951,45 @@ fn arrows_are_two_dimensional() {
     assert_eq!(app.focus, Focus::Events);
     app.move_focus(FocusDir::Up);
     assert_ne!(app.focus, Focus::Events);
+}
+
+#[test]
+fn overview_is_default_view() {
+    let app = App::new(5);
+    assert_eq!(app.view, DashboardView::Overview);
+}
+
+#[test]
+fn overview_cards_projects_then_services() {
+    let mut app = App::new(5);
+    app.projects = vec![make_project(1, "p1")];
+    let cards = app.overview_cards();
+    assert_eq!(cards[0].label, "p1");
+    assert!(cards.len() > 1);
+}
+
+#[test]
+fn enter_overview_service_opens_resources() {
+    let mut app = App::new(5);
+    app.overview_selected = app.overview_project_cards().len();
+    app.enter_overview();
+    assert_eq!(app.view, DashboardView::Resources);
+    assert_eq!(app.active_tab, ResourceTab::Servers);
+}
+
+#[test]
+fn esc_from_resources_returns_to_overview() {
+    let mut app = App::new(5);
+    app.view = DashboardView::Resources;
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Esc));
+    assert_eq!(app.view, DashboardView::Overview);
+}
+
+#[test]
+fn overview_move_right_changes_selection() {
+    let mut app = App::new(5);
+    app.overview_cols = 4;
+    assert_eq!(app.overview_selected, 0);
+    app.move_overview(FocusDir::Right);
+    assert_eq!(app.overview_selected, 1);
 }

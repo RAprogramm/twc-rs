@@ -84,6 +84,10 @@ pub(crate) async fn run_dashboard(
             break;
         }
 
+        if let Ok(size) = terminal.size() {
+            app.overview_cols = tui::widgets::overview::columns_for(size.width);
+        }
+
         terminal
             .draw(|f| tui::ui::draw(f, &app))
             .map_err(|e| TwcError::Io(e.to_string()))?;

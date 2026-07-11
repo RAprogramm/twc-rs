@@ -6,7 +6,7 @@
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use tokio::{sync::mpsc, time::Duration};
 
-use super::app::{App, Focus, FocusDir};
+use super::app::{App, DashboardView, Focus, FocusDir};
 
 /// Events that the TUI event loop can process.
 #[allow(dead_code)]
@@ -164,9 +164,34 @@ fn handle_overlay_key(app: &mut App, key: KeyEvent) -> Option<bool> {
     None
 }
 
+/// Handles a key on the overview landing screen: card grid navigation plus the
+/// shared global shortcuts.
+fn handle_overview_key(app: &mut App, key: KeyEvent) -> bool {
+    match key.code {
+        KeyCode::Char('Q') => {
+            app.quit();
+            return false;
+        }
+        KeyCode::Char('?') => app.toggle_help(),
+        KeyCode::Char('r') => app.force_refresh(),
+        KeyCode::Char('p') => app.open_profile_switcher(),
+        KeyCode::Down | KeyCode::Char('j') => app.move_overview(FocusDir::Down),
+        KeyCode::Up | KeyCode::Char('k') => app.move_overview(FocusDir::Up),
+        KeyCode::Right | KeyCode::Char('l') => app.move_overview(FocusDir::Right),
+        KeyCode::Left | KeyCode::Char('h') => app.move_overview(FocusDir::Left),
+        KeyCode::Enter => app.enter_overview(),
+        _ => {}
+    }
+    true
+}
+
 fn handle_key(app: &mut App, key: KeyEvent) -> bool {
     if let Some(result) = handle_overlay_key(app, key) {
         return result;
+    }
+
+    if app.view == DashboardView::Overview {
+        return handle_overview_key(app, key);
     }
 
     match key.code {
@@ -191,6 +216,8 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
                 app.deactivate_focus();
             } else if app.filter_active() {
                 app.filter_clear();
+            } else {
+                app.show_overview();
             }
             true
         }
