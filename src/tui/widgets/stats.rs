@@ -277,8 +277,8 @@ impl crate::tui::widgets::Widget for StatsWidget {
         if rows.is_empty() {
             return;
         }
-        let constraints: Vec<Constraint> = rows.iter().map(|_| Constraint::Fill(1)).collect();
-        let row_areas = Layout::vertical(constraints).split(inner);
+        let constraints: Vec<Constraint> = rows.iter().map(|_| Constraint::Length(1)).collect();
+        let row_areas = Layout::vertical(constraints).spacing(1).split(inner);
 
         for (row, &row_area) in rows.iter().zip(row_areas.iter()) {
             let cols =

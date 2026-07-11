@@ -27,7 +27,7 @@ use crate::tui::{
     themes::Palette
 };
 
-const KEY_WIDTH: usize = 10;
+const KEY_WIDTH: usize = 13;
 const RULE_WIDTH: usize = 32;
 
 /// Renders the details panel for the selected resource.
@@ -120,6 +120,26 @@ pub(super) fn kv(key: &str, value: String, value_style: Style, palette: Palette)
         ),
         Span::styled(value, value_style),
     ])
+}
+
+/// Builds a key/value row that falls back to a dim `\u{2014}` when the value is
+/// empty, keeping the field visible so the panel layout stays stable across
+/// selections instead of collapsing rows in and out.
+pub(super) fn kv_field(
+    key: &str,
+    value: &str,
+    value_style: Style,
+    palette: Palette
+) -> Line<'static> {
+    if value.is_empty() {
+        return kv(
+            key,
+            "\u{2014}".to_string(),
+            Style::default().fg(palette.dim),
+            palette
+        );
+    }
+    kv(key, value.to_string(), value_style, palette)
 }
 
 /// Builds a status row rendered as a colored `\u{25CF} label` chip.

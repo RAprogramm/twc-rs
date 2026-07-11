@@ -1,6 +1,7 @@
 [package]
 name = "twc-rs"
 version = "0.10.0"
+default-run = "twc-rs"
 edition = "2024"
 rust-version = "1.96"
 authors = ["RAprogramm <andrey.rozanov.vl@gmail.com>"]
