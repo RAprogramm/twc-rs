@@ -38,11 +38,18 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App) {
         })
         .collect();
 
+    let border_color = if app.focus != crate::tui::app::Focus::Events {
+        palette.border
+    } else if app.focus_active {
+        palette.success
+    } else {
+        palette.accent
+    };
     let list = List::new(items).block(
         Block::default()
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(palette.border))
+            .border_style(Style::default().fg(border_color))
             .title(Line::from(Span::styled(
                 format!(" {} ", t!("events.title")),
                 Style::default()

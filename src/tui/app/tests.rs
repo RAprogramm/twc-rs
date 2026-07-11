@@ -925,5 +925,17 @@ fn inactive_down_moves_focus_not_selection() {
     app.servers = vec![make_server(1, "s1", "on"), make_server(2, "s2", "on")];
     crate::tui::event::handle_event(&mut app, key_event(KeyCode::Down));
     assert_eq!(app.selected, 0);
+    assert_ne!(app.focus, Focus::ResourceList);
+}
+
+#[test]
+fn arrows_are_two_dimensional() {
+    let mut app = App::new(5);
+    assert_eq!(app.focus, Focus::ResourceList);
+    app.move_focus(FocusDir::Right);
     assert_eq!(app.focus, Focus::Details);
+    app.move_focus(FocusDir::Down);
+    assert_eq!(app.focus, Focus::Events);
+    app.move_focus(FocusDir::Up);
+    assert_ne!(app.focus, Focus::Events);
 }

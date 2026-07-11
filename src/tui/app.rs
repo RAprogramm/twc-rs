@@ -42,7 +42,18 @@ pub enum Focus {
     /// Details panel (right side).
     Details,
     /// Stats panel (right info column).
-    Stats
+    Stats,
+    /// Event log panel (bottom).
+    Events
+}
+
+/// A direction for moving focus between widgets on the dashboard grid.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FocusDir {
+    Left,
+    Right,
+    Up,
+    Down
 }
 
 /// Holds all runtime state for the TUI dashboard.

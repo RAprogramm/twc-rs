@@ -218,31 +218,57 @@ impl super::App {
         self.detail_scroll = 0;
     }
 
-    /// The widgets that can hold focus, left-to-right in the content row.
-    fn focus_ring(&self) -> Vec<super::Focus> {
+    /// The focusable widgets with their grid coordinates `(row, col)`, limited
+    /// to those currently visible. The content row (list, details, stats) is
+    /// row 1; the event log sits below on row 3.
+    fn focus_targets(&self) -> Vec<(super::Focus, i8, i8)> {
         use super::Focus;
-        let mut ring = vec![Focus::ResourceList, Focus::Details];
+        let mut targets = vec![(Focus::ResourceList, 1, 0), (Focus::Details, 1, 1)];
         if self.is_widget_enabled("stats") {
-            ring.push(Focus::Stats);
+            targets.push((Focus::Stats, 1, 2));
         }
-        ring
+        if self.is_widget_enabled("events") {
+            targets.push((Focus::Events, 3, 0));
+        }
+        targets
     }
 
-    /// Moves focus to the next widget in the ring, leaving any active widget.
-    pub fn focus_next(&mut self) {
-        let ring = self.focus_ring();
-        let pos = ring.iter().position(|f| *f == self.focus).unwrap_or(0);
-        self.focus = ring[(pos + 1) % ring.len()];
-        self.focus_active = false;
-    }
+    /// Moves focus to the nearest widget in the given direction on the grid,
+    /// leaving any active widget. Horizontal moves stay on the same row;
+    /// vertical moves pick the closest column on the nearest other row.
+    pub fn move_focus(&mut self, dir: super::FocusDir) {
+        use super::FocusDir;
 
-    /// Moves focus to the previous widget in the ring, leaving any active
-    /// widget.
-    pub fn focus_previous(&mut self) {
-        let ring = self.focus_ring();
-        let pos = ring.iter().position(|f| *f == self.focus).unwrap_or(0);
-        self.focus = ring[(pos + ring.len() - 1) % ring.len()];
-        self.focus_active = false;
+        let targets = self.focus_targets();
+        let (_, row, col) = targets
+            .iter()
+            .copied()
+            .find(|(f, _, _)| *f == self.focus)
+            .unwrap_or((self.focus, 1, 0));
+
+        let pick = match dir {
+            FocusDir::Left => targets
+                .iter()
+                .filter(|(_, r, c)| *r == row && *c < col)
+                .max_by_key(|(_, _, c)| *c),
+            FocusDir::Right => targets
+                .iter()
+                .filter(|(_, r, c)| *r == row && *c > col)
+                .min_by_key(|(_, _, c)| *c),
+            FocusDir::Up => targets
+                .iter()
+                .filter(|(_, r, _)| *r < row)
+                .min_by_key(|(_, r, c)| (row - *r, (col - *c).abs())),
+            FocusDir::Down => targets
+                .iter()
+                .filter(|(_, r, _)| *r > row)
+                .min_by_key(|(_, r, c)| (*r - row, (col - *c).abs()))
+        };
+
+        if let Some((f, _, _)) = pick {
+            self.focus = *f;
+            self.focus_active = false;
+        }
     }
 
     /// Activates the focused widget so its own keys (select, scroll) apply.

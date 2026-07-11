@@ -6,7 +6,7 @@
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use tokio::{sync::mpsc, time::Duration};
 
-use super::app::{App, Focus};
+use super::app::{App, Focus, FocusDir};
 
 /// Events that the TUI event loop can process.
 #[allow(dead_code)]
@@ -218,7 +218,7 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
                     _ => {}
                 }
             } else {
-                app.focus_next();
+                app.move_focus(FocusDir::Down);
             }
             true
         }
@@ -230,19 +230,19 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
                     _ => {}
                 }
             } else {
-                app.focus_previous();
+                app.move_focus(FocusDir::Up);
             }
             true
         }
         KeyCode::Right | KeyCode::Char('l') => {
             if !app.focus_active {
-                app.focus_next();
+                app.move_focus(FocusDir::Right);
             }
             true
         }
         KeyCode::Left | KeyCode::Char('h') => {
             if !app.focus_active {
-                app.focus_previous();
+                app.move_focus(FocusDir::Left);
             }
             true
         }
