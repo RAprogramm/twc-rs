@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: MIT
 
 //! The overview landing screen: Projects and Services zones rendered as a
-//! responsive grid of cards, each showing a Nerd Font icon, a name and a count.
+//! responsive grid of cards that flex to fill the whole available area, each
+//! showing a Nerd Font icon, a name and a count.
 
 use ratatui::{
     Frame,
-    layout::Rect,
+    layout::{Constraint, Layout, Rect},
     style::{Modifier, Style},
     text::{Line, Span},
     widgets::{Block, BorderType, Borders, Paragraph}
@@ -43,56 +44,59 @@ const NERD_ICONS: [&str; 20] = [
     "\u{f155}"   // Finances
 ];
 
-/// Fixed inner width of a card in cells (border excluded).
-const CARD_W: u16 = 20;
-/// Fixed total height of a card in rows (border included).
-const CARD_H: u16 = 4;
-/// Horizontal gap between cards in cells.
+/// Smallest width a card cell may shrink to before dropping a column.
+const MIN_CELL_W: u16 = 18;
+/// Horizontal gap between card cells, in cells.
 const GAP: u16 = 2;
+/// Upper bound on the number of grid columns.
+const MAX_COLS: usize = 8;
 
-/// Renders the overview screen into `area`, updating `app.overview_cols` so
-/// keyboard navigation matches the rendered grid.
+/// Number of grid columns the overview renders with at the given outer width.
+///
+/// Both [`render`] and keyboard navigation derive their column count from this
+/// so the two never disagree.
+#[must_use]
+pub fn columns_for(width: u16) -> usize {
+    let usable = width.saturating_sub(2);
+    usize::from((usable + GAP) / (MIN_CELL_W + GAP)).clamp(1, MAX_COLS)
+}
+
+/// Renders the overview screen into `area`, laying out both zones as flex grids
+/// that consume the full width and height.
 pub fn render(frame: &mut Frame, area: Rect, app: &App, palette: Palette) {
     let projects = app.overview_project_cards();
     let services = app.overview_service_cards();
+    let cols = columns_for(area.width);
 
-    let cols = usize::from((area.width.saturating_sub(2) + GAP) / (CARD_W + 2 + GAP)).max(1);
-
-    let mut y = area.y;
-    let mut index = 0usize;
-
+    let mut zones: Vec<(String, &[OverviewCard])> = Vec::with_capacity(2);
     if !projects.is_empty() {
-        y = render_zone(
+        zones.push((t!("overview.projects").into_owned(), projects.as_slice()));
+    }
+    zones.push((t!("overview.services").into_owned(), services.as_slice()));
+
+    let weights: Vec<Constraint> = zones
+        .iter()
+        .map(|(_, cards)| {
+            let rows = cards.len().div_ceil(cols).max(1);
+            Constraint::Fill(u16::try_from(rows + 1).unwrap_or(u16::MAX))
+        })
+        .collect();
+
+    let zone_areas = Layout::vertical(weights).spacing(1).split(area);
+
+    let mut index = 0usize;
+    for ((title, cards), zone) in zones.iter().zip(zone_areas.iter()) {
+        render_zone(
             frame,
-            area,
-            &t!("overview.projects"),
-            &projects,
+            *zone,
+            title,
+            cards,
             cols,
             &mut index,
             app.overview_selected,
-            y,
             palette
         );
-        y = y.saturating_add(1);
     }
-
-    render_zone(
-        frame,
-        area,
-        &t!("overview.services"),
-        &services,
-        cols,
-        &mut index,
-        app.overview_selected,
-        y,
-        palette
-    );
-}
-
-/// Number of grid columns the overview last rendered with, for navigation.
-#[must_use]
-pub fn columns_for(width: u16) -> usize {
-    usize::from((width.saturating_sub(2) + GAP) / (CARD_W + 2 + GAP)).max(1)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -104,13 +108,11 @@ fn render_zone(
     cols: usize,
     index: &mut usize,
     selected: usize,
-    start_y: u16,
     palette: Palette
-) -> u16 {
-    let mut y = start_y;
-    if y >= area.bottom() {
+) {
+    if area.height < 2 || cards.is_empty() {
         *index += cards.len();
-        return y;
+        return;
     }
 
     let header = Paragraph::new(Line::from(Span::styled(
@@ -119,24 +121,28 @@ fn render_zone(
             .fg(palette.header)
             .add_modifier(Modifier::BOLD)
     )));
-    frame.render_widget(header, Rect::new(area.x, y, area.width, 1));
-    y = y.saturating_add(1);
+    let vsplit = Layout::vertical([Constraint::Length(1), Constraint::Min(0)]).split(area);
+    frame.render_widget(header, vsplit[0]);
 
-    for (i, card) in cards.iter().enumerate() {
-        let col = i % cols;
-        let row = i / cols;
-        let card_x = area.x + 2 + (col as u16) * (CARD_W + 2 + GAP);
-        let card_y = y + (row as u16) * (CARD_H + 1);
-        if card_y + CARD_H > area.bottom() {
-            continue;
+    let rows = cards.len().div_ceil(cols).max(1);
+    let row_areas = Layout::vertical(vec![Constraint::Fill(1); rows])
+        .spacing(1)
+        .split(vsplit[1]);
+
+    for (r, row_area) in row_areas.iter().enumerate() {
+        let cells = Layout::horizontal(vec![Constraint::Fill(1); cols])
+            .spacing(GAP)
+            .split(*row_area);
+        for (c, cell) in cells.iter().enumerate() {
+            let i = r * cols + c;
+            let Some(card) = cards.get(i) else {
+                break;
+            };
+            render_card(frame, *cell, card, *index + i == selected, palette);
         }
-        let rect = Rect::new(card_x, card_y, CARD_W + 2, CARD_H);
-        render_card(frame, rect, card, *index + i == selected, palette);
     }
 
     *index += cards.len();
-    let rows = cards.len().div_ceil(cols) as u16;
-    y + rows * (CARD_H + 1)
 }
 
 fn render_card(
@@ -146,6 +152,9 @@ fn render_card(
     selected: bool,
     palette: Palette
 ) {
+    if rect.height < 3 || rect.width < 6 {
+        return;
+    }
     let border = if selected {
         palette.accent
     } else {
@@ -156,10 +165,11 @@ fn render_card(
         .copied()
         .unwrap_or("\u{25A0}");
 
+    let inner_w = usize::from(rect.width.saturating_sub(4));
     let title_line = Line::from(vec![
         Span::styled(format!("{icon}  "), Style::default().fg(palette.accent)),
         Span::styled(
-            truncate(&card.label, usize::from(CARD_W).saturating_sub(4)),
+            truncate(&card.label, inner_w.saturating_sub(3)),
             Style::default().fg(palette.fg).add_modifier(Modifier::BOLD)
         ),
     ]);
@@ -174,12 +184,18 @@ fn render_card(
             .add_modifier(Modifier::BOLD)
     ));
 
+    let mut lines = vec![title_line];
+    let pad = usize::from(rect.height).saturating_sub(3);
+    for _ in 0..pad {
+        lines.push(Line::from(""));
+    }
+    lines.push(count_line);
+
     let block = Block::default()
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
         .border_style(Style::default().fg(border));
-    let paragraph = Paragraph::new(vec![title_line, count_line]).block(block);
-    frame.render_widget(paragraph, rect);
+    frame.render_widget(Paragraph::new(lines).block(block), rect);
 }
 
 fn truncate(s: &str, max: usize) -> String {
