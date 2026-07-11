@@ -6,7 +6,9 @@
 use ratatui::text::Line;
 use rust_i18n::t;
 
-use super::{accent, chip, empty, heading, kv, name_style, rule, section, status_chip, warn};
+use super::{
+    accent, chip, empty, heading, kv, kv_field, name_style, rule, section, status_chip, warn
+};
 use crate::tui::{app::App, themes::Palette, widgets::resource_list::server_status_view};
 
 pub(super) fn render_server_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
@@ -522,63 +524,31 @@ pub(super) fn render_app_details(app: &App, palette: Palette) -> Vec<Line<'stati
             palette
         ),
         status_chip(&t!("details.status"), &a.status, palette),
-    ];
-    if !a.app_type.is_empty() {
-        lines.push(kv(
-            &t!("details.type"),
-            a.app_type.clone(),
-            accent(palette),
-            palette
-        ));
-    }
-    if !a.framework.is_empty() {
-        lines.push(kv(
+        kv_field(&t!("details.type"), &a.app_type, accent(palette), palette),
+        kv_field(
             &t!("details.framework"),
-            a.framework.clone(),
+            &a.framework,
             name_style(palette),
             palette
-        ));
-    }
-    if !a.language.is_empty() {
-        lines.push(kv(
+        ),
+        kv_field(
             &t!("details.language"),
-            a.language.clone(),
+            &a.language,
             name_style(palette),
             palette
-        ));
-    }
-    if !a.ip.is_empty() {
-        lines.push(kv(&t!("details.ip"), a.ip.clone(), warn(palette), palette));
-    }
-    if !a.location.is_empty() {
-        lines.push(kv(
-            &t!("details.location"),
-            a.location.clone(),
-            warn(palette),
+        ),
+        kv_field(&t!("details.ip"), &a.ip, warn(palette), palette),
+        kv_field(&t!("details.location"), &a.location, warn(palette), palette),
+        Line::from(""),
+        section(&t!("details.repository"), palette),
+        kv_field(&t!("details.branch"), &a.branch, accent(palette), palette),
+        kv_field(
+            &t!("details.commit"),
+            &a.commit,
+            name_style(palette),
             palette
-        ));
-    }
-
-    if !a.branch.is_empty() || !a.commit.is_empty() {
-        lines.push(Line::from(""));
-        lines.push(section(&t!("details.repository"), palette));
-        if !a.branch.is_empty() {
-            lines.push(kv(
-                &t!("details.branch"),
-                a.branch.clone(),
-                accent(palette),
-                palette
-            ));
-        }
-        if !a.commit.is_empty() {
-            lines.push(kv(
-                &t!("details.commit"),
-                a.commit.clone(),
-                name_style(palette),
-                palette
-            ));
-        }
-        lines.push(kv(
+        ),
+        kv(
             &t!("details.auto_deploy"),
             if a.auto_deploy {
                 t!("details.yes")
@@ -587,6 +557,15 @@ pub(super) fn render_app_details(app: &App, palette: Palette) -> Vec<Line<'stati
             }
             .to_string(),
             name_style(palette),
+            palette
+        ),
+    ];
+
+    if !a.comment.is_empty() {
+        lines.push(kv_field(
+            &t!("details.comment"),
+            &a.comment,
+            warn(palette),
             palette
         ));
     }
@@ -597,16 +576,6 @@ pub(super) fn render_app_details(app: &App, palette: Palette) -> Vec<Line<'stati
         for domain in &a.domains {
             lines.push(kv("", domain.clone(), accent(palette), palette));
         }
-    }
-
-    if !a.comment.is_empty() {
-        lines.push(Line::from(""));
-        lines.push(kv(
-            &t!("details.comment"),
-            a.comment.clone(),
-            warn(palette),
-            palette
-        ));
     }
 
     lines
