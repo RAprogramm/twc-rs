@@ -886,59 +886,56 @@ fn select_initial_tab_all_empty_stays() {
 }
 
 #[test]
-fn arrows_move_focus_between_widgets() {
+fn arrows_move_card_selection_horizontally() {
     let mut app = App::new(5);
     app.view = DashboardView::Resources;
-    assert_eq!(app.focus, Focus::ResourceList);
-    assert!(!app.focus_active);
+    app.servers = vec![
+        make_server(1, "s1", "on"),
+        make_server(2, "s2", "on"),
+        make_server(3, "s3", "on"),
+    ];
+    app.resource_cols = 3;
     crate::tui::event::handle_event(&mut app, key_event(KeyCode::Right));
-    assert_eq!(app.focus, Focus::Details);
-    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Left));
-    assert_eq!(app.focus, Focus::ResourceList);
-}
-
-#[test]
-fn enter_activates_focused_widget() {
-    let mut app = App::new(5);
-    app.view = DashboardView::Resources;
-    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Enter));
-    assert!(app.focus_active);
-    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Esc));
-    assert!(!app.focus_active);
-}
-
-#[test]
-fn active_details_scrolls_with_down_up() {
-    let mut app = App::new(5);
-    app.view = DashboardView::Resources;
-    app.focus = Focus::Details;
-    app.activate_focus();
-    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Down));
-    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Down));
-    assert_eq!(app.detail_scroll, 2);
-    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Up));
-    assert_eq!(app.detail_scroll, 1);
-}
-
-#[test]
-fn active_list_selects_not_scrolls() {
-    let mut app = App::new(5);
-    app.view = DashboardView::Resources;
-    app.servers = vec![make_server(1, "s1", "on"), make_server(2, "s2", "on")];
-    app.activate_focus();
-    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Down));
     assert_eq!(app.selected, 1);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Left));
+    assert_eq!(app.selected, 0);
+}
+
+#[test]
+fn enter_on_leaf_card_opens_action_menu() {
+    let mut app = App::new(5);
+    app.view = DashboardView::Resources;
+    app.servers = vec![make_server(7, "web", "On")];
+    app.selected = 0;
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Enter));
+    assert!(app.action_menu_open());
+}
+
+#[test]
+fn down_moves_card_selection_by_a_row() {
+    let mut app = App::new(5);
+    app.view = DashboardView::Resources;
+    app.servers = vec![
+        make_server(1, "s1", "on"),
+        make_server(2, "s2", "on"),
+        make_server(3, "s3", "on"),
+        make_server(4, "s4", "on"),
+    ];
+    app.resource_cols = 2;
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Down));
+    assert_eq!(app.selected, 2);
     assert_eq!(app.detail_scroll, 0);
 }
 
 #[test]
-fn inactive_down_moves_focus_not_selection() {
+fn down_moves_selection_on_single_column() {
     let mut app = App::new(5);
     app.view = DashboardView::Resources;
     app.servers = vec![make_server(1, "s1", "on"), make_server(2, "s2", "on")];
+    app.resource_cols = 1;
     crate::tui::event::handle_event(&mut app, key_event(KeyCode::Down));
-    assert_eq!(app.selected, 0);
-    assert_ne!(app.focus, Focus::ResourceList);
+    assert_eq!(app.selected, 1);
+    assert_eq!(app.focus, Focus::ResourceList);
 }
 
 #[test]

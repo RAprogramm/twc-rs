@@ -100,6 +100,12 @@ resource_list.disk_used:
 resource_list.count_docs:
   en: "%{n} docs"
   ru: "%{n} документов"
+resource_list.auto_prolong:
+  en: auto-renew
+  ru: автопродление
+resource_list.manual_prolong:
+  en: manual
+  ru: вручную
 account.status_active:
   en: "active"
   ru: "активен"

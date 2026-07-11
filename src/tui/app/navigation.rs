@@ -181,7 +181,30 @@ impl super::App {
         self.filtered_indices().len()
     }
 
+    /// Moves the card-grid selection in the given direction, using the column
+    /// count the grid last rendered with so movement matches the layout.
+    pub fn move_resource(&mut self, dir: super::FocusDir) {
+        use super::FocusDir;
+
+        let len = self.current_list_len();
+        if len == 0 {
+            self.selected = 0;
+            return;
+        }
+        let cols = self.resource_cols.max(1);
+        let cur = self.selected.min(len - 1);
+        self.selected = match dir {
+            FocusDir::Left => cur.saturating_sub(1),
+            FocusDir::Right => (cur + 1).min(len - 1),
+            FocusDir::Up => cur.saturating_sub(cols),
+            FocusDir::Down => (cur + cols).min(len - 1)
+        };
+    }
+
     /// Moves selection up.
+    // JUSTIFY: Retained as part of the App navigation API, exercised by
+    // tests and reserved for the details/stats overlay.
+    #[allow(dead_code)]
     pub const fn select_previous(&mut self) {
         if self.selected > 0 {
             self.selected -= 1;
@@ -189,6 +212,9 @@ impl super::App {
     }
 
     /// Moves selection down.
+    // JUSTIFY: Retained as part of the App navigation API, exercised by
+    // tests and reserved for the details/stats overlay.
+    #[allow(dead_code)]
     pub fn select_next(&mut self) {
         if self.selected + 1 < self.current_list_len() {
             self.selected += 1;
@@ -221,6 +247,7 @@ impl super::App {
     /// The focusable widgets with their grid coordinates `(row, col)`, limited
     /// to those currently visible. The content row (list, details, stats) is
     /// row 1; the event log sits below on row 3.
+    #[allow(dead_code)]
     fn focus_targets(&self) -> Vec<(super::Focus, i8, i8)> {
         use super::Focus;
         let mut targets = vec![(Focus::ResourceList, 1, 0), (Focus::Details, 1, 1)];
@@ -236,6 +263,9 @@ impl super::App {
     /// Moves focus to the nearest widget in the given direction on the grid,
     /// leaving any active widget. Horizontal moves stay on the same row;
     /// vertical moves pick the closest column on the nearest other row.
+    // JUSTIFY: Retained as part of the App navigation API, exercised by
+    // tests and reserved for the details/stats overlay.
+    #[allow(dead_code)]
     pub fn move_focus(&mut self, dir: super::FocusDir) {
         use super::FocusDir;
 
@@ -272,6 +302,9 @@ impl super::App {
     }
 
     /// Activates the focused widget so its own keys (select, scroll) apply.
+    // JUSTIFY: Retained as part of the App navigation API, exercised by
+    // tests and reserved for the details/stats overlay.
+    #[allow(dead_code)]
     pub const fn activate_focus(&mut self) {
         self.focus_active = true;
     }
@@ -282,11 +315,17 @@ impl super::App {
     }
 
     /// Scrolls the details panel down by one line.
+    // JUSTIFY: Retained as part of the App navigation API, exercised by
+    // tests and reserved for the details/stats overlay.
+    #[allow(dead_code)]
     pub const fn detail_scroll_down(&mut self) {
         self.detail_scroll = self.detail_scroll.saturating_add(1);
     }
 
     /// Scrolls the details panel up by one line.
+    // JUSTIFY: Retained as part of the App navigation API, exercised by
+    // tests and reserved for the details/stats overlay.
+    #[allow(dead_code)]
     pub const fn detail_scroll_up(&mut self) {
         self.detail_scroll = self.detail_scroll.saturating_sub(1);
     }

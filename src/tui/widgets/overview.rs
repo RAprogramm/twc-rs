@@ -61,6 +61,13 @@ pub fn columns_for(width: u16) -> usize {
     usize::from((usable + GAP) / (MIN_CELL_W + GAP)).clamp(1, MAX_COLS)
 }
 
+/// The Nerd Font glyph representing a resource category, shared with the
+/// resource card grid so both screens use one icon set.
+#[must_use]
+pub fn tab_icon(tab: crate::tui::app::ResourceTab) -> &'static str {
+    NERD_ICONS.get(tab.index()).copied().unwrap_or("\u{25A0}")
+}
+
 /// Renders the overview screen into `area`, laying out both zones as flex grids
 /// that consume the full width and height.
 pub fn render(frame: &mut Frame, area: Rect, app: &App, palette: Palette) {
@@ -205,4 +212,40 @@ fn truncate(s: &str, max: usize) -> String {
     let mut out: String = s.chars().take(max.saturating_sub(1)).collect();
     out.push('\u{2026}');
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use ratatui::{Terminal, backend::TestBackend};
+
+    use super::*;
+    use crate::tui::{app::ProjectSummary, themes::Theme};
+
+    #[test]
+    fn columns_grow_with_width_and_clamp() {
+        assert_eq!(columns_for(0), 1);
+        assert_eq!(columns_for(30), 1);
+        assert!(columns_for(120) > columns_for(40));
+        assert!(columns_for(4000) <= MAX_COLS);
+    }
+
+    #[test]
+    fn overview_renders_across_sizes_without_panic() {
+        let mut app = App::new(5);
+        app.projects = (0..3)
+            .map(|i| ProjectSummary {
+                id: i,
+                name: format!("proj-{i}"),
+                ..ProjectSummary::default()
+            })
+            .collect();
+        let palette = Theme::GruvboxDark.palette();
+        for (w, h) in [(0, 0), (1, 1), (4, 4), (40, 10), (100, 30), (240, 70)] {
+            let backend = TestBackend::new(w.max(1), h.max(1));
+            let mut terminal = Terminal::new(backend).unwrap();
+            terminal
+                .draw(|frame| render(frame, Rect::new(0, 0, w, h), &app, palette))
+                .unwrap();
+        }
+    }
 }

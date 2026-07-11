@@ -18,7 +18,7 @@ use rust_i18n::t;
 use status_bar::render_status_bar;
 
 use crate::tui::{
-    app::{App, DrillView, Focus},
+    app::{App, DrillView},
     themes::Palette,
     widgets::{
         Widget, account::AccountWidget, help::HelpWidget, resource_tabs::ResourceTabsWidget
@@ -152,88 +152,19 @@ fn render_content(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
         return;
     }
 
-    let list_pct = app.list_width_pct.clamp(20, 70);
-    let chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Percentage(list_pct),
-            Constraint::Percentage(100 - list_pct)
-        ])
-        .split(area);
-
     if app.is_loading {
         crate::tui::widgets::skeleton::render(
             frame,
-            chunks[0],
+            area,
             palette,
             &t!("ui.skeleton_resources"),
             8,
             app.anim_tick
         );
-        crate::tui::widgets::skeleton::render(
-            frame,
-            chunks[1],
-            palette,
-            &t!("ui.skeleton_details"),
-            6,
-            app.anim_tick
-        );
         return;
     }
 
-    let border_for = |target: Focus| {
-        if app.focus != target {
-            palette.border
-        } else if app.focus_active {
-            palette.success
-        } else {
-            palette.accent
-        }
-    };
-    let list_border_color = border_for(Focus::ResourceList);
-    let detail_border_color = border_for(Focus::Details);
-
-    if area.width < 56 {
-        crate::tui::widgets::resource_list::render(frame, area, app, list_border_color);
-        return;
-    }
-
-    let wide = area.width >= 100;
-    let show_stats = wide && app.is_widget_enabled("stats");
-    let show_token = wide && app.is_widget_enabled("token_info");
-
-    crate::tui::widgets::resource_list::render(frame, chunks[0], app, list_border_color);
-
-    if show_stats || show_token {
-        let right = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([Constraint::Percentage(62), Constraint::Percentage(38)])
-            .split(chunks[1]);
-        crate::tui::widgets::details::render(frame, right[0], app, detail_border_color);
-        render_info_column(frame, right[1], app, show_stats, show_token);
-    } else {
-        crate::tui::widgets::details::render(frame, chunks[1], app, detail_border_color);
-    }
-}
-
-/// Renders the optional right-hand info column with the Stats and Token Info
-/// widgets, stacked according to which are enabled.
-fn render_info_column(frame: &mut Frame, area: Rect, app: &App, stats: bool, token: bool) {
-    use crate::tui::widgets::{Widget, stats::StatsWidget, token_info::TokenInfoWidget};
-
-    match (stats, token) {
-        (true, true) => {
-            let rows = Layout::default()
-                .direction(Direction::Vertical)
-                .constraints([Constraint::Percentage(55), Constraint::Percentage(45)])
-                .split(area);
-            StatsWidget::new(true).render(frame, rows[0], app);
-            TokenInfoWidget::new(true).render(frame, rows[1], app);
-        }
-        (true, false) => StatsWidget::new(true).render(frame, area, app),
-        (false, true) => TokenInfoWidget::new(true).render(frame, area, app),
-        (false, false) => {}
-    }
+    crate::tui::widgets::resource_list::render(frame, area, app, palette.accent);
 }
 
 /// Renders the drill-in view listing the resources contained in a parent.

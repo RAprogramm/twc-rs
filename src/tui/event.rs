@@ -6,7 +6,7 @@
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use tokio::{sync::mpsc, time::Duration};
 
-use super::app::{App, DashboardView, Focus, FocusDir};
+use super::app::{App, DashboardView, FocusDir};
 
 /// Events that the TUI event loop can process.
 #[allow(dead_code)]
@@ -238,67 +238,37 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
             true
         }
         KeyCode::Down | KeyCode::Char('j') => {
-            if app.focus_active {
-                match app.focus {
-                    Focus::ResourceList => app.select_next(),
-                    Focus::Details => app.detail_scroll_down(),
-                    _ => {}
-                }
-            } else {
-                app.move_focus(FocusDir::Down);
-            }
+            app.move_resource(FocusDir::Down);
             true
         }
         KeyCode::Up | KeyCode::Char('k') => {
-            if app.focus_active {
-                match app.focus {
-                    Focus::ResourceList => app.select_previous(),
-                    Focus::Details => app.detail_scroll_up(),
-                    _ => {}
-                }
-            } else {
-                app.move_focus(FocusDir::Up);
-            }
+            app.move_resource(FocusDir::Up);
             true
         }
         KeyCode::Right | KeyCode::Char('l') => {
-            if !app.focus_active {
-                app.move_focus(FocusDir::Right);
-            }
+            app.move_resource(FocusDir::Right);
             true
         }
         KeyCode::Left | KeyCode::Char('h') => {
-            if !app.focus_active {
-                app.move_focus(FocusDir::Left);
-            }
+            app.move_resource(FocusDir::Left);
             true
         }
         KeyCode::Char('g') | KeyCode::Home => {
-            if app.focus_active && app.focus == Focus::ResourceList {
-                app.selected = 0;
-            }
+            app.selected = 0;
             true
         }
         KeyCode::Char('G' | '$') | KeyCode::End => {
-            if app.focus_active && app.focus == Focus::ResourceList {
-                let len = app.current_list_len();
-                if len > 0 {
-                    app.selected = len - 1;
-                }
+            let len = app.current_list_len();
+            if len > 0 {
+                app.selected = len - 1;
             }
             true
         }
         KeyCode::Enter => {
-            if app.focus_active {
-                if app.focus == Focus::ResourceList {
-                    if app.can_drill() {
-                        app.request_drill();
-                    } else {
-                        app.open_action_menu();
-                    }
-                }
+            if app.can_drill() {
+                app.request_drill();
             } else {
-                app.activate_focus();
+                app.open_action_menu();
             }
             true
         }
