@@ -40,7 +40,9 @@ pub enum Focus {
     #[default]
     ResourceList,
     /// Details panel (right side).
-    Details
+    Details,
+    /// Stats panel (right info column).
+    Stats
 }
 
 /// Holds all runtime state for the TUI dashboard.
@@ -100,6 +102,8 @@ pub struct App {
     pub filter_editing:    bool,
     pub hide_empty_tabs:   bool,
     pub initial_tab_set:   bool,
+    pub detail_scroll:     u16,
+    pub focus_active:      bool,
     pub language:          crate::config::Language,
     pub stats_subject:     Option<String>,
     pub stats_loaded_for:  Option<String>,
@@ -182,6 +186,8 @@ impl App {
             filter_editing: false,
             hide_empty_tabs: false,
             initial_tab_set: false,
+            detail_scroll: 0,
+            focus_active: false,
             language: crate::config::Language::default(),
             stats_subject: None,
             stats_loaded_for: None,

@@ -6,7 +6,7 @@
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use tokio::{sync::mpsc, time::Duration};
 
-use super::app::App;
+use super::app::{App, Focus};
 
 /// Events that the TUI event loop can process.
 #[allow(dead_code)]
@@ -187,7 +187,9 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
             true
         }
         KeyCode::Esc => {
-            if app.filter_active() {
+            if app.focus_active {
+                app.deactivate_focus();
+            } else if app.filter_active() {
                 app.filter_clear();
             }
             true
@@ -208,30 +210,68 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
             app.previous_tab();
             true
         }
-        KeyCode::Char('j') | KeyCode::Down => {
-            app.select_next();
+        KeyCode::Down | KeyCode::Char('j') => {
+            if app.focus_active {
+                match app.focus {
+                    Focus::ResourceList => app.select_next(),
+                    Focus::Details => app.detail_scroll_down(),
+                    _ => {}
+                }
+            } else {
+                app.focus_next();
+            }
             true
         }
-        KeyCode::Char('k') | KeyCode::Up => {
-            app.select_previous();
+        KeyCode::Up | KeyCode::Char('k') => {
+            if app.focus_active {
+                match app.focus {
+                    Focus::ResourceList => app.select_previous(),
+                    Focus::Details => app.detail_scroll_up(),
+                    _ => {}
+                }
+            } else {
+                app.focus_previous();
+            }
+            true
+        }
+        KeyCode::Right | KeyCode::Char('l') => {
+            if !app.focus_active {
+                app.focus_next();
+            }
+            true
+        }
+        KeyCode::Left | KeyCode::Char('h') => {
+            if !app.focus_active {
+                app.focus_previous();
+            }
             true
         }
         KeyCode::Char('g') | KeyCode::Home => {
-            app.selected = 0;
+            if app.focus_active && app.focus == Focus::ResourceList {
+                app.selected = 0;
+            }
             true
         }
         KeyCode::Char('G' | '$') | KeyCode::End => {
-            let len = app.current_list_len();
-            if len > 0 {
-                app.selected = len - 1;
+            if app.focus_active && app.focus == Focus::ResourceList {
+                let len = app.current_list_len();
+                if len > 0 {
+                    app.selected = len - 1;
+                }
             }
             true
         }
         KeyCode::Enter => {
-            if app.can_drill() {
-                app.request_drill();
+            if app.focus_active {
+                if app.focus == Focus::ResourceList {
+                    if app.can_drill() {
+                        app.request_drill();
+                    } else {
+                        app.open_action_menu();
+                    }
+                }
             } else {
-                app.open_action_menu();
+                app.activate_focus();
             }
             true
         }

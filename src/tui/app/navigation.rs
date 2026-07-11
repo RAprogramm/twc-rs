@@ -215,6 +215,54 @@ impl super::App {
         self.selected = 0;
         self.filter.clear();
         self.filter_editing = false;
+        self.detail_scroll = 0;
+    }
+
+    /// The widgets that can hold focus, left-to-right in the content row.
+    fn focus_ring(&self) -> Vec<super::Focus> {
+        use super::Focus;
+        let mut ring = vec![Focus::ResourceList, Focus::Details];
+        if self.is_widget_enabled("stats") {
+            ring.push(Focus::Stats);
+        }
+        ring
+    }
+
+    /// Moves focus to the next widget in the ring, leaving any active widget.
+    pub fn focus_next(&mut self) {
+        let ring = self.focus_ring();
+        let pos = ring.iter().position(|f| *f == self.focus).unwrap_or(0);
+        self.focus = ring[(pos + 1) % ring.len()];
+        self.focus_active = false;
+    }
+
+    /// Moves focus to the previous widget in the ring, leaving any active
+    /// widget.
+    pub fn focus_previous(&mut self) {
+        let ring = self.focus_ring();
+        let pos = ring.iter().position(|f| *f == self.focus).unwrap_or(0);
+        self.focus = ring[(pos + ring.len() - 1) % ring.len()];
+        self.focus_active = false;
+    }
+
+    /// Activates the focused widget so its own keys (select, scroll) apply.
+    pub const fn activate_focus(&mut self) {
+        self.focus_active = true;
+    }
+
+    /// Leaves the active widget, returning to widget-to-widget navigation.
+    pub const fn deactivate_focus(&mut self) {
+        self.focus_active = false;
+    }
+
+    /// Scrolls the details panel down by one line.
+    pub const fn detail_scroll_down(&mut self) {
+        self.detail_scroll = self.detail_scroll.saturating_add(1);
+    }
+
+    /// Scrolls the details panel up by one line.
+    pub const fn detail_scroll_up(&mut self) {
+        self.detail_scroll = self.detail_scroll.saturating_sub(1);
     }
 
     pub(super) fn clamp_selection(&mut self) {

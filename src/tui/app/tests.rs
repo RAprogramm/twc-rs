@@ -321,6 +321,7 @@ fn handle_key_vim_k() {
         make_server(2, "s2", "running"),
     ];
     app.selected = 1;
+    app.activate_focus();
     let event = AppEvent::Key(crossterm::event::KeyEvent {
         code:      KeyCode::Char('k'),
         modifiers: crossterm::event::KeyModifiers::NONE,
@@ -339,6 +340,7 @@ fn handle_key_vim_j() {
         make_server(1, "s1", "running"),
         make_server(2, "s2", "running"),
     ];
+    app.activate_focus();
     let event = AppEvent::Key(crossterm::event::KeyEvent {
         code:      KeyCode::Char('j'),
         modifiers: crossterm::event::KeyModifiers::NONE,
@@ -402,6 +404,7 @@ fn handle_key_g() {
         make_server(2, "s2", "running"),
     ];
     app.selected = 1;
+    app.activate_focus();
     let event = AppEvent::Key(crossterm::event::KeyEvent {
         code:      KeyCode::Char('g'),
         modifiers: crossterm::event::KeyModifiers::NONE,
@@ -421,6 +424,7 @@ fn handle_key_dollar() {
         make_server(2, "s2", "running"),
     ];
     app.selected = 0;
+    app.activate_focus();
     let event = AppEvent::Key(crossterm::event::KeyEvent {
         code:      KeyCode::Char('$'),
         modifiers: crossterm::event::KeyModifiers::NONE,
@@ -517,6 +521,7 @@ fn menu_select_destructive_requires_confirm() {
 fn enter_opens_menu_then_runs_action() {
     let mut app = App::new(5);
     app.servers = vec![make_server(7, "web", "On")];
+    app.activate_focus();
 
     crate::tui::event::handle_event(&mut app, key(KeyCode::Enter));
     assert!(app.action_menu_open());
@@ -870,4 +875,55 @@ fn select_initial_tab_all_empty_stays() {
     app.select_initial_tab();
     assert_eq!(app.active_tab, ResourceTab::Servers);
     assert!(app.initial_tab_set);
+}
+
+#[test]
+fn arrows_move_focus_between_widgets() {
+    let mut app = App::new(5);
+    assert_eq!(app.focus, Focus::ResourceList);
+    assert!(!app.focus_active);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Right));
+    assert_eq!(app.focus, Focus::Details);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Left));
+    assert_eq!(app.focus, Focus::ResourceList);
+}
+
+#[test]
+fn enter_activates_focused_widget() {
+    let mut app = App::new(5);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Enter));
+    assert!(app.focus_active);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Esc));
+    assert!(!app.focus_active);
+}
+
+#[test]
+fn active_details_scrolls_with_down_up() {
+    let mut app = App::new(5);
+    app.focus = Focus::Details;
+    app.activate_focus();
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Down));
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Down));
+    assert_eq!(app.detail_scroll, 2);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Up));
+    assert_eq!(app.detail_scroll, 1);
+}
+
+#[test]
+fn active_list_selects_not_scrolls() {
+    let mut app = App::new(5);
+    app.servers = vec![make_server(1, "s1", "on"), make_server(2, "s2", "on")];
+    app.activate_focus();
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Down));
+    assert_eq!(app.selected, 1);
+    assert_eq!(app.detail_scroll, 0);
+}
+
+#[test]
+fn inactive_down_moves_focus_not_selection() {
+    let mut app = App::new(5);
+    app.servers = vec![make_server(1, "s1", "on"), make_server(2, "s2", "on")];
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Down));
+    assert_eq!(app.selected, 0);
+    assert_eq!(app.focus, Focus::Details);
 }

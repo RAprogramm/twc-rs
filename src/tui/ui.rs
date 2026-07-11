@@ -144,16 +144,17 @@ fn render_content(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
         return;
     }
 
-    let list_border_color = if app.focus == Focus::ResourceList {
-        palette.accent
-    } else {
-        palette.border
+    let border_for = |target: Focus| {
+        if app.focus != target {
+            palette.border
+        } else if app.focus_active {
+            palette.success
+        } else {
+            palette.accent
+        }
     };
-    let detail_border_color = if app.focus == Focus::Details {
-        palette.accent
-    } else {
-        palette.border
-    };
+    let list_border_color = border_for(Focus::ResourceList);
+    let detail_border_color = border_for(Focus::Details);
 
     if area.width < 56 {
         crate::tui::widgets::resource_list::render(frame, area, app, list_border_color);

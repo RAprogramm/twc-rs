@@ -251,10 +251,17 @@ impl crate::tui::widgets::Widget for StatsWidget {
             || format!(" {} ", t!("stats.title")),
             |name| format!(" {} — {name} ", t!("stats.title"))
         );
+        let border_color = if app.focus != crate::tui::app::Focus::Stats {
+            palette.border
+        } else if app.focus_active {
+            palette.success
+        } else {
+            palette.accent
+        };
         let block = Block::default()
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(palette.border))
+            .border_style(Style::default().fg(border_color))
             .title(Line::from(Span::styled(
                 title,
                 Style::default()

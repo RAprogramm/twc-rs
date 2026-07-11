@@ -68,7 +68,9 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
         }
     };
 
-    let paragraph = Paragraph::new(text).block(
+    let max_scroll = u16::try_from(text.len().saturating_sub(1)).unwrap_or(u16::MAX);
+    let scroll = app.detail_scroll.min(max_scroll);
+    let paragraph = Paragraph::new(text).scroll((scroll, 0)).block(
         Block::default()
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
