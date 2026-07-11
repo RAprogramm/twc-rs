@@ -512,7 +512,7 @@ pub(super) fn render_app_details(app: &App, palette: Palette) -> Vec<Line<'stati
         return empty(&t!("details.no_apps"), palette);
     }
     let a = &app.apps[app.selected_real_index().min(app.apps.len() - 1)];
-    vec![
+    let mut lines = vec![
         heading(&a.name, palette),
         rule(palette),
         kv(
@@ -522,14 +522,94 @@ pub(super) fn render_app_details(app: &App, palette: Palette) -> Vec<Line<'stati
             palette
         ),
         status_chip(&t!("details.status"), &a.status, palette),
-        kv(&t!("details.ip"), a.ip.clone(), warn(palette), palette),
-        kv(
+    ];
+    if !a.app_type.is_empty() {
+        lines.push(kv(
+            &t!("details.type"),
+            a.app_type.clone(),
+            accent(palette),
+            palette
+        ));
+    }
+    if !a.framework.is_empty() {
+        lines.push(kv(
+            &t!("details.framework"),
+            a.framework.clone(),
+            name_style(palette),
+            palette
+        ));
+    }
+    if !a.language.is_empty() {
+        lines.push(kv(
+            &t!("details.language"),
+            a.language.clone(),
+            name_style(palette),
+            palette
+        ));
+    }
+    if !a.ip.is_empty() {
+        lines.push(kv(&t!("details.ip"), a.ip.clone(), warn(palette), palette));
+    }
+    if !a.location.is_empty() {
+        lines.push(kv(
             &t!("details.location"),
             a.location.clone(),
             warn(palette),
             palette
-        ),
-    ]
+        ));
+    }
+
+    if !a.branch.is_empty() || !a.commit.is_empty() {
+        lines.push(Line::from(""));
+        lines.push(section(&t!("details.repository"), palette));
+        if !a.branch.is_empty() {
+            lines.push(kv(
+                &t!("details.branch"),
+                a.branch.clone(),
+                accent(palette),
+                palette
+            ));
+        }
+        if !a.commit.is_empty() {
+            lines.push(kv(
+                &t!("details.commit"),
+                a.commit.clone(),
+                name_style(palette),
+                palette
+            ));
+        }
+        lines.push(kv(
+            &t!("details.auto_deploy"),
+            if a.auto_deploy {
+                t!("details.yes")
+            } else {
+                t!("details.no")
+            }
+            .to_string(),
+            name_style(palette),
+            palette
+        ));
+    }
+
+    if !a.domains.is_empty() {
+        lines.push(Line::from(""));
+        lines.push(section(&t!("details.domains"), palette));
+        for domain in &a.domains {
+            lines.push(kv("", domain.clone(), accent(palette), palette));
+        }
+    }
+
+    if !a.comment.is_empty() {
+        lines.push(Line::from(""));
+        lines.push(kv(
+            &t!("details.comment"),
+            a.comment.clone(),
+            warn(palette),
+            palette
+        ));
+    }
+
+    lines
 }
 
 pub(super) fn render_ai_agent_details(app: &App, palette: Palette) -> Vec<Line<'static>> {

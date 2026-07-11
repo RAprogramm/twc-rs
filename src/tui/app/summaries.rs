@@ -228,11 +228,19 @@ pub struct MailSummary {
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct AppSummary {
-    pub id:       i32,
-    pub name:     String,
-    pub status:   String,
-    pub ip:       String,
-    pub location: String
+    pub id:          i32,
+    pub name:        String,
+    pub status:      String,
+    pub ip:          String,
+    pub location:    String,
+    pub app_type:    String,
+    pub framework:   String,
+    pub language:    String,
+    pub branch:      String,
+    pub commit:      String,
+    pub auto_deploy: bool,
+    pub comment:     String,
+    pub domains:     Vec<String>
 }
 
 /// Summary of a single AI agent.

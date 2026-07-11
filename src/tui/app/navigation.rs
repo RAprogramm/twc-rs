@@ -50,6 +50,26 @@ impl super::App {
         tabs
     }
 
+    /// On the first data load, moves off an empty active tab onto the first
+    /// tab that actually has items, so the dashboard never opens on a blank
+    /// list. Runs once; later manual tab changes are left untouched.
+    pub fn select_initial_tab(&mut self) {
+        if self.initial_tab_set {
+            return;
+        }
+        self.initial_tab_set = true;
+        if self.tab_count(self.active_tab) > 0 {
+            return;
+        }
+        if let Some(tab) = ResourceTab::ALL
+            .into_iter()
+            .find(|t| self.tab_count(*t) > 0)
+        {
+            self.active_tab = tab;
+            self.reset_after_tab_change();
+        }
+    }
+
     /// Toggles hiding of empty tabs and marks preferences dirty.
     pub const fn toggle_hide_empty_tabs(&mut self) {
         self.hide_empty_tabs = !self.hide_empty_tabs;

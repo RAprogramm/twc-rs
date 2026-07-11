@@ -97,6 +97,30 @@ details.bound_to:
 details.documents:
   en: "Documents"
   ru: "Документы"
+details.type:
+  en: "Type"
+  ru: "Тип"
+details.framework:
+  en: "Framework"
+  ru: "Фреймворк"
+details.language:
+  en: "Language"
+  ru: "Язык"
+details.repository:
+  en: "Repository"
+  ru: "Репозиторий"
+details.branch:
+  en: "Branch"
+  ru: "Ветка"
+details.commit:
+  en: "Commit"
+  ru: "Коммит"
+details.auto_deploy:
+  en: "Auto-deploy"
+  ru: "Автодеплой"
+details.domains:
+  en: "Domains"
+  ru: "Домены"
 
 details.cores:
   en: "cores"
