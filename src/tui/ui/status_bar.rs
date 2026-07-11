@@ -44,7 +44,7 @@ pub(super) fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, palett
                 .add_modifier(Modifier::BOLD)
         ),
         Span::raw("  "),
-        key("h/l"),
+        key("\u{21e5}/\u{21e4}"),
         lbl(format!(" {}   ", t!("ui.status_tabs"))),
         key("j/k"),
         lbl(format!(" {}   ", t!("ui.status_move"))),
