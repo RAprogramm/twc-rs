@@ -200,11 +200,11 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
             app.force_refresh();
             true
         }
-        KeyCode::Tab | KeyCode::Char('l') | KeyCode::Right => {
+        KeyCode::Tab => {
             app.next_tab();
             true
         }
-        KeyCode::BackTab | KeyCode::Char('h') | KeyCode::Left => {
+        KeyCode::BackTab => {
             app.previous_tab();
             true
         }

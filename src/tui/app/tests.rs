@@ -350,32 +350,48 @@ fn handle_key_vim_j() {
     assert_eq!(app.selected, 1);
 }
 
-#[test]
-fn handle_key_vim_h() {
-    let mut app = App::new(5);
-    let event = AppEvent::Key(crossterm::event::KeyEvent {
-        code:      KeyCode::Char('h'),
+fn key_event(code: KeyCode) -> AppEvent {
+    AppEvent::Key(crossterm::event::KeyEvent {
+        code,
         modifiers: crossterm::event::KeyModifiers::NONE,
-        kind:      crossterm::event::KeyEventKind::Press,
-        state:     crossterm::event::KeyEventState::NONE
-    });
-    let keep_going = crate::tui::event::handle_event(&mut app, event);
-    assert!(keep_going);
+        kind: crossterm::event::KeyEventKind::Press,
+        state: crossterm::event::KeyEventState::NONE
+    })
+}
+
+#[test]
+fn handle_key_tab_switches_next() {
+    let mut app = App::new(5);
+    assert!(crate::tui::event::handle_event(
+        &mut app,
+        key_event(KeyCode::Tab)
+    ));
+    assert_eq!(app.active_tab, ResourceTab::Databases);
+}
+
+#[test]
+fn handle_key_backtab_switches_previous() {
+    let mut app = App::new(5);
+    assert!(crate::tui::event::handle_event(
+        &mut app,
+        key_event(KeyCode::BackTab)
+    ));
     assert_eq!(app.active_tab, ResourceTab::Finances);
 }
 
 #[test]
-fn handle_key_vim_l() {
+fn handle_key_vim_h_l_no_longer_switch_tabs() {
     let mut app = App::new(5);
-    let event = AppEvent::Key(crossterm::event::KeyEvent {
-        code:      KeyCode::Char('l'),
-        modifiers: crossterm::event::KeyModifiers::NONE,
-        kind:      crossterm::event::KeyEventKind::Press,
-        state:     crossterm::event::KeyEventState::NONE
-    });
-    let keep_going = crate::tui::event::handle_event(&mut app, event);
-    assert!(keep_going);
-    assert_eq!(app.active_tab, ResourceTab::Databases);
+    assert!(crate::tui::event::handle_event(
+        &mut app,
+        key_event(KeyCode::Char('l'))
+    ));
+    assert_eq!(app.active_tab, ResourceTab::Servers);
+    assert!(crate::tui::event::handle_event(
+        &mut app,
+        key_event(KeyCode::Char('h'))
+    ));
+    assert_eq!(app.active_tab, ResourceTab::Servers);
 }
 
 #[test]
