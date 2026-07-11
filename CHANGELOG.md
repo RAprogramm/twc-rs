@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.1](https://github.com/RAprogramm/twc-rs/compare/v0.10.0...v0.10.1) - 2026-07-11
+
+### Fixed
+
+- Align app details, stabilize layout, compact stats, set default-run (#120) ([#119](https://github.com/RAprogramm/twc-rs/issues/119)) ([2de6c75](https://github.com/RAprogramm/twc-rs/commit/2de6c755453b61292894ed0cb5cafc8b8521e742))
+
+
 ## [0.10.0](https://github.com/RAprogramm/twc-rs/compare/v0.9.1...v0.10.0) - 2026-07-11
 
 ### Added

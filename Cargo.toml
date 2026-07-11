@@ -1,6 +1,6 @@
 [package]
 name = "twc-rs"
-version = "0.10.0"
+version = "0.10.1"
 default-run = "twc-rs"
 edition = "2024"
 rust-version = "1.96"
