@@ -137,6 +137,20 @@ fn floating_ip_binding(
     }
 }
 
+/// Renders a serde-tagged enum as its wire string (e.g. `Frameworks::NextJs`
+/// becomes `next.js`), falling back to an empty string.
+fn enum_label<T: serde::Serialize>(value: &T) -> String {
+    serde_json::to_value(value)
+        .ok()
+        .and_then(|v| v.as_str().map(str::to_owned))
+        .unwrap_or_default()
+}
+
+/// Shortens a git commit SHA to its first seven characters.
+fn short_commit(sha: &str) -> String {
+    sha.chars().take(7).collect()
+}
+
 #[expect(clippy::too_many_lines)]
 #[expect(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
 async fn refresh_all(
@@ -638,11 +652,27 @@ async fn refresh_all(
             .apps
             .iter()
             .map(|a| AppSummary {
-                id:       a.id as i32,
-                name:     a.name.clone(),
-                status:   format!("{:?}", a.status),
-                ip:       a.ip.clone().unwrap_or_default(),
-                location: a.location.clone().unwrap_or_default()
+                id:          a.id as i32,
+                name:        a.name.clone(),
+                status:      enum_label(&a.status),
+                ip:          a.ip.clone().unwrap_or_default(),
+                location:    a.location.clone().unwrap_or_default(),
+                app_type:    a.r#type.as_ref().map(enum_label).unwrap_or_default(),
+                framework:   a.framework.as_deref().map(enum_label).unwrap_or_default(),
+                language:    a.language.clone().unwrap_or_default(),
+                branch:      a.branch_name.clone().unwrap_or_default(),
+                commit:      a
+                    .commit_sha
+                    .as_deref()
+                    .map(short_commit)
+                    .unwrap_or_default(),
+                auto_deploy: a.is_auto_deploy.unwrap_or(false),
+                comment:     a.comment.clone().unwrap_or_default(),
+                domains:     a
+                    .domains
+                    .as_ref()
+                    .map(|d| d.iter().filter_map(|x| x.fqdn.clone()).collect())
+                    .unwrap_or_default()
             })
             .collect();
         app.update_apps(summaries);

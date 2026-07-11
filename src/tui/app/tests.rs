@@ -820,3 +820,38 @@ fn create_form_not_for_actionless_tab() {
     app.open_create_form();
     assert!(!app.create_form_open());
 }
+
+#[test]
+fn select_initial_tab_moves_off_empty_servers() {
+    let mut app = App::new(5);
+    app.databases = vec![make_database(1, "db", "postgres")];
+    app.select_initial_tab();
+    assert!(app.initial_tab_set);
+    assert_eq!(app.active_tab, ResourceTab::Databases);
+}
+
+#[test]
+fn select_initial_tab_keeps_non_empty_active() {
+    let mut app = App::new(5);
+    app.servers = vec![make_server(1, "s", "on")];
+    app.databases = vec![make_database(1, "db", "postgres")];
+    app.select_initial_tab();
+    assert_eq!(app.active_tab, ResourceTab::Servers);
+}
+
+#[test]
+fn select_initial_tab_runs_only_once() {
+    let mut app = App::new(5);
+    app.select_initial_tab();
+    app.databases = vec![make_database(1, "db", "postgres")];
+    app.select_initial_tab();
+    assert_eq!(app.active_tab, ResourceTab::Servers);
+}
+
+#[test]
+fn select_initial_tab_all_empty_stays() {
+    let mut app = App::new(5);
+    app.select_initial_tab();
+    assert_eq!(app.active_tab, ResourceTab::Servers);
+    assert!(app.initial_tab_set);
+}

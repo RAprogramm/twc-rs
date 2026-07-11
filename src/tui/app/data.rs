@@ -236,6 +236,7 @@ impl super::App {
             }
             self.last_load_errors = data.load_errors;
         }
+        self.select_initial_tab();
         self.clamp_selection();
         self.is_loading = false;
         self.last_refresh = Instant::now();
