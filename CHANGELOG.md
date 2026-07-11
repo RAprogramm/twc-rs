@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0](https://github.com/RAprogramm/twc-rs/compare/v0.9.1...v0.10.0) - 2026-07-11
+
+### Added
+
+- Enrich app details and auto-select first non-empty tab (#117) ([#116](https://github.com/RAprogramm/twc-rs/issues/116)) ([5154c14](https://github.com/RAprogramm/twc-rs/commit/5154c14140008d651dab7b322294acea74b676ff))
+
+
 ## [0.9.0](https://github.com/RAprogramm/twc-rs/compare/v0.8.1...v0.9.0) - 2026-07-06
 
 ### Added
