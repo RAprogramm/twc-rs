@@ -657,45 +657,97 @@ async fn load_mails(c: &Configuration, tx: &Tx) {
     });
 }
 
-#[expect(clippy::cast_possible_truncation)]
 async fn load_apps(c: &Configuration, tx: &Tx) {
-    use tui::app::AppSummary;
-
     send_result(
         tx,
         "apps",
         timeweb_rs::apis::apps_api::get_apps(c).await,
-        |resp| {
-            DataSlice::Apps(
-                resp.apps
-                    .iter()
-                    .map(|a| AppSummary {
-                        id:          a.id as i32,
-                        name:        a.name.clone(),
-                        status:      enum_label(&a.status),
-                        ip:          a.ip.clone().unwrap_or_default(),
-                        location:    a.location.clone().unwrap_or_default(),
-                        app_type:    a.r#type.as_ref().map(enum_label).unwrap_or_default(),
-                        framework:   a.framework.as_deref().map(enum_label).unwrap_or_default(),
-                        language:    a.language.clone().unwrap_or_default(),
-                        branch:      a.branch_name.clone().unwrap_or_default(),
-                        commit:      a
-                            .commit_sha
-                            .as_deref()
-                            .map(short_commit)
-                            .unwrap_or_default(),
-                        auto_deploy: a.is_auto_deploy.unwrap_or(false),
-                        comment:     a.comment.clone().unwrap_or_default(),
-                        domains:     a
-                            .domains
-                            .as_ref()
-                            .map(|d| d.iter().filter_map(|x| x.fqdn.clone()).collect())
-                            .unwrap_or_default()
-                    })
-                    .collect()
-            )
-        }
+        |resp| DataSlice::Apps(resp.apps.iter().map(map_app).collect())
     );
+}
+
+/// Maps the API's full application model onto the dashboard summary, keeping
+/// every field except environment variable values (secrets — only the count
+/// survives, since summaries are persisted to the on-disk snapshot).
+#[expect(clippy::cast_possible_truncation)]
+fn map_app(a: &timeweb_rs::models::App) -> crate::tui::app::AppSummary {
+    let (cfg_cpu, cfg_ram_mb, cfg_bandwidth, cfg_freq, cfg_disk_type) = a
+        .configuration
+        .as_ref()
+        .and_then(|c| c.as_deref())
+        .map_or((0, 0, 0, String::new(), String::new()), |cfg| {
+            (
+                cfg.cpu.unwrap_or(0.0) as i64,
+                cfg.ram.unwrap_or(0.0) as i64,
+                cfg.network_bandwidth.unwrap_or(0.0) as i64,
+                cfg.cpu_frequency.clone().unwrap_or_default(),
+                cfg.disk_type.map(|d| format!("{d:?}")).unwrap_or_default()
+            )
+        });
+    let (disk_used_mb, disk_size_mb) = a
+        .disk_status
+        .as_ref()
+        .and_then(|d| d.as_deref())
+        .map_or((0, 0), |d| {
+            (d.used.unwrap_or(0.0) as i64, d.size.unwrap_or(0.0) as i64)
+        });
+    crate::tui::app::AppSummary {
+        id: a.id as i32,
+        name: a.name.clone(),
+        status: enum_label(&a.status),
+        ip: a.ip.clone().unwrap_or_default(),
+        location: a.location.clone().unwrap_or_default(),
+        app_type: a.r#type.as_ref().map(enum_label).unwrap_or_default(),
+        framework: a.framework.as_deref().map(enum_label).unwrap_or_default(),
+        language: a.language.clone().unwrap_or_default(),
+        branch: a.branch_name.clone().unwrap_or_default(),
+        commit: a
+            .commit_sha
+            .as_deref()
+            .map(short_commit)
+            .unwrap_or_default(),
+        auto_deploy: a.is_auto_deploy.unwrap_or(false),
+        comment: a.comment.clone().unwrap_or_default(),
+        domains: a
+            .domains
+            .as_ref()
+            .map(|d| d.iter().filter_map(|x| x.fqdn.clone()).collect())
+            .unwrap_or_default(),
+        repository: a
+            .repository
+            .as_ref()
+            .map(|r| r.full_name.clone())
+            .unwrap_or_default(),
+        repo_url: a
+            .repository
+            .as_ref()
+            .map(|r| r.url.clone())
+            .unwrap_or_default(),
+        repo_private: a.repository.as_ref().is_some_and(|r| r.is_private),
+        provider: a
+            .provider
+            .as_ref()
+            .map(|p| format!("{:?}", p.r#type).to_lowercase())
+            .unwrap_or_default(),
+        env_version: a.env_version.clone().flatten().unwrap_or_default(),
+        env_count: a
+            .envs
+            .as_ref()
+            .and_then(|v| v.as_object().map(serde_json::Map::len))
+            .unwrap_or(0),
+        preset_id: a.preset_id.unwrap_or(0),
+        index_dir: a.index_dir.clone().flatten().unwrap_or_default(),
+        build_cmd: a.build_cmd.clone().unwrap_or_default(),
+        run_cmd: a.run_cmd.clone().flatten().unwrap_or_default(),
+        cfg_cpu,
+        cfg_ram_mb,
+        cfg_bandwidth,
+        cfg_freq,
+        cfg_disk_type,
+        disk_used_mb,
+        disk_size_mb,
+        started_at: a.start_time.map(|t| t.to_rfc3339()).unwrap_or_default()
+    }
 }
 
 #[expect(clippy::cast_possible_truncation)]

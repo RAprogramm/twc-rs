@@ -11,7 +11,9 @@ mod stats;
 use timeweb_rs::authenticated;
 
 use self::{
-    actions::{fetch_database_extra, fetch_drill, perform_action, perform_create},
+    actions::{
+        fetch_app_extra, fetch_database_extra, fetch_drill, perform_action, perform_create
+    },
     refresh::{spawn_one_shot_refresh, spawn_refresh_loop},
     stats::spawn_stats_fetch
 };
@@ -116,26 +118,46 @@ pub(crate) async fn run_dashboard(
             spawn_one_shot_refresh(tx.clone(), token.clone());
         }
 
-        if let Some((detail_tab, detail_id)) = app.take_detail_fetch()
-            && detail_tab == tui::app::ResourceTab::Databases
-        {
-            let preset_id = app
-                .databases
-                .iter()
-                .find(|d| d.id == detail_id)
-                .map_or(0, |d| d.preset_id);
+        if let Some((detail_tab, detail_id)) = app.take_detail_fetch() {
             let config = authenticated(token.clone());
             let extra_tx = tx.clone();
-            tokio::spawn(async move {
-                let sections = fetch_database_extra(&config, detail_id, preset_id).await;
-                if !sections.is_empty() {
-                    let _ = extra_tx.send(tui::event::AppEvent::DetailExtra {
-                        tab: detail_tab,
-                        id: detail_id,
-                        sections
+            match detail_tab {
+                tui::app::ResourceTab::Databases => {
+                    let preset_id = app
+                        .databases
+                        .iter()
+                        .find(|d| d.id == detail_id)
+                        .map_or(0, |d| d.preset_id);
+                    tokio::spawn(async move {
+                        let sections = fetch_database_extra(&config, detail_id, preset_id).await;
+                        if !sections.is_empty() {
+                            let _ = extra_tx.send(tui::event::AppEvent::DetailExtra {
+                                tab: detail_tab,
+                                id: detail_id,
+                                sections
+                            });
+                        }
                     });
                 }
-            });
+                tui::app::ResourceTab::Apps => {
+                    let preset_id = app
+                        .apps
+                        .iter()
+                        .find(|a| a.id == detail_id)
+                        .map_or(0, |a| a.preset_id);
+                    tokio::spawn(async move {
+                        let sections = fetch_app_extra(&config, detail_id, preset_id).await;
+                        if !sections.is_empty() {
+                            let _ = extra_tx.send(tui::event::AppEvent::DetailExtra {
+                                tab: detail_tab,
+                                id: detail_id,
+                                sections
+                            });
+                        }
+                    });
+                }
+                _ => {}
+            }
         }
 
         if let Some((drill_tab, drill_id, drill_name)) = app.take_drill_request() {

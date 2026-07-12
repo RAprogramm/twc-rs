@@ -253,3 +253,45 @@ details.plan:
 details.per_month:
   en: "%{price} ₽/month"
   ru: "%{price} ₽/мес"
+details.started:
+  en: "Started"
+  ru: "Запущено"
+details.repo:
+  en: "Repo"
+  ru: "Репозиторий"
+details.url:
+  en: "URL"
+  ru: "URL"
+details.provider:
+  en: "Provider"
+  ru: "Провайдер"
+details.build:
+  en: "Build"
+  ru: "Сборка"
+details.build_cmd:
+  en: "Build cmd"
+  ru: "Команда сборки"
+details.run_cmd:
+  en: "Run cmd"
+  ru: "Команда запуска"
+details.index_dir:
+  en: "Index dir"
+  ru: "Каталог статики"
+details.env_version:
+  en: "Env version"
+  ru: "Версия окружения"
+details.env_vars:
+  en: "Env variables"
+  ru: "Переменные окружения"
+details.bandwidth:
+  en: "Bandwidth"
+  ru: "Канал"
+details.disk_type:
+  en: "Disk type"
+  ru: "Тип диска"
+details.deploys:
+  en: "Recent deploys"
+  ru: "Последние деплои"
+details.requests:
+  en: "Requests"
+  ru: "Запросы"

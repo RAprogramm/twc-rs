@@ -379,3 +379,93 @@ pub(crate) async fn fetch_database_extra(
 
     sections
 }
+
+/// Fetches the deep details of an application: its recent deploys and the
+/// decoded tariff preset.
+pub(crate) async fn fetch_app_extra(
+    config: &timeweb_rs::apis::configuration::Configuration,
+    id: i32,
+    preset_id: i64
+) -> tui::app::DetailSections {
+    use rust_i18n::t;
+    use timeweb_rs::apis::apps_api;
+
+    let id_text = id.to_string();
+    let (deploys, presets) = tokio::join!(
+        apps_api::get_app_deploys(config, &id_text, None, None),
+        apps_api::get_apps_presets(config, &id_text)
+    );
+
+    let mut sections = Vec::new();
+
+    if let Ok(resp) = deploys {
+        let rows: Vec<(String, String)> = resp
+            .deploys
+            .unwrap_or_default()
+            .iter()
+            .take(5)
+            .map(|d| {
+                let sha: String = d.commit_sha.chars().take(7).collect();
+                (
+                    crate::tui::humanize::date(&d.started_at),
+                    format!("{:?} · {sha} · {}", d.status, d.commit_msg)
+                )
+            })
+            .collect();
+        if !rows.is_empty() {
+            sections.push((t!("details.deploys").into_owned(), rows));
+        }
+    }
+
+    if let Ok(resp) = presets {
+        let mut rows: Vec<(String, String)> = Vec::new();
+        if let Some(p) = resp
+            .backend_presets
+            .iter()
+            .flatten()
+            .find(|p| i64::from(p.id) == preset_id)
+        {
+            rows.push((t!("details.cpu").into_owned(), p.cpu.to_string()));
+            rows.push((
+                t!("details.ram").into_owned(),
+                crate::tui::humanize::megabytes(i64::from(p.ram))
+            ));
+            rows.push((
+                t!("details.disk").into_owned(),
+                crate::tui::humanize::megabytes(i64::from(p.disk))
+            ));
+            rows.push((
+                t!("details.price").into_owned(),
+                t!("details.per_month", price => p.price).into_owned()
+            ));
+            if !p.description_short.is_empty() {
+                rows.push((t!("details.plan").into_owned(), p.description_short.clone()));
+            }
+        } else if let Some(p) = resp
+            .frontend_presets
+            .iter()
+            .flatten()
+            .find(|p| i64::from(p.id) == preset_id)
+        {
+            rows.push((
+                t!("details.disk").into_owned(),
+                crate::tui::humanize::megabytes(i64::from(p.disk))
+            ));
+            if let Some(requests) = p.requests {
+                rows.push((t!("details.requests").into_owned(), requests.to_string()));
+            }
+            rows.push((
+                t!("details.price").into_owned(),
+                t!("details.per_month", price => p.price).into_owned()
+            ));
+            if !p.description_short.is_empty() {
+                rows.push((t!("details.plan").into_owned(), p.description_short.clone()));
+            }
+        }
+        if !rows.is_empty() {
+            sections.push((t!("details.tariff").into_owned(), rows));
+        }
+    }
+
+    sections
+}

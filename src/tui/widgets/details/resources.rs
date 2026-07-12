@@ -598,29 +598,21 @@ pub(super) fn render_app_details(app: &App, palette: Palette) -> Vec<Line<'stati
             palette
         ),
         kv_field(&t!("details.ip"), &a.ip, warn(palette), palette),
-        kv_field(&t!("details.location"), &a.location, warn(palette), palette),
-        Line::from(""),
-        section(&t!("details.repository"), palette),
-        kv_field(&t!("details.branch"), &a.branch, accent(palette), palette),
-        kv_field(
-            &t!("details.commit"),
-            &a.commit,
-            name_style(palette),
-            palette
-        ),
         kv(
-            &t!("details.auto_deploy"),
-            if a.auto_deploy {
-                t!("details.yes")
-            } else {
-                t!("details.no")
-            }
-            .to_string(),
-            name_style(palette),
+            &t!("details.location"),
+            crate::tui::humanize::location(&a.location),
+            warn(palette),
             palette
         ),
     ];
-
+    if !a.started_at.is_empty() {
+        lines.push(kv(
+            &t!("details.started"),
+            crate::tui::humanize::date(&a.started_at),
+            name_style(palette),
+            palette
+        ));
+    }
     if !a.comment.is_empty() {
         lines.push(kv_field(
             &t!("details.comment"),
@@ -628,6 +620,134 @@ pub(super) fn render_app_details(app: &App, palette: Palette) -> Vec<Line<'stati
             warn(palette),
             palette
         ));
+    }
+
+    lines.push(Line::from(""));
+    lines.push(section(&t!("details.repository"), palette));
+    if !a.repository.is_empty() {
+        let repo = if a.repo_private {
+            format!("{} (private)", a.repository)
+        } else {
+            a.repository.clone()
+        };
+        lines.push(kv(&t!("details.repo"), repo, accent(palette), palette));
+    }
+    if !a.repo_url.is_empty() {
+        lines.push(kv(
+            &t!("details.url"),
+            a.repo_url.clone(),
+            name_style(palette),
+            palette
+        ));
+    }
+    if !a.provider.is_empty() {
+        lines.push(kv_field(
+            &t!("details.provider"),
+            &a.provider,
+            name_style(palette),
+            palette
+        ));
+    }
+    lines.push(kv_field(
+        &t!("details.branch"),
+        &a.branch,
+        accent(palette),
+        palette
+    ));
+    lines.push(kv_field(
+        &t!("details.commit"),
+        &a.commit,
+        name_style(palette),
+        palette
+    ));
+    lines.push(kv(
+        &t!("details.auto_deploy"),
+        if a.auto_deploy {
+            t!("details.yes")
+        } else {
+            t!("details.no")
+        }
+        .to_string(),
+        name_style(palette),
+        palette
+    ));
+
+    let build_rows = [
+        (t!("details.build_cmd"), a.build_cmd.clone()),
+        (t!("details.run_cmd"), a.run_cmd.clone()),
+        (t!("details.index_dir"), a.index_dir.clone()),
+        (t!("details.env_version"), a.env_version.clone()),
+        (
+            t!("details.env_vars"),
+            if a.env_count > 0 {
+                a.env_count.to_string()
+            } else {
+                String::new()
+            }
+        )
+    ];
+    if build_rows.iter().any(|(_, v)| !v.is_empty()) {
+        lines.push(Line::from(""));
+        lines.push(section(&t!("details.build"), palette));
+        for (label, value) in build_rows {
+            if !value.is_empty() {
+                lines.push(kv(&label, value, name_style(palette), palette));
+            }
+        }
+    }
+
+    if a.cfg_cpu > 0 || a.disk_size_mb > 0 {
+        lines.push(Line::from(""));
+        lines.push(section(&t!("details.resources"), palette));
+        if a.cfg_cpu > 0 {
+            let freq = if a.cfg_freq.is_empty() {
+                String::new()
+            } else {
+                format!(" x {}", a.cfg_freq)
+            };
+            lines.push(kv(
+                &t!("details.cpu"),
+                format!("{}{freq}", a.cfg_cpu),
+                accent(palette),
+                palette
+            ));
+        }
+        if a.cfg_ram_mb > 0 {
+            lines.push(kv(
+                &t!("details.ram"),
+                crate::tui::humanize::megabytes(a.cfg_ram_mb),
+                accent(palette),
+                palette
+            ));
+        }
+        if a.disk_size_mb > 0 {
+            lines.push(kv(
+                &t!("details.disk"),
+                format!(
+                    "{} / {}",
+                    crate::tui::humanize::megabytes(a.disk_used_mb),
+                    crate::tui::humanize::megabytes(a.disk_size_mb)
+                ),
+                name_style(palette),
+                palette
+            ));
+        }
+        if a.cfg_bandwidth > 0 {
+            lines.push(kv(
+                &t!("details.bandwidth"),
+                format!("{} Mbps", a.cfg_bandwidth),
+                name_style(palette),
+                palette
+            ));
+        }
+        if !a.cfg_disk_type.is_empty() {
+            lines.push(kv_field(
+                &t!("details.disk_type"),
+                &a.cfg_disk_type,
+                name_style(palette),
+                palette
+            ));
+        }
     }
 
     if !a.domains.is_empty() {

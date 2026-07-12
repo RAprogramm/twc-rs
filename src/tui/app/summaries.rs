@@ -243,24 +243,62 @@ pub struct MailSummary {
     pub comment: String
 }
 
-/// Summary of a single application.
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-// JUSTIFY: Public API type for future API integration.
-#[allow(dead_code)]
+/// Summary of a single application, carrying every field the list endpoint
+/// exposes.
+///
+/// Environment variable values are deliberately not kept (they are secrets
+/// and summaries hit the on-disk snapshot) — only their count is.
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct AppSummary {
-    pub id:          i32,
-    pub name:        String,
-    pub status:      String,
-    pub ip:          String,
-    pub location:    String,
-    pub app_type:    String,
-    pub framework:   String,
-    pub language:    String,
-    pub branch:      String,
-    pub commit:      String,
-    pub auto_deploy: bool,
-    pub comment:     String,
-    pub domains:     Vec<String>
+    pub id:            i32,
+    pub name:          String,
+    pub status:        String,
+    pub ip:            String,
+    pub location:      String,
+    pub app_type:      String,
+    pub framework:     String,
+    pub language:      String,
+    pub branch:        String,
+    pub commit:        String,
+    pub auto_deploy:   bool,
+    pub comment:       String,
+    pub domains:       Vec<String>,
+    #[serde(default)]
+    pub repository:    String,
+    #[serde(default)]
+    pub repo_url:      String,
+    #[serde(default)]
+    pub repo_private:  bool,
+    #[serde(default)]
+    pub provider:      String,
+    #[serde(default)]
+    pub env_version:   String,
+    #[serde(default)]
+    pub env_count:     usize,
+    #[serde(default)]
+    pub preset_id:     i64,
+    #[serde(default)]
+    pub index_dir:     String,
+    #[serde(default)]
+    pub build_cmd:     String,
+    #[serde(default)]
+    pub run_cmd:       String,
+    #[serde(default)]
+    pub cfg_cpu:       i64,
+    #[serde(default)]
+    pub cfg_ram_mb:    i64,
+    #[serde(default)]
+    pub cfg_bandwidth: i64,
+    #[serde(default)]
+    pub cfg_freq:      String,
+    #[serde(default)]
+    pub cfg_disk_type: String,
+    #[serde(default)]
+    pub disk_used_mb:  i64,
+    #[serde(default)]
+    pub disk_size_mb:  i64,
+    #[serde(default)]
+    pub started_at:    String
 }
 
 /// Summary of a single AI agent.
