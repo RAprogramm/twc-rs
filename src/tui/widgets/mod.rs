@@ -181,6 +181,7 @@ pub mod events;
 pub mod help;
 pub mod resource_cards;
 pub mod resource_list;
+pub mod service_header;
 pub mod sidebar;
 pub mod skeleton;
 pub mod stats;

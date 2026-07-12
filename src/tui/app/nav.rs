@@ -131,6 +131,7 @@ impl App {
         match self.nav_current() {
             Some(NavKind::Service(tab)) => {
                 self.active_tab = tab;
+                self.content_on_create = self.tab_count(tab) == 0;
                 self.pane = Pane::Content;
             }
             Some(NavKind::Project(index)) => {
@@ -146,6 +147,7 @@ impl App {
     /// Returns focus to the sidebar, closing any opened project contents.
     pub fn focus_sidebar(&mut self) {
         self.pane = Pane::Sidebar;
+        self.content_on_create = false;
         self.close_drill();
         self.filter.clear();
         self.filter_editing = false;

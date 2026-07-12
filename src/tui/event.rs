@@ -275,6 +275,8 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
         KeyCode::Enter => {
             if app.pane == Pane::Sidebar {
                 app.nav_open();
+            } else if app.content_on_create {
+                app.open_create_form();
             } else if !app.drill_open() {
                 app.open_action_menu();
             }

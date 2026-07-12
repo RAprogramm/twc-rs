@@ -82,7 +82,8 @@ pub fn status_view(status: &str, palette: &Palette) -> (Color, String) {
     (color, label)
 }
 
-/// Renders the resource card grid into `area` with a given border color.
+/// Renders the service panel: the product info header with its Create button
+/// on top, a separator, and the resource card grid below.
 pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
     let palette = app.theme.palette();
 
@@ -101,27 +102,60 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
         format!(" {tab_name} ({}) ", cards.len())
     };
 
-    let cols = card_grid::columns(
-        area.width.saturating_sub(2),
-        card_grid::longest_title(&cards)
+    let block = ratatui::widgets::Block::default()
+        .borders(ratatui::widgets::Borders::ALL)
+        .border_type(ratatui::widgets::BorderType::Rounded)
+        .border_style(ratatui::style::Style::default().fg(border_color))
+        .title(ratatui::text::Line::from(ratatui::text::Span::styled(
+            title,
+            ratatui::style::Style::default()
+                .fg(palette.title)
+                .add_modifier(ratatui::style::Modifier::BOLD)
+        )));
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+    if inner.height == 0 || inner.width < 6 {
+        return;
+    }
+
+    let focused = app.pane == crate::tui::app::Pane::Content;
+    let header_h = crate::tui::widgets::service_header::height(app.active_tab, inner.width)
+        .min(inner.height.saturating_sub(1));
+    if header_h >= 4 {
+        let header_area = Rect::new(inner.x, inner.y, inner.width, header_h);
+        crate::tui::widgets::service_header::render(
+            frame,
+            header_area,
+            app.active_tab,
+            focused && app.content_on_create,
+            &palette
+        );
+    }
+
+    let grid = Rect::new(
+        inner.x,
+        inner.y + header_h,
+        inner.width,
+        inner.height.saturating_sub(header_h)
     );
-    let selected = if app.pane == crate::tui::app::Pane::Content {
+    if cards.is_empty() {
+        let hint = ratatui::widgets::Paragraph::new(ratatui::text::Line::from(
+            ratatui::text::Span::styled(
+                t!("service.your_resources").to_string(),
+                ratatui::style::Style::default().fg(palette.dim)
+            )
+        ));
+        frame.render_widget(hint, grid);
+        return;
+    }
+
+    let cols = card_grid::columns(grid.width, card_grid::longest_title(&cards));
+    let selected = if focused && !app.content_on_create {
         app.selected
     } else {
         usize::MAX
     };
-    let empty = t!("ui.drill_empty");
-    card_grid::render(
-        frame,
-        area,
-        &title,
-        &cards,
-        selected,
-        cols,
-        empty.as_ref(),
-        border_color,
-        &palette
-    );
+    card_grid::render_grid_in(frame, grid, &cards, selected, cols, &palette);
 }
 
 /// Widget wrapper for the resource list panel.

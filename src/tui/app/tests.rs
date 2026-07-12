@@ -1098,6 +1098,31 @@ fn up_on_top_row_stays_put() {
 }
 
 #[test]
+fn empty_service_focuses_create_button() {
+    let mut app = App::new(5);
+    app.nav_open();
+    assert_eq!(app.pane, Pane::Content);
+    assert!(app.content_on_create);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Enter));
+    assert!(app.status_message.is_some());
+}
+
+#[test]
+fn up_from_first_row_focuses_create_then_down_returns() {
+    let mut app = App::new(5);
+    app.servers = vec![make_server(1, "s1", "On"), make_server(2, "s2", "On")];
+    app.nav_open();
+    assert!(!app.content_on_create);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Up));
+    assert!(app.content_on_create);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Up));
+    assert!(app.content_on_create);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Down));
+    assert!(!app.content_on_create);
+    assert_eq!(app.selected, 0);
+}
+
+#[test]
 fn sidebar_is_default_pane() {
     let app = App::new(5);
     assert_eq!(app.pane, Pane::Sidebar);

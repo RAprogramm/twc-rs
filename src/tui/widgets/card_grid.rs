@@ -153,6 +153,19 @@ pub fn render(
     render_grid(frame, inner, cards, selected, cols.max(1), palette);
 }
 
+/// Renders just the card grid into an already-prepared inner area, for panels
+/// that draw their own border and chrome around it.
+pub fn render_grid_in(
+    frame: &mut Frame,
+    inner: Rect,
+    cards: &[GridCard],
+    selected: usize,
+    cols: usize,
+    palette: &Palette
+) {
+    render_grid(frame, inner, cards, selected, cols.max(1), palette);
+}
+
 fn render_grid(
     frame: &mut Frame,
     inner: Rect,

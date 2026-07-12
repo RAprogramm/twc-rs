@@ -215,8 +215,21 @@ impl super::App {
     pub fn content_move(&mut self, dir: super::FocusDir) {
         use super::FocusDir;
 
+        let has_create =
+            self.drill.is_none() && matches!(self.nav_current(), Some(super::NavKind::Service(_)));
         let len = self.content_len();
+
+        if self.content_on_create {
+            if matches!(dir, FocusDir::Down) && len > 0 {
+                self.content_on_create = false;
+                self.set_content_selected(0);
+            }
+            return;
+        }
         if len == 0 {
+            if has_create {
+                self.content_on_create = true;
+            }
             return;
         }
         let cols = self.resource_cols.max(1);
@@ -236,6 +249,8 @@ impl super::App {
             FocusDir::Up => {
                 if cur >= cols {
                     self.set_content_selected(cur - cols);
+                } else if has_create {
+                    self.content_on_create = true;
                 }
             }
             FocusDir::Down => {
