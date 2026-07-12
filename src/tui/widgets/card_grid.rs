@@ -67,34 +67,31 @@ impl GridCard {
     }
 }
 
-/// Smallest width a card cell may shrink to before dropping a column.
+/// Content floor of a card cell: the icon, its gaps and a few label cells —
+/// anything narrower cannot show a meaningful card.
 const MIN_CELL_W: u16 = 16;
-/// Widest a single card cell is sized to fit its label before columns stop
-/// growing (extra width past this is shared out by [`Constraint::Fill`]).
-const MAX_CELL_W: u16 = 34;
 /// Cells a card spends on its border plus the icon and its trailing spaces.
 const LABEL_OVERHEAD: u16 = 6;
 /// Horizontal gap between card cells, in cells.
 const HGAP: u16 = 2;
 /// Vertical gap between card rows, in rows.
 const VGAP: u16 = 1;
-/// Fixed card height: border, title, status, meta, border.
+/// Card height derived from its content: border, title, status, meta, border.
 const CARD_H: u16 = 5;
-/// Upper bound on the number of grid columns.
-const MAX_COLS: usize = 8;
 
 /// Number of grid columns for a grid `avail` cells wide.
 ///
-/// Cards are sized wide enough to fit the `longest_label` (capped at
-/// [`MAX_CELL_W`]), then as many columns as fit are used. Rendering and
-/// keyboard navigation both derive columns from this so they never disagree.
+/// Fully content-driven: a cell is exactly wide enough for the longest label
+/// plus card chrome, and as many such cells as fit the available width are
+/// used — no artificial caps. Rendering and keyboard navigation both derive
+/// columns from this so they never disagree.
 #[must_use]
 pub fn columns(avail: u16, longest_label: usize) -> usize {
     let needed = u16::try_from(longest_label)
-        .unwrap_or(MAX_CELL_W)
+        .unwrap_or(u16::MAX)
         .saturating_add(LABEL_OVERHEAD)
-        .clamp(MIN_CELL_W, MAX_CELL_W);
-    usize::from((avail + HGAP) / (needed + HGAP)).clamp(1, MAX_COLS)
+        .max(MIN_CELL_W);
+    usize::from((avail.saturating_add(HGAP)) / (needed.saturating_add(HGAP))).max(1)
 }
 
 /// Character length of the longest card title, for [`columns`].
@@ -131,6 +128,7 @@ fn render_grid(
     if inner.height < 3 || inner.width < 6 {
         return;
     }
+    let cols = cols.min(cards.len()).max(1);
     let rows_total = cards.len().div_ceil(cols);
     let rows_fit = usize::from((inner.height + VGAP) / (CARD_H + VGAP)).max(1);
 
@@ -235,7 +233,7 @@ mod tests {
         assert_eq!(columns(0, 8), 1);
         assert!(columns(120, 8) > columns(40, 8));
         assert!(columns(120, 30) <= columns(120, 6));
-        assert!(columns(4000, 8) <= MAX_COLS);
+        assert!(columns(200, 8) < columns(400, 8));
     }
 
     #[test]
