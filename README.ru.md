@@ -7,7 +7,7 @@ SPDX-License-Identifier: MIT
 
 <div align="center">
 
-# twc-rs
+![twc-rs — быстрый CLI для Timeweb Cloud](docs/assets/banner.png)
 
 **Быстрый CLI из одного бинарника _и_ интерактивная TUI-панель для [Timeweb Cloud](https://timeweb.cloud).**
 
