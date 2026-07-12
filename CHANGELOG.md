@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0](https://github.com/RAprogramm/twc-rs/compare/v1.0.0...v1.1.0) - 2026-07-12
+
+### Added
+
+- Show the action buttons at the top of the details panel ([8080bcc](https://github.com/RAprogramm/twc-rs/commit/8080bccf761a3e25eecbd044193f7691eeda76d2))
+
+
 ## [0.10.1](https://github.com/RAprogramm/twc-rs/compare/v0.10.0...v0.10.1) - 2026-07-11
 
 ### Fixed
