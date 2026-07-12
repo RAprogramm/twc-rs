@@ -30,18 +30,52 @@ use crate::tui::{
 const KEY_WIDTH: usize = 13;
 const RULE_WIDTH: usize = 32;
 
-/// Renders the details panel for the selected resource.
-///
-/// # Arguments
-///
-/// * `frame` - The render frame.
-/// * `area` - The area to render in.
-/// * `app` - The application state.
-/// * `border_color` - Color for the panel border.
-pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) -> u16 {
+/// An action attached to an interactive detail row.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DetailAction {
+    /// Trigger a new deployment of the application.
+    Redeploy
+}
+
+/// One row of the details panel: its rendered line, the raw value the user
+/// can copy from it, and an optional action Enter triggers on it.
+pub struct DetailLine {
+    pub line:   Line<'static>,
+    pub copy:   Option<String>,
+    pub action: Option<DetailAction>
+}
+
+impl DetailLine {
+    /// True when the cursor can land on this row.
+    #[must_use]
+    pub const fn is_interactive(&self) -> bool {
+        self.copy.is_some() || self.action.is_some()
+    }
+}
+
+impl From<Line<'static>> for DetailLine {
+    fn from(line: Line<'static>) -> Self {
+        Self {
+            line,
+            copy: None,
+            action: None
+        }
+    }
+}
+
+/// A blank spacer row.
+pub(super) fn blank() -> DetailLine {
+    Line::from("").into()
+}
+
+/// Builds every row of the details panel for the selected resource: the
+/// per-type fields, the background-fetched deep sections, and the action
+/// buttons the API offers for it.
+#[must_use]
+pub fn build(app: &App) -> Vec<DetailLine> {
     let palette = app.theme.palette();
 
-    let text = match app.active_tab {
+    let mut rows = match app.active_tab {
         ResourceTab::Servers => render_server_details(app, palette),
         ResourceTab::Databases => render_database_details(app, palette),
         ResourceTab::S3 => render_s3_details(app, palette),
@@ -68,6 +102,46 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) -> 
         }
     };
 
+    append_extra_sections(&mut rows, app, palette);
+
+    if app.active_tab == ResourceTab::Apps && !app.apps.is_empty() {
+        rows.push(blank());
+        rows.push(section(&t!("details.actions"), palette));
+        rows.push(action_row(
+            &t!("details.redeploy"),
+            DetailAction::Redeploy,
+            palette
+        ));
+    }
+
+    rows
+}
+
+/// The copy value and action of the `index`-th interactive row.
+#[must_use]
+pub fn interactive_at(app: &App, index: usize) -> Option<(Option<String>, Option<DetailAction>)> {
+    build(app)
+        .into_iter()
+        .filter(DetailLine::is_interactive)
+        .nth(index)
+        .map(|row| (row.copy, row.action))
+}
+
+/// Number of interactive rows in the current details panel.
+#[must_use]
+pub fn interactive_len(app: &App) -> usize {
+    build(app).iter().filter(|r| r.is_interactive()).count()
+}
+
+/// Renders the details panel.
+///
+/// Interactive rows carry a cursor highlight, the text flows into smart
+/// multi-column layout, and live CPU/RAM sparklines appear when the resource
+/// reports statistics. Returns the clamped scroll offset actually used.
+pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) -> u16 {
+    let palette = app.theme.palette();
+    let rows = build(app);
+
     let block = Block::default()
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
@@ -84,30 +158,98 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) -> 
         return 0;
     }
 
-    let mut text = text;
-    append_extra_sections(&mut text, app, palette);
-    render_columns(frame, inner, text, app.detail_scroll)
+    let charts_h = chart_rows(app, inner);
+    let text_area = Rect::new(
+        inner.x,
+        inner.y,
+        inner.width,
+        inner.height.saturating_sub(charts_h)
+    );
+    if charts_h > 0 {
+        render_charts(
+            frame,
+            Rect::new(inner.x, inner.y + text_area.height, inner.width, charts_h),
+            app,
+            palette
+        );
+    }
+
+    let mut selected_abs = None;
+    let mut interactive_seen = 0usize;
+    let lines: Vec<Line> = rows
+        .into_iter()
+        .enumerate()
+        .map(|(abs, row)| {
+            let interactive = row.is_interactive();
+            let mut line = row.line;
+            if interactive {
+                if interactive_seen == app.detail_selected {
+                    selected_abs = Some(abs);
+                    line.spans.insert(
+                        0,
+                        Span::styled("\u{258E}", Style::default().fg(palette.accent))
+                    );
+                } else {
+                    line.spans.insert(0, Span::raw(" "));
+                }
+                interactive_seen += 1;
+            } else {
+                line.spans.insert(0, Span::raw(" "));
+            }
+            line
+        })
+        .collect();
+
+    render_columns(frame, text_area, lines, app.detail_scroll, selected_abs)
 }
 
-/// Appends the background-fetched deep-detail sections (connection, nested
-/// databases, tariff, ...) for the resource currently shown, when loaded.
-fn append_extra_sections(text: &mut Vec<Line<'static>>, app: &App, palette: Palette) {
-    let Some(id) = app
-        .selected_resource()
-        .and_then(|(id, _)| id.parse::<i32>().ok())
-    else {
-        return;
+/// Rows reserved at the bottom for the CPU/RAM sparklines, when the selected
+/// resource has live statistics loaded and the panel is tall enough.
+fn chart_rows(app: &App, inner: Rect) -> u16 {
+    let has_stats = matches!(app.active_tab, ResourceTab::Apps | ResourceTab::Servers)
+        && (!app.cpu_history.is_empty() || !app.ram_history.is_empty());
+    if has_stats && inner.height >= 14 {
+        8
+    } else {
+        0
+    }
+}
+
+/// Renders the live CPU and RAM sparklines side by side.
+fn render_charts(frame: &mut Frame, area: Rect, app: &App, palette: Palette) {
+    use ratatui::widgets::Sparkline;
+
+    let halves = ratatui::layout::Layout::horizontal([
+        ratatui::layout::Constraint::Percentage(50),
+        ratatui::layout::Constraint::Percentage(50)
+    ])
+    .spacing(2)
+    .split(area);
+
+    let chart = |title: String, data: &[f64], color: Color| {
+        let points: Vec<u64> = data.iter().map(|v| (*v * 100.0) as u64).collect();
+        let last = data.last().copied().unwrap_or(0.0);
+        Sparkline::default()
+            .block(
+                Block::default()
+                    .borders(Borders::TOP)
+                    .border_style(Style::default().fg(palette.border))
+                    .title(Line::from(Span::styled(
+                        format!(" {title} {last:.1}% "),
+                        Style::default().fg(palette.header)
+                    )))
+            )
+            .data(points)
+            .style(Style::default().fg(color))
     };
-    let Some(sections) = app.detail_extra.get(&(app.active_tab, id)) else {
-        return;
-    };
-    for (title, rows) in sections {
-        text.push(Line::from(""));
-        text.push(heading(title, palette));
-        text.push(rule(palette));
-        for (key, value) in rows {
-            text.push(kv(key, value.clone(), name_style(palette), palette));
-        }
+
+    if !app.cpu_history.is_empty() {
+        let cpu: Vec<f64> = app.cpu_history.iter().copied().collect();
+        frame.render_widget(chart("CPU".to_string(), &cpu, palette.accent), halves[0]);
+    }
+    if !app.ram_history.is_empty() {
+        let ram: Vec<f64> = app.ram_history.iter().copied().collect();
+        frame.render_widget(chart("RAM".to_string(), &ram, palette.success), halves[1]);
     }
 }
 
@@ -126,26 +268,64 @@ fn breadcrumbs(app: &App) -> String {
 /// Horizontal gap between details columns.
 const COLUMN_GAP: u16 = 3;
 
+/// Appends the background-fetched deep-detail sections (connection, nested
+/// databases, tariff, ...) for the resource currently shown, when loaded.
+fn append_extra_sections(text: &mut Vec<DetailLine>, app: &App, palette: Palette) {
+    let Some(id) = app
+        .selected_resource()
+        .and_then(|(id, _)| id.parse::<i32>().ok())
+    else {
+        return;
+    };
+    let Some(sections) = app.detail_extra.get(&(app.active_tab, id)) else {
+        return;
+    };
+    for (title, rows) in sections {
+        text.push(blank());
+        text.push(heading(title, palette));
+        text.push(rule(palette));
+        for (key, value) in rows {
+            text.push(kv(key, value.clone(), name_style(palette), palette));
+        }
+    }
+}
+
 /// Lays the detail lines out smartly: when they exceed the panel height and
 /// the panel is wide enough, they flow into additional columns instead of
 /// hiding below the fold. The column width comes from the widest line of the
-/// actual content, so nothing is hardcoded to a terminal size. Scrolling only
-/// kicks in once every column is full.
+/// actual content. The scroll offset follows the cursor row when one is
+/// given, and is always clamped to the content.
 ///
 /// Returns the clamped scroll offset actually used, so the caller can write
 /// it back and the scroll state never runs past the content.
-fn render_columns(frame: &mut Frame, inner: Rect, text: Vec<Line<'static>>, scroll: u16) -> u16 {
+fn render_columns(
+    frame: &mut Frame,
+    inner: Rect,
+    text: Vec<Line<'static>>,
+    scroll: u16,
+    follow: Option<usize>
+) -> u16 {
     let height = usize::from(inner.height);
+    if height == 0 {
+        return 0;
+    }
     let column_width = u16::try_from(text.iter().map(Line::width).max().unwrap_or(0))
         .unwrap_or(u16::MAX)
         .clamp(1, inner.width);
     let max_cols = usize::from((inner.width + COLUMN_GAP) / (column_width + COLUMN_GAP)).max(1);
-    let needed = text.len().div_ceil(height.max(1));
+    let needed = text.len().div_ceil(height);
     let cols = needed.clamp(1, max_cols);
 
     let capacity = cols * height;
     let max_scroll = text.len().saturating_sub(capacity);
-    let offset = usize::from(scroll).min(max_scroll);
+    let mut offset = usize::from(scroll).min(max_scroll);
+    if let Some(target) = follow {
+        if target < offset {
+            offset = target;
+        } else if target >= offset + capacity {
+            offset = target + 1 - capacity;
+        }
+    }
     let clamped = u16::try_from(offset).unwrap_or(u16::MAX);
     let visible: Vec<Line> = text.into_iter().skip(offset).take(capacity).collect();
 
@@ -170,49 +350,56 @@ fn render_columns(frame: &mut Frame, inner: Rect, text: Vec<Line<'static>>, scro
 }
 
 /// Builds the bold heading line shown at the top of a populated panel.
-pub(super) fn heading(name: &str, palette: Palette) -> Line<'static> {
+pub(super) fn heading(name: &str, palette: Palette) -> DetailLine {
     Line::from(Span::styled(
         name.to_string(),
         Style::default()
             .fg(palette.title)
             .add_modifier(Modifier::BOLD)
     ))
+    .into()
 }
 
 /// Builds a dim horizontal rule used to separate sections.
-pub(super) fn rule(palette: Palette) -> Line<'static> {
+pub(super) fn rule(palette: Palette) -> DetailLine {
     Line::from(Span::styled(
         "\u{2500}".repeat(RULE_WIDTH),
         Style::default().fg(palette.dim)
     ))
+    .into()
 }
 
 /// Builds a dim, bold section header line.
-pub(super) fn section(label: &str, palette: Palette) -> Line<'static> {
+pub(super) fn section(label: &str, palette: Palette) -> DetailLine {
     Line::from(Span::styled(
         label.to_string(),
         Style::default()
             .fg(palette.header)
             .add_modifier(Modifier::BOLD)
     ))
+    .into()
 }
 
 /// Builds a key/value row, dimming the key via the palette's dim color.
-/// Keys longer than the standard column keep at least two spaces before the
-/// value instead of gluing to it.
-pub(super) fn kv(key: &str, value: String, value_style: Style, palette: Palette) -> Line<'static> {
+/// The raw value is attached for copying. Keys longer than the standard
+/// column keep at least two spaces before the value instead of gluing to it.
+pub(super) fn kv(key: &str, value: String, value_style: Style, palette: Palette) -> DetailLine {
     let padded = if key.chars().count() >= KEY_WIDTH {
         format!("{key}  ")
     } else {
         format!("{key:<KEY_WIDTH$}")
     };
-    Line::from(vec![
-        Span::styled(padded, Style::default().fg(palette.dim)),
-        Span::styled(value, value_style),
-    ])
+    DetailLine {
+        line:   Line::from(vec![
+            Span::styled(padded, Style::default().fg(palette.dim)),
+            Span::styled(value.clone(), value_style),
+        ]),
+        copy:   Some(value),
+        action: None
+    }
 }
 
-/// Builds a key/value row that falls back to a dim `\u{2014}` when the value is
+/// Builds a key/value row that falls back to a dim `—` when the value is
 /// empty, keeping the field visible so the panel layout stays stable across
 /// selections instead of collapsing rows in and out.
 pub(super) fn kv_field(
@@ -220,49 +407,75 @@ pub(super) fn kv_field(
     value: &str,
     value_style: Style,
     palette: Palette
-) -> Line<'static> {
+) -> DetailLine {
     if value.is_empty() {
-        return kv(
+        let mut row = kv(
             key,
             "\u{2014}".to_string(),
             Style::default().fg(palette.dim),
             palette
         );
+        row.copy = None;
+        return row;
     }
     kv(key, value.to_string(), value_style, palette)
 }
 
-/// Builds a status row rendered as a colored `\u{25CF} label` chip.
-pub(super) fn chip(key: &str, label: &str, color: Color, palette: Palette) -> Line<'static> {
-    Line::from(vec![
-        Span::styled(
-            format!("{key:<KEY_WIDTH$}"),
-            Style::default().fg(palette.dim)
-        ),
-        Span::styled(
-            format!("\u{25CF} {label}"),
-            Style::default().fg(color).add_modifier(Modifier::BOLD)
-        ),
-    ])
+/// Builds a status row rendered as a colored `● label` chip.
+pub(super) fn chip(key: &str, label: &str, color: Color, palette: Palette) -> DetailLine {
+    DetailLine {
+        line:   Line::from(vec![
+            Span::styled(
+                format!("{key:<KEY_WIDTH$}"),
+                Style::default().fg(palette.dim)
+            ),
+            Span::styled(
+                format!("\u{25CF} {label}"),
+                Style::default().fg(color).add_modifier(Modifier::BOLD)
+            ),
+        ]),
+        copy:   Some(label.to_string()),
+        action: None
+    }
 }
 
 /// Builds a status chip colored by the generic status classifier from
 /// [`crate::tui::widgets::resource_list::status_view`].
-pub(super) fn status_chip(key: &str, status: &str, palette: Palette) -> Line<'static> {
+pub(super) fn status_chip(key: &str, status: &str, palette: Palette) -> DetailLine {
     let (color, label) = crate::tui::widgets::resource_list::status_view(status, &palette);
     chip(key, &label, color, palette)
 }
 
+/// Builds an action-button row: Enter on it triggers `action`.
+pub(super) fn action_row(label: &str, action: DetailAction, palette: Palette) -> DetailLine {
+    DetailLine {
+        line:   Line::from(vec![
+            Span::styled("\u{2590}", Style::default().fg(palette.border)),
+            Span::styled(
+                format!(" \u{25B6} {label} "),
+                Style::default()
+                    .fg(palette.fg)
+                    .bg(palette.border)
+                    .add_modifier(Modifier::BOLD)
+            ),
+            Span::styled("\u{258C}", Style::default().fg(palette.border)),
+        ]),
+        copy:   None,
+        action: Some(action)
+    }
+}
+
 /// Builds a centered, dim empty-state notice.
-pub(super) fn empty(message: &str, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn empty(message: &str, palette: Palette) -> Vec<DetailLine> {
     vec![
-        Line::from(""),
+        blank(),
         Line::from(Span::styled(
             format!("  {message}"),
             Style::default()
                 .fg(palette.dim)
                 .add_modifier(Modifier::ITALIC)
-        )),
+        ))
+        .into(),
     ]
 }
 

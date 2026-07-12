@@ -384,16 +384,6 @@ impl super::App {
         self.focus_active = true;
     }
 
-    /// Scrolls the details panel down by one line.
-    pub const fn detail_scroll_down(&mut self) {
-        self.detail_scroll = self.detail_scroll.saturating_add(1);
-    }
-
-    /// Scrolls the details panel up by one line.
-    pub const fn detail_scroll_up(&mut self) {
-        self.detail_scroll = self.detail_scroll.saturating_sub(1);
-    }
-
     pub(super) fn clamp_selection(&mut self) {
         let len = self.current_list_len();
         if len == 0 {

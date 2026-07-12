@@ -118,6 +118,36 @@ pub(crate) async fn run_dashboard(
             spawn_one_shot_refresh(tx.clone(), token.clone());
         }
 
+        if let Some((action_id, action)) = app.take_detail_action() {
+            match action {
+                tui::widgets::details::DetailAction::Redeploy => {
+                    use tui::app::LogLevel;
+                    let config = authenticated(token.clone());
+                    let request = timeweb_rs::models::CreateDeployRequest {
+                        commit_sha: None
+                    };
+                    match timeweb_rs::apis::apps_api::create_deploy(
+                        &config,
+                        &action_id.to_string(),
+                        request
+                    )
+                    .await
+                    {
+                        Ok(_) => {
+                            let msg = format!("redeploy started for app #{action_id}");
+                            app.log(LogLevel::Success, msg.clone());
+                            app.status_message = Some(msg);
+                        }
+                        Err(e) => {
+                            let msg = format!("redeploy failed: {e}");
+                            app.log(LogLevel::Error, msg.clone());
+                            app.error_message = Some(msg);
+                        }
+                    }
+                }
+            }
+        }
+
         if let Some((detail_tab, detail_id)) = app.take_detail_fetch() {
             let config = authenticated(token.clone());
             let extra_tx = tx.clone();

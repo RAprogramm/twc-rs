@@ -295,3 +295,12 @@ details.deploys:
 details.requests:
   en: "Requests"
   ru: "Запросы"
+details.actions:
+  en: "Actions"
+  ru: "Действия"
+details.redeploy:
+  en: "Redeploy"
+  ru: "Передеплоить"
+details.copied:
+  en: "Copied: %{value}"
+  ru: "Скопировано: %{value}"

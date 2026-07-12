@@ -3,7 +3,6 @@
 
 //! Per-resource renderers for the details panel.
 
-use ratatui::text::Line;
 use rust_i18n::t;
 
 use super::{
@@ -11,7 +10,7 @@ use super::{
 };
 use crate::tui::{app::App, themes::Palette, widgets::resource_list::server_status_view};
 
-pub(super) fn render_server_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_server_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.servers.is_empty() {
         return empty(&t!("details.no_servers"), palette);
     }
@@ -34,7 +33,7 @@ pub(super) fn render_server_details(app: &App, palette: Palette) -> Vec<Line<'st
             warn(palette),
             palette
         ),
-        Line::from(""),
+        super::blank(),
         section(&t!("details.resources"), palette),
         kv(
             &t!("details.cpu"),
@@ -57,7 +56,7 @@ pub(super) fn render_server_details(app: &App, palette: Palette) -> Vec<Line<'st
     ]
 }
 
-pub(super) fn render_database_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_database_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.databases.is_empty() {
         return empty(&t!("details.no_databases"), palette);
     }
@@ -138,7 +137,7 @@ pub(super) fn render_database_details(app: &App, palette: Palette) -> Vec<Line<'
         palette
     ));
     if !db.config.is_empty() {
-        lines.push(Line::from(""));
+        lines.push(super::blank());
         lines.push(heading(&t!("details.config"), palette));
         lines.push(rule(palette));
         for (key, value) in &db.config {
@@ -148,7 +147,7 @@ pub(super) fn render_database_details(app: &App, palette: Palette) -> Vec<Line<'
     lines
 }
 
-pub(super) fn render_s3_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_s3_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.s3_storages.is_empty() {
         return empty(&t!("details.no_s3"), palette);
     }
@@ -184,7 +183,7 @@ pub(super) fn render_s3_details(app: &App, palette: Palette) -> Vec<Line<'static
     ]
 }
 
-pub(super) fn render_k8s_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_k8s_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.k8s_clusters.is_empty() {
         return empty(&t!("details.no_k8s"), palette);
     }
@@ -206,7 +205,7 @@ pub(super) fn render_k8s_details(app: &App, palette: Palette) -> Vec<Line<'stati
             palette
         ),
         status_chip(&t!("details.status"), &cluster.status, palette),
-        Line::from(""),
+        super::blank(),
         section(&t!("details.resources"), palette),
         kv(
             &t!("details.cpu"),
@@ -229,7 +228,7 @@ pub(super) fn render_k8s_details(app: &App, palette: Palette) -> Vec<Line<'stati
     ]
 }
 
-pub(super) fn render_project_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_project_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.projects.is_empty() {
         return empty(&t!("details.no_projects"), palette);
     }
@@ -244,7 +243,7 @@ pub(super) fn render_project_details(app: &App, palette: Palette) -> Vec<Line<'s
             accent(palette),
             palette
         ),
-        Line::from(""),
+        super::blank(),
         section(&t!("details.resources"), palette),
     ];
     let counts = [
@@ -279,7 +278,7 @@ pub(super) fn render_string_details(
     app: &App,
     label: &str,
     palette: Palette
-) -> Vec<Line<'static>> {
+) -> Vec<super::DetailLine> {
     if items.is_empty() {
         return empty(&t!("details.no_entries", name => label), palette);
     }
@@ -296,7 +295,7 @@ pub(super) fn render_string_details(
     ]
 }
 
-pub(super) fn render_balancer_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_balancer_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.balancers.is_empty() {
         return empty(&t!("details.no_balancers"), palette);
     }
@@ -321,7 +320,7 @@ pub(super) fn render_balancer_details(app: &App, palette: Palette) -> Vec<Line<'
     ]
 }
 
-pub(super) fn render_registry_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_registry_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.registries.is_empty() {
         return empty(&t!("details.no_registries"), palette);
     }
@@ -350,7 +349,7 @@ pub(super) fn disk_used_percent(used: i64, size: i64) -> i64 {
     if size <= 0 { 0 } else { used * 100 / size }
 }
 
-pub(super) fn render_domain_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_domain_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.domains.is_empty() {
         return empty(&t!("details.no_domains"), palette);
     }
@@ -379,7 +378,7 @@ pub(super) fn render_domain_details(app: &App, palette: Palette) -> Vec<Line<'st
     ]
 }
 
-pub(super) fn render_firewall_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_firewall_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.firewalls.is_empty() {
         return empty(&t!("details.no_firewalls"), palette);
     }
@@ -402,7 +401,7 @@ pub(super) fn render_firewall_details(app: &App, palette: Palette) -> Vec<Line<'
     ]
 }
 
-pub(super) fn render_floating_ip_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_floating_ip_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.floating_ips.is_empty() {
         return empty(&t!("details.no_floating_ips"), palette);
     }
@@ -426,7 +425,7 @@ pub(super) fn render_floating_ip_details(app: &App, palette: Palette) -> Vec<Lin
     ]
 }
 
-pub(super) fn render_image_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_image_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.images.is_empty() {
         return empty(&t!("details.no_images"), palette);
     }
@@ -450,7 +449,7 @@ pub(super) fn render_image_details(app: &App, palette: Palette) -> Vec<Line<'sta
     ]
 }
 
-pub(super) fn render_network_drive_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_network_drive_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.network_drives.is_empty() {
         return empty(&t!("details.no_network_drives"), palette);
     }
@@ -474,7 +473,7 @@ pub(super) fn render_network_drive_details(app: &App, palette: Palette) -> Vec<L
     ]
 }
 
-pub(super) fn render_vpc_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_vpc_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.vpcs.is_empty() {
         return empty(&t!("details.no_vpcs"), palette);
     }
@@ -503,7 +502,7 @@ pub(super) fn render_vpc_details(app: &App, palette: Palette) -> Vec<Line<'stati
     ]
 }
 
-pub(super) fn render_dedicated_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_dedicated_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.dedicated_servers.is_empty() {
         return empty(&t!("details.no_dedicated"), palette);
     }
@@ -521,7 +520,7 @@ pub(super) fn render_dedicated_details(app: &App, palette: Palette) -> Vec<Line<
         ),
         status_chip(&t!("details.status"), &d.status, palette),
         kv(&t!("details.ip"), d.ip.clone(), warn(palette), palette),
-        Line::from(""),
+        super::blank(),
         section(&t!("details.resources"), palette),
         kv(
             &t!("details.cpu"),
@@ -544,7 +543,7 @@ pub(super) fn render_dedicated_details(app: &App, palette: Palette) -> Vec<Line<
     ]
 }
 
-pub(super) fn render_mail_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_mail_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.mails.is_empty() {
         return empty(&t!("details.no_mail"), palette);
     }
@@ -569,7 +568,7 @@ pub(super) fn render_mail_details(app: &App, palette: Palette) -> Vec<Line<'stat
     lines
 }
 
-pub(super) fn render_app_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_app_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.apps.is_empty() {
         return empty(&t!("details.no_apps"), palette);
     }
@@ -622,7 +621,7 @@ pub(super) fn render_app_details(app: &App, palette: Palette) -> Vec<Line<'stati
         ));
     }
 
-    lines.push(Line::from(""));
+    lines.push(super::blank());
     lines.push(section(&t!("details.repository"), palette));
     if !a.repository.is_empty() {
         let repo = if a.repo_private {
@@ -687,7 +686,7 @@ pub(super) fn render_app_details(app: &App, palette: Palette) -> Vec<Line<'stati
         )
     ];
     if build_rows.iter().any(|(_, v)| !v.is_empty()) {
-        lines.push(Line::from(""));
+        lines.push(super::blank());
         lines.push(section(&t!("details.build"), palette));
         for (label, value) in build_rows {
             if !value.is_empty() {
@@ -697,7 +696,7 @@ pub(super) fn render_app_details(app: &App, palette: Palette) -> Vec<Line<'stati
     }
 
     if a.cfg_cpu > 0 || a.disk_size_mb > 0 {
-        lines.push(Line::from(""));
+        lines.push(super::blank());
         lines.push(section(&t!("details.resources"), palette));
         if a.cfg_cpu > 0 {
             let freq = if a.cfg_freq.is_empty() {
@@ -751,7 +750,7 @@ pub(super) fn render_app_details(app: &App, palette: Palette) -> Vec<Line<'stati
     }
 
     if !a.domains.is_empty() {
-        lines.push(Line::from(""));
+        lines.push(super::blank());
         lines.push(section(&t!("details.domains"), palette));
         for domain in &a.domains {
             lines.push(kv("", domain.clone(), accent(palette), palette));
@@ -761,7 +760,7 @@ pub(super) fn render_app_details(app: &App, palette: Palette) -> Vec<Line<'stati
     lines
 }
 
-pub(super) fn render_ai_agent_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_ai_agent_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.ai_agents.is_empty() {
         return empty(&t!("details.no_ai_agents"), palette);
     }
@@ -785,7 +784,7 @@ pub(super) fn render_ai_agent_details(app: &App, palette: Palette) -> Vec<Line<'
     ]
 }
 
-pub(super) fn render_knowledge_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_knowledge_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.knowledge_bases.is_empty() {
         return empty(&t!("details.no_knowledge"), palette);
     }

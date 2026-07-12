@@ -54,7 +54,9 @@ fn hints(app: &App) -> Vec<(&'static str, String)> {
     }
     if app.detail_open {
         return vec![
-            ("\u{2191}\u{2193}", t!("ui.status_scroll").into_owned()),
+            ("\u{2191}\u{2193}", t!("ui.status_nav").into_owned()),
+            ("y", t!("ui.status_copy").into_owned()),
+            ("\u{23ce}", t!("ui.status_actions").into_owned()),
             ("Esc", t!("ui.status_back").into_owned()),
             ("Q", t!("ui.status_quit").into_owned()),
         ];

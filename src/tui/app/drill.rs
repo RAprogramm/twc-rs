@@ -128,11 +128,20 @@ impl super::App {
         self.filter_editing = false;
         self.selected = index;
         self.detail_scroll = 0;
+        self.detail_selected = 0;
         self.detail_open = true;
         if let Ok(id) = item.id.parse::<i32>() {
             self.detail_fetch = Some((item.tab, id));
         }
         true
+    }
+
+    /// Takes the pending detail action for the loop to execute.
+    #[must_use]
+    pub fn take_detail_action(
+        &mut self
+    ) -> Option<(i32, crate::tui::widgets::details::DetailAction)> {
+        self.detail_action.take()
     }
 
     /// Takes the pending deep-detail fetch for the loop to run in the

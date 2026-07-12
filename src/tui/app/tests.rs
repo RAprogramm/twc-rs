@@ -1261,7 +1261,9 @@ fn enter_on_project_item_opens_full_details() {
     assert_eq!(app.active_tab, ResourceTab::Databases);
     assert_eq!(app.selected, 0);
     crate::tui::event::handle_event(&mut app, key_event(KeyCode::Down));
-    assert_eq!(app.detail_scroll, 1);
+    assert_eq!(app.detail_selected, 1);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Up));
+    assert_eq!(app.detail_selected, 0);
     crate::tui::event::handle_event(&mut app, key_event(KeyCode::Esc));
     assert!(!app.detail_open);
     assert!(app.drill_open());

@@ -4,6 +4,7 @@
 //! Terminal user interface for the TWC dashboard.
 
 pub mod app;
+pub mod clipboard;
 pub mod command_palette;
 pub mod event;
 pub mod humanize;

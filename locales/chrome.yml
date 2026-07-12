@@ -169,3 +169,6 @@ ui.status_updated:
 ui.status_pick:
   en: pick
   ru: выбрать
+ui.status_copy:
+  en: copy
+  ru: копировать

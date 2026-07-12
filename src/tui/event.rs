@@ -273,8 +273,33 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
     if app.detail_open {
         match key.code {
             KeyCode::Esc | KeyCode::Char('q') => app.detail_open = false,
-            KeyCode::Down | KeyCode::Char('j') => app.detail_scroll_down(),
-            KeyCode::Up | KeyCode::Char('k') => app.detail_scroll_up(),
+            KeyCode::Down | KeyCode::Char('j') => {
+                let len = crate::tui::widgets::details::interactive_len(app);
+                if app.detail_selected + 1 < len {
+                    app.detail_selected += 1;
+                }
+            }
+            KeyCode::Up | KeyCode::Char('k') => {
+                app.detail_selected = app.detail_selected.saturating_sub(1);
+            }
+            KeyCode::Char('y' | 'c') => {
+                if let Some((Some(value), _)) =
+                    crate::tui::widgets::details::interactive_at(app, app.detail_selected)
+                {
+                    crate::tui::clipboard::copy(&value);
+                    app.status_message =
+                        Some(rust_i18n::t!("details.copied", value => value).into_owned());
+                }
+            }
+            KeyCode::Enter => {
+                if let Some((_, Some(action))) =
+                    crate::tui::widgets::details::interactive_at(app, app.detail_selected)
+                    && let Some((id, _)) = app.selected_resource()
+                    && let Ok(id) = id.parse::<i32>()
+                {
+                    app.detail_action = Some((id, action));
+                }
+            }
             KeyCode::Char('Q') => {
                 app.quit();
                 return false;
