@@ -227,6 +227,20 @@ fn handle_settings_key(app: &mut App, key: KeyEvent) -> bool {
     true
 }
 
+/// Handles a key while the create hub owns the content pane.
+fn handle_create_key(app: &mut App, key: KeyEvent) -> bool {
+    match key.code {
+        KeyCode::Up | KeyCode::Char('k') => app.create_move(FocusDir::Up),
+        KeyCode::Down | KeyCode::Char('j') => app.create_move(FocusDir::Down),
+        KeyCode::Right | KeyCode::Char('l') => app.create_move(FocusDir::Right),
+        KeyCode::Left | KeyCode::Char('h') => app.create_move(FocusDir::Left),
+        KeyCode::Enter => app.create_activate(),
+        KeyCode::Esc => app.focus_sidebar(),
+        _ => return false
+    }
+    true
+}
+
 fn handle_key(app: &mut App, key: KeyEvent) -> bool {
     if let Some(result) = handle_overlay_key(app, key) {
         return result;
@@ -235,6 +249,13 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
     if app.pane == Pane::Content
         && matches!(app.nav_current(), Some(super::app::NavKind::Settings))
         && handle_settings_key(app, key)
+    {
+        return true;
+    }
+
+    if app.pane == Pane::Content
+        && matches!(app.nav_current(), Some(super::app::NavKind::Create))
+        && handle_create_key(app, key)
     {
         return true;
     }

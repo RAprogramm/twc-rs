@@ -176,6 +176,7 @@ impl fmt::Debug for WidgetRegistry {
 
 pub mod account;
 pub mod card_grid;
+pub mod create_panel;
 pub mod details;
 pub mod events;
 pub mod help;

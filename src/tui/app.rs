@@ -12,6 +12,7 @@ use std::{
 use rust_i18n::t;
 
 mod actions;
+mod create;
 mod data;
 mod drill;
 mod forms;
@@ -30,7 +31,8 @@ pub use data::DataSlice;
 pub use drill::{DrillItem, DrillView};
 pub use forms::CreateForm;
 pub use nav::{NavItem, NavKind};
-pub use settings::{SETTING_ROWS, SettingsPicker};
+pub(crate) use navigation::grid_step;
+pub use settings::{SETTING_ROWS, SettingRow, SettingsPicker};
 pub use stats::{ResourceStats, StatsRequest};
 pub use summaries::*;
 pub use tabs::ResourceTab;
@@ -132,6 +134,7 @@ pub struct App {
     pub snapshot_dirty:      bool,
     pub settings_selected:   usize,
     pub picker:              Option<SettingsPicker>,
+    pub create_selected:     usize,
     pub refresh_requested:   bool,
     pub drill:               Option<DrillView>,
     pub drill_request:       Option<(ResourceTab, i32, String)>,
@@ -230,6 +233,7 @@ impl App {
             snapshot_dirty: false,
             settings_selected: 0,
             picker: None,
+            create_selected: 0,
             refresh_requested: false,
             drill: None,
             drill_request: None,

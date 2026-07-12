@@ -247,6 +247,13 @@ pub(super) fn render_settings_picker(frame: &mut Frame, area: Rect, app: &App, p
         return;
     };
 
+    let longest_option = picker
+        .options
+        .iter()
+        .map(|o| o.chars().count())
+        .max()
+        .unwrap_or(10);
+    let is_theme = picker.row == crate::tui::app::SettingRow::Theme;
     let lines: Vec<Line> = picker
         .options
         .iter()
@@ -259,20 +266,31 @@ pub(super) fn render_settings_picker(frame: &mut Frame, area: Rect, app: &App, p
             if selected {
                 style = style.add_modifier(Modifier::BOLD);
             }
-            Line::from(vec![
+            let mut spans = vec![
                 Span::styled(marker, Style::default().fg(palette.accent)),
-                Span::styled(option.clone(), style),
-            ])
+                Span::styled(format!("{option:<longest_option$}"), style),
+            ];
+            if is_theme && let Some(theme) = crate::tui::themes::Theme::ALL.get(idx) {
+                let swatch = theme.palette();
+                spans.push(Span::raw("  "));
+                for color in [
+                    swatch.bg,
+                    swatch.fg,
+                    swatch.accent,
+                    swatch.success,
+                    swatch.warning,
+                    swatch.error,
+                    swatch.dim
+                ] {
+                    spans.push(Span::styled("\u{2588}\u{2588}", Style::default().fg(color)));
+                }
+            }
+            Line::from(spans)
         })
         .collect();
 
-    let longest = picker
-        .options
-        .iter()
-        .map(|o| o.chars().count())
-        .max()
-        .unwrap_or(10)
-        .max(picker.title.chars().count());
+    let swatch_width = if is_theme { 16 } else { 0 };
+    let longest = longest_option.max(picker.title.chars().count()) + swatch_width;
     let width = u16::try_from(longest + 8)
         .unwrap_or(32)
         .clamp(24, area.width.saturating_sub(4));

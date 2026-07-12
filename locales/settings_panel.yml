@@ -1,5 +1,8 @@
 _version: 2
 
+sidebar.create:
+  en: "Create"
+  ru: "Создать"
 sidebar.settings:
   en: "Settings"
   ru: "Настройки"

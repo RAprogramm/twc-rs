@@ -9,6 +9,8 @@ use super::{App, Pane, ResourceTab};
 /// What a sidebar entry points at.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NavKind {
+    /// The create hub: cards for creating every resource type.
+    Create,
     /// A project entry, carrying the project's list index.
     Project(usize),
     /// A service-category entry, carrying its resource tab.
@@ -60,17 +62,18 @@ impl App {
     pub fn nav_items(&self) -> Vec<NavItem> {
         use crate::tui::widgets::sidebar::tab_icon;
 
-        let mut items: Vec<NavItem> = self
-            .projects
-            .iter()
-            .enumerate()
-            .map(|(i, p)| NavItem {
-                kind:  NavKind::Project(i),
-                glyph: tab_icon(ResourceTab::Projects),
-                label: p.name.clone(),
-                count: Some(usize::try_from(p.resource_count()).unwrap_or(0))
-            })
-            .collect();
+        let mut items: Vec<NavItem> = vec![NavItem {
+            kind:  NavKind::Create,
+            glyph: "\u{f067}",
+            label: rust_i18n::t!("sidebar.create").into_owned(),
+            count: None
+        }];
+        items.extend(self.projects.iter().enumerate().map(|(i, p)| NavItem {
+            kind:  NavKind::Project(i),
+            glyph: tab_icon(ResourceTab::Projects),
+            label: p.name.clone(),
+            count: Some(usize::try_from(p.resource_count()).unwrap_or(0))
+        }));
         items.extend(
             Self::service_tabs()
                 .into_iter()
@@ -139,7 +142,7 @@ impl App {
                 self.active_tab = ResourceTab::Projects;
                 self.select_project_drill(index);
             }
-            Some(NavKind::Settings) | None => {}
+            Some(NavKind::Settings | NavKind::Create) | None => {}
         }
     }
 
@@ -160,7 +163,7 @@ impl App {
                 }
                 self.pane = Pane::Content;
             }
-            Some(NavKind::Settings) => self.pane = Pane::Content,
+            Some(NavKind::Settings | NavKind::Create) => self.pane = Pane::Content,
             None => {}
         }
     }

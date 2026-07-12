@@ -59,7 +59,7 @@ impl super::App {
                 self.reset_after_tab_change();
                 self.select_project_drill(project_index);
             }
-            NavKind::Settings => {}
+            NavKind::Settings | NavKind::Create => {}
         }
     }
 
@@ -186,12 +186,22 @@ impl super::App {
     /// The longest item name in the content pane, for sizing grid columns.
     #[must_use]
     pub fn content_longest_label(&self) -> usize {
-        if matches!(self.nav_current(), Some(super::NavKind::Settings)) {
-            return super::SETTING_ROWS
-                .iter()
-                .map(|r| r.label().chars().count())
-                .max()
-                .unwrap_or(0);
+        match self.nav_current() {
+            Some(super::NavKind::Settings) => {
+                return super::SETTING_ROWS
+                    .iter()
+                    .map(|r| r.label().chars().count())
+                    .max()
+                    .unwrap_or(0);
+            }
+            Some(super::NavKind::Create) => {
+                return Self::create_targets()
+                    .iter()
+                    .map(|t| t.display_name().chars().count())
+                    .max()
+                    .unwrap_or(0);
+            }
+            _ => {}
         }
         self.drill.as_ref().map_or_else(
             || {
@@ -229,6 +239,8 @@ impl super::App {
     /// Moves the content-grid selection exactly one step in the given
     /// direction: left/right stay within the row, up/down move by a row, and
     /// every edge clamps in place — leaving the pane is Esc only.
+    ///
+    /// See [`grid_step`] for the shared movement rule.
     pub fn content_move(&mut self, dir: super::FocusDir) {
         use super::FocusDir;
 
@@ -470,5 +482,27 @@ impl super::App {
             ResourceTab::Vpc => self.vpcs.get(real).map(|v| (v.id.clone(), v.name.clone())),
             _ => None
         }
+    }
+}
+
+/// One clamped step on a card grid `len` items long laid out in `cols`
+/// columns: left/right stay within the row, up/down move by a row, every
+/// edge stays put.
+#[must_use]
+pub(crate) fn grid_step(cur: usize, len: usize, cols: usize, dir: super::FocusDir) -> usize {
+    use super::FocusDir;
+
+    if len == 0 {
+        return 0;
+    }
+    let cols = cols.max(1);
+    let cur = cur.min(len - 1);
+    let col = cur % cols;
+    match dir {
+        FocusDir::Left if col > 0 => cur - 1,
+        FocusDir::Right if col + 1 < cols && cur + 1 < len => cur + 1,
+        FocusDir::Up if cur >= cols => cur - cols,
+        FocusDir::Down if cur + cols < len => cur + cols,
+        _ => cur
     }
 }

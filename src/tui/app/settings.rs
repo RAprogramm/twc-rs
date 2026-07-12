@@ -112,34 +112,12 @@ impl super::App {
     /// Moves the settings-card selection one step on the grid, clamping at
     /// every edge exactly like the resource grids.
     pub fn settings_move(&mut self, dir: super::FocusDir) {
-        use super::FocusDir;
-
-        let len = SETTING_ROWS.len();
-        let cols = self.resource_cols.max(1);
-        let cur = self.settings_selected.min(len - 1);
-        let col = cur % cols;
-        match dir {
-            FocusDir::Left => {
-                if col > 0 {
-                    self.settings_selected = cur - 1;
-                }
-            }
-            FocusDir::Right => {
-                if col + 1 < cols && cur + 1 < len {
-                    self.settings_selected = cur + 1;
-                }
-            }
-            FocusDir::Up => {
-                if cur >= cols {
-                    self.settings_selected = cur - cols;
-                }
-            }
-            FocusDir::Down => {
-                if cur + cols < len {
-                    self.settings_selected = cur + cols;
-                }
-            }
-        }
+        self.settings_selected = super::grid_step(
+            self.settings_selected,
+            SETTING_ROWS.len(),
+            self.resource_cols,
+            dir
+        );
     }
 
     /// Activates the selected setting card: toggles a switch in place, or

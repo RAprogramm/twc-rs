@@ -101,22 +101,32 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
 
     for (i, item) in items.iter().enumerate() {
         let group = match item.kind {
-            NavKind::Project(_) => 0u8,
-            NavKind::Service(_) => 1,
-            NavKind::Settings => 2
+            NavKind::Create => 0u8,
+            NavKind::Project(_) => 1,
+            NavKind::Service(_) => 2,
+            NavKind::Settings => 3
         };
         if last_group != Some(group) {
             if last_group.is_some() {
                 lines.push(Line::from(""));
             }
+            if group == 0 {
+                last_group = Some(group);
+                let selected = i == app.nav_selected;
+                if selected {
+                    selected_line = lines.len();
+                }
+                lines.push(nav_line(app, item, selected, focused, inner.width, palette));
+                continue;
+            }
             let header = match group {
-                0 => t!("overview.projects"),
-                1 => t!("overview.services"),
+                1 => t!("overview.projects"),
+                2 => t!("overview.services"),
                 _ => t!("sidebar.settings")
             };
             let loading = match group {
-                0 => app.projects_pending > 0,
-                1 => app.services_pending > 0,
+                1 => app.projects_pending > 0,
+                2 => app.services_pending > 0,
                 _ => false
             };
             let refreshing = !app.initial_cycle_done || app.manual_refresh_spin;

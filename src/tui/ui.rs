@@ -140,6 +140,10 @@ fn render_content(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
     }
 
     match app.nav_current() {
+        Some(NavKind::Create) => {
+            crate::tui::widgets::create_panel::render(frame, area, app, border);
+            return;
+        }
         Some(NavKind::Settings) => {
             crate::tui::widgets::settings_panel::render(frame, area, app, border);
             return;
