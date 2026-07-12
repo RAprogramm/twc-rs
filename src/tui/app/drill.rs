@@ -28,18 +28,25 @@ pub struct DrillView {
 }
 
 impl super::App {
-    /// Opens the given project's contents panel immediately (empty, marked
-    /// loading, so no intermediate screen flashes) and queues the fetch.
+    /// Opens the given project's contents panel immediately and queues a
+    /// background fetch. Cached contents show at once (stale-while-revalidate);
+    /// only a never-opened project shows the loading skeleton.
     pub fn open_project_drill(&mut self, index: usize) {
         let Some(project) = self.projects.get(index) else {
             return;
         };
-        self.drill = Some(DrillView {
-            title:    project.name.clone(),
-            items:    Vec::new(),
-            selected: 0
-        });
-        self.drill_loading = true;
+        if let Some(cached) = self.drill_cache.get(&project.id) {
+            self.drill = Some(cached.clone());
+            self.drill_loading = false;
+        } else {
+            self.drill = Some(DrillView {
+                title:    project.name.clone(),
+                items:    Vec::new(),
+                selected: 0
+            });
+            self.drill_loading = true;
+        }
+        self.drill_fetching_id = Some(project.id);
         self.drill_request = Some((ResourceTab::Projects, project.id, project.name.clone()));
     }
 
@@ -49,9 +56,21 @@ impl super::App {
         self.drill_request.take()
     }
 
-    /// Opens the drill-in view with fetched contents.
+    /// Applies freshly fetched drill contents: updates the cache, and swaps
+    /// the open panel in place when it still shows the same project (keeping
+    /// the selection where possible).
     pub fn open_drill(&mut self, view: DrillView) {
-        self.drill = Some(view);
+        if let Some(id) = self.drill_fetching_id.take() {
+            self.drill_cache.insert(id, view.clone());
+        }
+        match self.drill.as_mut() {
+            Some(current) if current.title == view.title => {
+                current.selected = current.selected.min(view.items.len().saturating_sub(1));
+                current.items = view.items;
+            }
+            Some(_) => {}
+            None => {}
+        }
         self.drill_loading = false;
     }
 

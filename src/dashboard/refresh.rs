@@ -387,7 +387,7 @@ async fn load_projects(c: &Configuration, tx: &Tx) {
             ..Default::default()
         })
         .collect();
-    send(tx, DataSlice::Projects(summaries.clone()));
+    send(tx, DataSlice::ProjectsList(summaries.clone()));
 
     let mut count_handles = Vec::with_capacity(resp.projects.len());
     for p in &resp.projects {

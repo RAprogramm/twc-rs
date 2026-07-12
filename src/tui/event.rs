@@ -219,9 +219,7 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
             }
         }
         KeyCode::Right | KeyCode::Char('l') => {
-            if app.pane == Pane::Sidebar {
-                app.nav_open();
-            } else {
+            if app.pane == Pane::Content {
                 app.content_move(FocusDir::Right);
             }
         }

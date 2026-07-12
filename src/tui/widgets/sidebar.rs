@@ -110,11 +110,13 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
             } else {
                 t!("overview.services")
             };
-            let loading = if is_project {
-                app.projects_pending > 0
-            } else {
-                app.services_pending > 0
-            };
+            let refreshing = !app.initial_cycle_done || app.manual_refresh_spin;
+            let loading = refreshing
+                && if is_project {
+                    app.projects_pending > 0
+                } else {
+                    app.services_pending > 0
+                };
             let mut spans = vec![Span::styled(
                 format!(" {}", header.to_uppercase()),
                 Style::default()

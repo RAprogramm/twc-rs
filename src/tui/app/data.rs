@@ -23,6 +23,9 @@ pub enum DataSlice {
     Databases(Vec<DatabaseSummary>),
     S3(Vec<S3Summary>),
     K8s(Vec<K8sSummary>),
+    /// The bare project list, streamed before per-project counts are known;
+    /// applied by merging so cached counts never flash back to zero.
+    ProjectsList(Vec<ProjectSummary>),
     Projects(Vec<ProjectSummary>),
     Balancers(Vec<BalancerSummary>),
     Registries(Vec<RegistrySummary>),
@@ -50,6 +53,7 @@ impl super::App {
     /// Marks that a refresh is needed immediately.
     pub fn force_refresh(&mut self) {
         self.refresh_requested = true;
+        self.manual_refresh_spin = true;
         self.log(LogLevel::Info, t!("app.log_manual_refresh").to_string());
     }
 
@@ -73,7 +77,7 @@ impl super::App {
     /// each resource as soon as its endpoint responds.
     pub fn apply_slice(&mut self, slice: DataSlice) {
         match &slice {
-            DataSlice::Projects(_) => {
+            DataSlice::Projects(_) | DataSlice::ProjectsList(_) => {
                 self.projects_pending = self.projects_pending.saturating_sub(1);
             }
             DataSlice::Account(_)
@@ -93,6 +97,23 @@ impl super::App {
             DataSlice::Databases(v) => self.databases = v,
             DataSlice::S3(v) => self.s3_storages = v,
             DataSlice::K8s(v) => self.k8s_clusters = v,
+            DataSlice::ProjectsList(v) => {
+                self.projects = v
+                    .into_iter()
+                    .map(|mut p| {
+                        if let Some(prev) = self.projects.iter().find(|old| old.id == p.id) {
+                            p.server_count = prev.server_count;
+                            p.database_count = prev.database_count;
+                            p.bucket_count = prev.bucket_count;
+                            p.cluster_count = prev.cluster_count;
+                            p.balancer_count = prev.balancer_count;
+                            p.dedicated_count = prev.dedicated_count;
+                            p.app_count = prev.app_count;
+                        }
+                        p
+                    })
+                    .collect();
+            }
             DataSlice::Projects(v) => self.projects = v,
             DataSlice::Balancers(v) => self.balancers = v,
             DataSlice::Registries(v) => self.registries = v,
@@ -151,6 +172,8 @@ impl super::App {
         self.is_loading = false;
         self.projects_pending = 0;
         self.services_pending = 0;
+        self.initial_cycle_done = true;
+        self.manual_refresh_spin = false;
         if self.last_load_errors.is_empty() {
             self.error_message = None;
             self.status_message = Some(t!("app.load_ok").to_string());

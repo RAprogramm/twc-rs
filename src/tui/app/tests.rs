@@ -385,12 +385,28 @@ fn handle_key_backtab_moves_nav_up() {
 }
 
 #[test]
-fn sidebar_l_opens_content_h_returns() {
+fn sidebar_left_right_are_noop() {
+    let mut app = App::new(5);
+    app.servers = vec![make_server(1, "s1", "On")];
+    for code in [
+        KeyCode::Right,
+        KeyCode::Left,
+        KeyCode::Char('l'),
+        KeyCode::Char('h')
+    ] {
+        assert!(crate::tui::event::handle_event(&mut app, key_event(code)));
+        assert_eq!(app.pane, Pane::Sidebar);
+        assert_eq!(app.nav_selected, 0);
+    }
+}
+
+#[test]
+fn enter_opens_content_h_returns() {
     let mut app = App::new(5);
     app.servers = vec![make_server(1, "s1", "On")];
     assert!(crate::tui::event::handle_event(
         &mut app,
-        key_event(KeyCode::Char('l'))
+        key_event(KeyCode::Enter)
     ));
     assert_eq!(app.pane, Pane::Content);
     assert!(crate::tui::event::handle_event(
@@ -398,6 +414,49 @@ fn sidebar_l_opens_content_h_returns() {
         key_event(KeyCode::Char('h'))
     ));
     assert_eq!(app.pane, Pane::Sidebar);
+}
+
+#[test]
+fn projects_list_slice_keeps_cached_counts() {
+    let bare = |id: i32, name: &str| ProjectSummary {
+        id,
+        name: name.to_string(),
+        ..Default::default()
+    };
+    let mut app = App::new(5);
+    let mut with_counts = bare(1, "p1");
+    with_counts.server_count = 4;
+    app.apply_slice(DataSlice::Projects(vec![with_counts]));
+    assert_eq!(app.projects[0].server_count, 4);
+
+    app.apply_slice(DataSlice::ProjectsList(vec![bare(1, "p1"), bare(2, "p2")]));
+    assert_eq!(app.projects.len(), 2);
+    assert_eq!(app.projects[0].server_count, 4);
+    assert_eq!(app.projects[1].server_count, 0);
+}
+
+#[test]
+fn cached_project_drill_opens_without_skeleton() {
+    use crate::tui::app::{DrillItem, DrillView};
+    let mut app = App::new(5);
+    app.projects = vec![make_project(7, "Caravan")];
+    app.open_project_drill(0);
+    assert!(app.drill_loading);
+    app.open_drill(DrillView {
+        title:    "Caravan".to_string(),
+        items:    vec![DrillItem {
+            kind:   "Server".to_string(),
+            name:   "a".to_string(),
+            detail: String::new()
+        }],
+        selected: 0
+    });
+    assert!(!app.drill_loading);
+    app.close_drill();
+
+    app.open_project_drill(0);
+    assert!(!app.drill_loading);
+    assert_eq!(app.drill_view().expect("cached").items.len(), 1);
 }
 
 #[test]
@@ -736,7 +795,7 @@ fn open_project_drill_queues_fetch() {
 fn drill_view_navigation() {
     use crate::tui::app::{DrillItem, DrillView};
     let mut app = App::new(5);
-    app.open_drill(DrillView {
+    app.drill = Some(DrillView {
         title:    "Project 'x'".to_string(),
         items:    vec![
             DrillItem {
