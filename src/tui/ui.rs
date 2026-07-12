@@ -114,18 +114,12 @@ fn render_content(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
     };
 
     if let Some(view) = app.drill_view() {
-        if app.drill_loading {
-            crate::tui::widgets::skeleton::render(
-                frame,
-                area,
-                palette,
-                &view.title,
-                8,
-                app.anim_tick
-            );
+        let selected = if app.pane == Pane::Content {
+            view.selected
         } else {
-            render_drill(frame, area, view, border, palette);
-        }
+            usize::MAX
+        };
+        render_drill(frame, area, view, selected, border, palette);
         return;
     }
 
@@ -169,13 +163,18 @@ fn render_project_preview(
         area.width.saturating_sub(2),
         card_grid::longest_title(&cards)
     );
+    let selected = if app.pane == Pane::Content {
+        app.content_selected()
+    } else {
+        usize::MAX
+    };
     let empty = t!("ui.drill_empty");
     card_grid::render(
         frame,
         area,
         &title,
         &cards,
-        app.content_selected(),
+        selected,
         cols,
         empty.as_ref(),
         border,
@@ -188,6 +187,7 @@ fn render_drill(
     frame: &mut Frame,
     area: Rect,
     view: &DrillView,
+    selected: usize,
     border: ratatui::style::Color,
     palette: &Palette
 ) {
@@ -218,7 +218,7 @@ fn render_drill(
         area,
         &title,
         &cards,
-        view.selected,
+        selected,
         cols,
         empty.as_ref(),
         border,

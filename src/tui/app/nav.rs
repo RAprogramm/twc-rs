@@ -117,13 +117,16 @@ impl App {
         self.selected = 0;
         self.filter.clear();
         self.filter_editing = false;
-        if let Some(NavKind::Service(tab)) = self.nav_current() {
-            self.active_tab = tab;
+        match self.nav_current() {
+            Some(NavKind::Service(tab)) => self.active_tab = tab,
+            Some(NavKind::Project(index)) => self.select_project_drill(index),
+            None => {}
         }
     }
 
-    /// Opens the selected entry: focuses the content pane, and for a project
-    /// starts fetching its real contents (a skeleton shows meanwhile).
+    /// Opens the selected entry: simply focuses the content pane — whatever
+    /// the sidebar selection already raised there (service grid, cached
+    /// project contents or its counts preview) stays put.
     pub fn nav_open(&mut self) {
         match self.nav_current() {
             Some(NavKind::Service(tab)) => {
@@ -131,8 +134,10 @@ impl App {
                 self.pane = Pane::Content;
             }
             Some(NavKind::Project(index)) => {
+                if self.drill.is_none() && self.drill_fetching_id.is_none() {
+                    self.select_project_drill(index);
+                }
                 self.pane = Pane::Content;
-                self.open_project_drill(index);
             }
             None => {}
         }

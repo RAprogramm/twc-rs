@@ -106,18 +106,24 @@ pub(crate) async fn run_dashboard(
         }
 
         if let Some((drill_tab, drill_id, drill_name)) = app.take_drill_request() {
-            use tui::app::LogLevel;
             let config = authenticated(token.clone());
-            match fetch_drill(&config, drill_tab, drill_id, &drill_name).await {
-                Ok(view) => {
-                    app.log(LogLevel::Info, format!("opened {drill_name}"));
-                    app.open_drill(view);
+            let drill_tx = tx.clone();
+            tokio::spawn(async move {
+                match fetch_drill(&config, drill_tab, drill_id, &drill_name).await {
+                    Ok(view) => {
+                        let _ = drill_tx.send(tui::event::AppEvent::Drill {
+                            id:   drill_id,
+                            view: Box::new(view)
+                        });
+                    }
+                    Err(e) => {
+                        let _ = drill_tx.send(tui::event::AppEvent::DrillFailed {
+                            name:  drill_name,
+                            error: e.to_string()
+                        });
+                    }
                 }
-                Err(e) => {
-                    app.close_drill();
-                    app.log(LogLevel::Error, format!("open {drill_name} failed: {e}"));
-                }
-            }
+            });
         }
 
         if let Some(action) = app.take_dispatch() {

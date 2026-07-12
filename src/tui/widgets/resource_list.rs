@@ -105,13 +105,18 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
         area.width.saturating_sub(2),
         card_grid::longest_title(&cards)
     );
+    let selected = if app.pane == crate::tui::app::Pane::Content {
+        app.selected
+    } else {
+        usize::MAX
+    };
     let empty = t!("ui.drill_empty");
     card_grid::render(
         frame,
         area,
         &title,
         &cards,
-        app.selected,
+        selected,
         cols,
         empty.as_ref(),
         border_color,

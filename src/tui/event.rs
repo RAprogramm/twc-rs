@@ -33,6 +33,20 @@ pub enum AppEvent {
     Slice(Box<super::app::DataSlice>),
     /// All endpoints of a streamed load cycle finished.
     LoadFinished,
+    /// A project's drill contents finished loading in the background.
+    Drill {
+        /// The project id the contents belong to.
+        id:   i32,
+        /// The fetched contents.
+        view: Box<super::app::DrillView>
+    },
+    /// A background drill fetch failed.
+    DrillFailed {
+        /// The project name, for the log entry.
+        name:  String,
+        /// The failure message.
+        error: String
+    },
     /// Live statistics for the selected resource.
     Stats(Box<super::app::ResourceStats>),
     /// A statistics fetch failed; logged without blocking the dashboard.
@@ -72,6 +86,23 @@ pub fn handle_event(app: &mut App, event: AppEvent) -> bool {
         }
         AppEvent::LoadFinished => {
             app.load_finished();
+            true
+        }
+        AppEvent::Drill {
+            id,
+            view
+        } => {
+            app.apply_drill(id, *view);
+            true
+        }
+        AppEvent::DrillFailed {
+            name,
+            error
+        } => {
+            app.log(
+                super::app::LogLevel::Error,
+                format!("open {name} failed: {error}")
+            );
             true
         }
         AppEvent::Stats(stats) => {

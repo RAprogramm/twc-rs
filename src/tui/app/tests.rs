@@ -436,27 +436,53 @@ fn projects_list_slice_keeps_cached_counts() {
 }
 
 #[test]
-fn cached_project_drill_opens_without_skeleton() {
+fn selecting_project_shows_cache_and_revalidates() {
     use crate::tui::app::{DrillItem, DrillView};
     let mut app = App::new(5);
     app.projects = vec![make_project(7, "Caravan")];
-    app.open_project_drill(0);
-    assert!(app.drill_loading);
-    app.open_drill(DrillView {
-        title:    "Caravan".to_string(),
-        items:    vec![DrillItem {
-            kind:   "Server".to_string(),
-            name:   "a".to_string(),
-            detail: String::new()
-        }],
-        selected: 0
-    });
-    assert!(!app.drill_loading);
+    app.select_project_drill(0);
+    assert!(!app.drill_open());
+    assert!(app.take_drill_request().is_some());
+
+    app.apply_drill(
+        7,
+        DrillView {
+            title:    "Caravan".to_string(),
+            items:    vec![DrillItem {
+                kind:   "Server".to_string(),
+                name:   "a".to_string(),
+                detail: String::new()
+            }],
+            selected: 0
+        }
+    );
+    assert_eq!(app.drill_view().expect("applied").items.len(), 1);
     app.close_drill();
 
-    app.open_project_drill(0);
-    assert!(!app.drill_loading);
+    app.select_project_drill(0);
     assert_eq!(app.drill_view().expect("cached").items.len(), 1);
+}
+
+#[test]
+fn stale_drill_result_updates_cache_only() {
+    use crate::tui::app::{DrillItem, DrillView};
+    let mut app = App::new(5);
+    app.projects = vec![make_project(7, "Caravan"), make_project(8, "Other")];
+    app.select_project_drill(1);
+    app.apply_drill(
+        7,
+        DrillView {
+            title:    "Caravan".to_string(),
+            items:    vec![DrillItem {
+                kind:   "Server".to_string(),
+                name:   "a".to_string(),
+                detail: String::new()
+            }],
+            selected: 0
+        }
+    );
+    assert!(app.drill_view().is_none());
+    assert_eq!(app.drill_cache.get(&7).expect("cached").items.len(), 1);
 }
 
 #[test]
@@ -778,15 +804,13 @@ fn filter_resets_on_nav_change() {
 }
 
 #[test]
-fn open_project_drill_queues_fetch() {
+fn select_project_drill_queues_fetch() {
     let mut app = App::new(5);
-    app.open_project_drill(0);
+    app.select_project_drill(0);
     assert!(app.take_drill_request().is_none());
 
     app.projects = vec![make_project(3, "ratma")];
-    app.open_project_drill(0);
-    assert!(app.drill_open());
-    assert!(app.drill_loading);
+    app.select_project_drill(0);
     let req = app.take_drill_request().expect("drill requested");
     assert_eq!(req, (ResourceTab::Projects, 3, "ratma".to_string()));
 }
@@ -1085,15 +1109,13 @@ fn nav_items_projects_then_services() {
 }
 
 #[test]
-fn nav_open_project_opens_drill_immediately() {
+fn nav_open_project_focuses_content_and_fetches_quietly() {
     let mut app = App::new(5);
     app.projects = vec![make_project(7, "Caravan")];
     app.nav_selected = 0;
     app.nav_open();
     assert_eq!(app.pane, Pane::Content);
-    assert!(app.drill_open());
-    assert!(app.drill_loading);
-    assert_eq!(app.drill_view().expect("drill").title, "Caravan");
+    assert!(!app.drill_open());
     let req = app.take_drill_request().expect("fetch requested");
     assert_eq!(req.1, 7);
 }
@@ -1128,9 +1150,18 @@ fn nav_up_down_move_selection_and_tab() {
 
 #[test]
 fn nav_change_closes_open_drill() {
+    use crate::tui::app::DrillView;
     let mut app = App::new(5);
     app.projects = vec![make_project(7, "Caravan")];
     app.nav_open();
+    app.apply_drill(
+        7,
+        DrillView {
+            title:    "Caravan".to_string(),
+            items:    Vec::new(),
+            selected: 0
+        }
+    );
     assert!(app.drill_open());
     app.nav_down();
     assert!(!app.drill_open());

@@ -167,7 +167,8 @@ fn render_grid(
     let rows_total = cards.len().div_ceil(cols);
     let rows_fit = usize::from((inner.height + VGAP) / (CARD_H + VGAP)).max(1);
 
-    let selected_row = selected / cols;
+    let anchor = selected.min(cards.len().saturating_sub(1));
+    let selected_row = anchor / cols;
     let first_row = if rows_total <= rows_fit || selected_row < rows_fit {
         0
     } else {
