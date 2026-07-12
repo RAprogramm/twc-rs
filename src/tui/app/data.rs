@@ -123,7 +123,24 @@ impl super::App {
             }
             DataSlice::Projects(v) => {
                 let old_len = self.projects.len();
-                self.projects = v;
+                self.projects = v
+                    .into_iter()
+                    .map(|mut p| {
+                        if p.resource_count() == 0
+                            && let Some(prev) = self.projects.iter().find(|old| old.id == p.id)
+                            && prev.resource_count() > 0
+                        {
+                            p.server_count = prev.server_count;
+                            p.database_count = prev.database_count;
+                            p.bucket_count = prev.bucket_count;
+                            p.cluster_count = prev.cluster_count;
+                            p.balancer_count = prev.balancer_count;
+                            p.dedicated_count = prev.dedicated_count;
+                            p.app_count = prev.app_count;
+                        }
+                        p
+                    })
+                    .collect();
                 self.anchor_nav_selection(old_len, self.projects.len());
             }
             DataSlice::Balancers(v) => self.balancers = v,

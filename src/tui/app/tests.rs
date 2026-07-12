@@ -464,6 +464,67 @@ fn projects_list_slice_keeps_cached_counts() {
 }
 
 #[test]
+fn shrunken_drill_response_triggers_silent_refetch() {
+    use crate::tui::app::{DrillItem, DrillView};
+    let item = |tab: ResourceTab, id: &str, name: &str| DrillItem {
+        tab,
+        id: id.to_string(),
+        kind: String::new(),
+        name: name.to_string(),
+        detail: String::new()
+    };
+    let full = DrillView {
+        title:    "Caravan".to_string(),
+        items:    vec![
+            item(ResourceTab::Databases, "42", "db"),
+            item(ResourceTab::Apps, "7", "api"),
+        ],
+        selected: 0
+    };
+    let flapped = DrillView {
+        title:    "Caravan".to_string(),
+        items:    vec![item(ResourceTab::Apps, "7", "api")],
+        selected: 0
+    };
+
+    let mut app = App::new(5);
+    app.projects = vec![make_project(9, "Caravan")];
+    app.select_project_drill(0);
+    let _ = app.take_drill_request();
+    app.apply_drill(9, full.clone());
+    assert_eq!(app.drill_view().expect("full").items.len(), 2);
+
+    app.apply_drill(9, flapped.clone());
+    assert_eq!(
+        app.drill_view().expect("kept").items.len(),
+        2,
+        "flapped response must not clobber the pane"
+    );
+    let retry = app.take_drill_request().expect("silent refetch queued");
+    assert_eq!(retry.1, 9);
+
+    app.apply_drill(9, flapped);
+    assert_eq!(
+        app.drill_view().expect("confirmed").items.len(),
+        1,
+        "a confirming second response must apply (real deletion)"
+    );
+}
+
+#[test]
+fn zeroed_project_counts_do_not_clobber_known_ones() {
+    let mut app = App::new(5);
+    app.apply_slice(DataSlice::Projects(vec![make_project(1, "p1")]));
+    assert_eq!(app.projects[0].server_count, 2);
+    app.apply_slice(DataSlice::Projects(vec![ProjectSummary {
+        id: 1,
+        name: "p1".to_string(),
+        ..Default::default()
+    }]));
+    assert_eq!(app.projects[0].server_count, 2);
+}
+
+#[test]
 fn selecting_project_shows_cache_and_revalidates() {
     use crate::tui::app::{DrillItem, DrillView};
     let mut app = App::new(5);

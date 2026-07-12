@@ -42,6 +42,7 @@ impl super::App {
         };
         self.drill = self.drill_cache.get(&project.id).cloned();
         self.drill_fetching_id = Some(project.id);
+        self.drill_retried = None;
         self.drill_request = Some((ResourceTab::Projects, project.id, project.name.clone()));
     }
 
@@ -54,7 +55,22 @@ impl super::App {
     /// Applies drill contents fetched for project `id`: refreshes the cache,
     /// and swaps the open pane in place when that project is still the one
     /// selected (keeping the highlighted row where possible).
+    ///
+    /// The project-resources endpoint occasionally flaps, returning a response
+    /// with whole collections missing. A response that strictly shrinks the
+    /// cached contents is therefore not applied immediately: it triggers one
+    /// silent re-fetch, and only a confirming second answer replaces the data
+    /// (so real deletions still show up).
     pub fn apply_drill(&mut self, id: i32, view: DrillView) {
+        if self.drill_retried != Some(id)
+            && let Some(cached) = self.drill_cache.get(&id)
+            && looks_like_flap(cached, &view)
+        {
+            self.drill_retried = Some(id);
+            self.drill_request = Some((ResourceTab::Projects, id, view.title));
+            return;
+        }
+        self.drill_retried = None;
         self.drill_cache.insert(id, view.clone());
         if self.drill_fetching_id != Some(id) {
             return;
@@ -142,4 +158,15 @@ impl super::App {
 /// Index of the first element matching the predicate.
 fn position<T>(items: &[T], pred: impl Fn(&T) -> bool) -> Option<usize> {
     items.iter().position(pred)
+}
+
+/// True when `fresh` is a strict subset of `cached` — the signature of the
+/// project-resources endpoint transiently dropping a collection rather than a
+/// real deletion (which would change ids, not just shrink the set).
+fn looks_like_flap(cached: &DrillView, fresh: &DrillView) -> bool {
+    fresh.items.len() < cached.items.len()
+        && fresh
+            .items
+            .iter()
+            .all(|f| cached.items.iter().any(|c| c.tab == f.tab && c.id == f.id))
 }
