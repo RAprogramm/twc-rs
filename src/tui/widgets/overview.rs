@@ -48,6 +48,10 @@ const NERD_ICONS: [&str; 20] = [
 const MIN_CELL_W: u16 = 18;
 /// Horizontal gap between card cells, in cells.
 const GAP: u16 = 2;
+/// Vertical gap between card rows, in rows.
+const VGAP: u16 = 1;
+/// Fixed card height: top border, title, count, bottom border.
+const CARD_H: u16 = 4;
 /// Upper bound on the number of grid columns.
 const MAX_COLS: usize = 8;
 
@@ -81,15 +85,13 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, palette: Palette) {
     }
     zones.push((t!("overview.services").into_owned(), services.as_slice()));
 
-    let weights: Vec<Constraint> = zones
+    let mut constraints: Vec<Constraint> = zones
         .iter()
-        .map(|(_, cards)| {
-            let rows = cards.len().div_ceil(cols).max(1);
-            Constraint::Fill(u16::try_from(rows + 1).unwrap_or(u16::MAX))
-        })
+        .map(|(_, cards)| Constraint::Length(zone_height(cards.len(), cols)))
         .collect();
+    constraints.push(Constraint::Min(0));
 
-    let zone_areas = Layout::vertical(weights).spacing(1).split(area);
+    let zone_areas = Layout::vertical(constraints).spacing(1).split(area);
 
     let mut index = 0usize;
     for ((title, cards), zone) in zones.iter().zip(zone_areas.iter()) {
@@ -104,6 +106,13 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, palette: Palette) {
             palette
         );
     }
+}
+
+/// Total rows a zone needs: a header line plus its fixed-height card rows and
+/// the gaps between them.
+fn zone_height(count: usize, cols: usize) -> u16 {
+    let rows = u16::try_from(count.div_ceil(cols.max(1)).max(1)).unwrap_or(1);
+    1 + rows * CARD_H + rows.saturating_sub(1) * VGAP
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -132,8 +141,8 @@ fn render_zone(
     frame.render_widget(header, vsplit[0]);
 
     let rows = cards.len().div_ceil(cols).max(1);
-    let row_areas = Layout::vertical(vec![Constraint::Fill(1); rows])
-        .spacing(1)
+    let row_areas = Layout::vertical(vec![Constraint::Length(CARD_H); rows])
+        .spacing(VGAP)
         .split(vsplit[1]);
 
     for (r, row_area) in row_areas.iter().enumerate() {
@@ -191,12 +200,7 @@ fn render_card(
             .add_modifier(Modifier::BOLD)
     ));
 
-    let mut lines = vec![title_line];
-    let pad = usize::from(rect.height).saturating_sub(3);
-    for _ in 0..pad {
-        lines.push(Line::from(""));
-    }
-    lines.push(count_line);
+    let lines = vec![title_line, count_line];
 
     let block = Block::default()
         .borders(Borders::ALL)

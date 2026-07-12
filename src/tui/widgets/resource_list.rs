@@ -406,19 +406,10 @@ fn render_grid(frame: &mut Frame, inner: Rect, cards: &[&Card], app: &App, palet
         selected_row + 1 - rows_fit
     };
 
-    let stretch = rows_total <= rows_fit;
-    let visible_rows = if stretch {
-        rows_total
-    } else {
-        rows_fit.min(rows_total - first_row)
-    };
-
-    let row_constraints: Vec<Constraint> = if stretch {
-        vec![Constraint::Fill(1); visible_rows]
-    } else {
-        vec![Constraint::Length(CARD_H); visible_rows]
-    };
-    let row_areas = Layout::vertical(row_constraints).spacing(VGAP).split(inner);
+    let visible_rows = rows_fit.min(rows_total - first_row);
+    let row_areas = Layout::vertical(vec![Constraint::Length(CARD_H); visible_rows])
+        .spacing(VGAP)
+        .split(inner);
 
     for (ri, row_area) in row_areas.iter().enumerate() {
         let grid_row = first_row + ri;

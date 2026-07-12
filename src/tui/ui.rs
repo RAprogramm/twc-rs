@@ -89,9 +89,12 @@ pub fn draw(frame: &mut Frame, app: &App) {
 /// Renders the overview landing screen: account header, the card zones, and the
 /// status bar.
 fn draw_overview(frame: &mut Frame, size: Rect, app: &App, palette: &Palette, show_account: bool) {
-    let mut constraints = Vec::with_capacity(3);
+    let mut constraints = Vec::with_capacity(4);
     if show_account {
         constraints.push(Constraint::Length(3));
+    }
+    if app.is_loading {
+        constraints.push(Constraint::Length(1));
     }
     constraints.push(Constraint::Min(6));
     constraints.push(Constraint::Length(3));
@@ -106,9 +109,41 @@ fn draw_overview(frame: &mut Frame, size: Rect, app: &App, palette: &Palette, sh
         AccountWidget::new(true).render(frame, chunks[idx], app);
         idx += 1;
     }
+    if app.is_loading {
+        render_loading_banner(frame, chunks[idx], app, palette);
+        idx += 1;
+    }
     crate::tui::widgets::overview::render(frame, chunks[idx], app, *palette);
     idx += 1;
     render_status_bar(frame, chunks[idx], app, palette);
+}
+
+/// Spinner frames for the loading banner, advanced by the animation tick.
+const SPINNER: [&str; 10] = [
+    "\u{280B}", "\u{2819}", "\u{2839}", "\u{2838}", "\u{283C}", "\u{2834}", "\u{2826}",
+    "\u{2827}", "\u{2807}", "\u{280F}"
+];
+
+/// Renders a one-line animated loading indicator so it is obvious the dashboard
+/// is still fetching data.
+fn render_loading_banner(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
+    let frame_idx = usize::try_from(app.anim_tick % SPINNER.len() as u64).unwrap_or(0);
+    let spinner = SPINNER[frame_idx];
+    let line = Line::from(vec![
+        Span::raw("  "),
+        Span::styled(
+            spinner,
+            Style::default()
+                .fg(palette.accent)
+                .add_modifier(Modifier::BOLD)
+        ),
+        Span::raw(" "),
+        Span::styled(
+            t!("overview.loading").to_string(),
+            Style::default().fg(palette.dim)
+        ),
+    ]);
+    frame.render_widget(ratatui::widgets::Paragraph::new(line), area);
 }
 
 /// Renders the floating overlays (help, menus, dialogs, palette) shared by all

@@ -6,3 +6,6 @@ overview.projects:
 overview.services:
   en: "Services"
   ru: "Сервисы"
+overview.loading:
+  en: "Loading resources…"
+  ru: "Загрузка ресурсов…"
