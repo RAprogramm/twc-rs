@@ -317,3 +317,59 @@ pub(super) fn render_settings_picker(frame: &mut Frame, area: Rect, app: &App, p
     frame.render_widget(Clear, popup);
     frame.render_widget(paragraph, popup);
 }
+
+/// Renders the create-hub guide popup: what the product is and how to get
+/// one today.
+pub(super) fn render_info_popup(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
+    let Some((title, body)) = app.info_popup.as_ref() else {
+        return;
+    };
+
+    let width = 64u16.min(area.width.saturating_sub(4));
+    let wrap_cols = usize::from(width.saturating_sub(4)).max(10);
+    let body_rows =
+        u16::try_from(body.chars().count() / wrap_cols + body.matches('\n').count() + 2)
+            .unwrap_or(6);
+    let height = (body_rows + 4).min(area.height.saturating_sub(2));
+    let popup = Rect {
+        x: area.width.saturating_sub(width) / 2,
+        y: area.height.saturating_sub(height) / 2,
+        width,
+        height
+    };
+
+    let mut lines: Vec<Line> = body
+        .split('\n')
+        .map(|part| {
+            Line::from(Span::styled(
+                part.to_string(),
+                Style::default().fg(palette.fg)
+            ))
+        })
+        .collect();
+    lines.push(Line::from(""));
+    lines.push(Line::from(Span::styled(
+        t!("create.popup_hint").into_owned(),
+        Style::default().fg(palette.dim)
+    )));
+
+    let paragraph = Paragraph::new(lines)
+        .wrap(ratatui::widgets::Wrap {
+            trim: true
+        })
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(palette.accent))
+                .title(Line::from(Span::styled(
+                    format!(" {title} "),
+                    Style::default()
+                        .fg(palette.title)
+                        .add_modifier(Modifier::BOLD)
+                )))
+        )
+        .style(Style::default().bg(palette.bg));
+    frame.render_widget(Clear, popup);
+    frame.render_widget(paragraph, popup);
+}

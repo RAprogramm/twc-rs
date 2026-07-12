@@ -6,7 +6,10 @@
 mod overlays;
 mod status_bar;
 
-use overlays::{render_action_menu, render_confirm, render_create_form, render_settings_picker};
+use overlays::{
+    render_action_menu, render_confirm, render_create_form, render_info_popup,
+    render_settings_picker
+};
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect}
@@ -97,6 +100,10 @@ fn draw_modals(frame: &mut Frame, size: Rect, app: &App, palette: &Palette) {
 
     if app.picker_open() {
         render_settings_picker(frame, size, app, palette);
+    }
+
+    if app.info_popup_open() {
+        render_info_popup(frame, size, app, palette);
     }
 
     if let Some(form) = app.create_form.as_ref() {

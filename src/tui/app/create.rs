@@ -21,13 +21,34 @@ impl super::App {
             super::grid_step(self.create_selected, len, self.resource_cols, dir);
     }
 
-    /// Opens the creation form for the selected target.
+    /// Activates the selected target: opens the creation form when one
+    /// exists, otherwise a guide popup describing the product and how to get
+    /// one today.
     pub fn create_activate(&mut self) {
         let targets = Self::create_targets();
         let Some(tab) = targets.get(self.create_selected.min(targets.len() - 1)) else {
             return;
         };
         self.active_tab = *tab;
-        self.open_create_form();
+        if matches!(tab, ResourceTab::Projects) {
+            self.open_create_form();
+            return;
+        }
+        let (desc, _) = crate::tui::widgets::service_header::texts(*tab);
+        self.info_popup = Some((
+            tab.display_name().into_owned(),
+            format!("{desc}\n\n{}", rust_i18n::t!("create.instruction"))
+        ));
+    }
+
+    /// Returns true while the info popup is open.
+    #[must_use]
+    pub const fn info_popup_open(&self) -> bool {
+        self.info_popup.is_some()
+    }
+
+    /// Closes the info popup.
+    pub fn info_popup_close(&mut self) {
+        self.info_popup = None;
     }
 }

@@ -144,6 +144,13 @@ fn handle_overlay_key(app: &mut App, key: KeyEvent) -> Option<bool> {
         return Some(true);
     }
 
+    if app.info_popup_open() {
+        if matches!(key.code, KeyCode::Esc | KeyCode::Enter | KeyCode::Char('q')) {
+            app.info_popup_close();
+        }
+        return Some(true);
+    }
+
     if app.picker_open() {
         match key.code {
             KeyCode::Esc => app.picker_close(),

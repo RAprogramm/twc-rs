@@ -36,6 +36,11 @@ pub fn cards() -> Vec<GridCard> {
 }
 
 /// Renders the create hub into `area`.
+///
+/// While the sidebar owns focus this is a presentation: an overview of the
+/// platform, the full list of creatable products with one-line descriptions,
+/// and the official-docs note about API tokens. After Enter the pane switches
+/// to the creation cards.
 pub fn render(frame: &mut Frame, area: Rect, app: &App, border: ratatui::style::Color) {
     let palette = app.theme.palette();
     let block = Block::default()
@@ -54,14 +59,65 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border: ratatui::style::
         return;
     }
 
+    if app.pane == Pane::Sidebar {
+        render_presentation(frame, inner, &palette);
+        return;
+    }
+
     let cards = cards();
     let cols = card_grid::columns(inner.width, card_grid::longest_title(&cards));
-    let selected = if app.pane == Pane::Content {
-        app.create_selected
-    } else {
-        usize::MAX
-    };
-    card_grid::render_grid_in(frame, inner, &cards, selected, cols, &palette);
+    card_grid::render_grid_in(frame, inner, &cards, app.create_selected, cols, &palette);
+}
+
+/// Renders the hover presentation: intro, the product list with one-line
+/// descriptions, the API-token note and how to proceed.
+fn render_presentation(frame: &mut Frame, inner: Rect, palette: &crate::tui::themes::Palette) {
+    use ratatui::widgets::{Paragraph, Wrap};
+
+    let mut lines: Vec<Line> = vec![
+        Line::from(Span::styled(
+            t!("create.presentation_intro").into_owned(),
+            Style::default().fg(palette.fg)
+        )),
+        Line::from(""),
+    ];
+    for tab in App::create_targets() {
+        let (desc, _) = service_header::texts(tab);
+        lines.push(Line::from(vec![
+            Span::styled(
+                format!(" {} ", sidebar::tab_icon(tab)),
+                Style::default().fg(palette.accent)
+            ),
+            Span::styled(
+                format!("{:<18}", tab.display_name()),
+                Style::default().fg(palette.fg).add_modifier(Modifier::BOLD)
+            ),
+            Span::styled(desc.into_owned(), Style::default().fg(palette.dim)),
+        ]));
+    }
+    lines.push(Line::from(""));
+    lines.push(Line::from(Span::styled(
+        t!("create.token_title").into_owned(),
+        Style::default()
+            .fg(palette.header)
+            .add_modifier(Modifier::BOLD)
+    )));
+    lines.push(Line::from(Span::styled(
+        t!("create.token_text").into_owned(),
+        Style::default().fg(palette.dim)
+    )));
+    lines.push(Line::from(""));
+    lines.push(Line::from(Span::styled(
+        t!("create.presentation_hint").into_owned(),
+        Style::default().fg(palette.accent)
+    )));
+
+    frame.render_widget(
+        Paragraph::new(lines).wrap(Wrap {
+            trim: false
+        }),
+        inner
+    );
 }
 
 #[cfg(test)]

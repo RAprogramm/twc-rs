@@ -33,3 +33,24 @@ settings.on:
 settings.off:
   en: "off"
   ru: "выкл"
+create.header:
+  en: "Pick a type — Enter opens the creation form, or a guide on what the product is and how to get one."
+  ru: "Выберите тип — Enter откроет форму создания или справку: что это за продукт и как его получить."
+create.presentation_intro:
+  en: "Timeweb Cloud is a full cloud platform: compute, storage, networks, mail and AI services. Everything below can be created and managed from this dashboard or the web panel."
+  ru: "Timeweb Cloud — полноценная облачная платформа: вычисления, хранилища, сети, почта и ИИ-сервисы. Всё перечисленное ниже создаётся и управляется из этого дашборда или веб-панели."
+create.presentation_hint:
+  en: "Press Enter to browse the creation cards."
+  ru: "Нажмите Enter, чтобы перейти к плашкам создания."
+create.token_title:
+  en: "About API tokens"
+  ru: "Об API-токенах"
+create.token_text:
+  en: "Per the official docs, all API and CLI access is authorized with a bearer token issued in the web panel (the API section). This dashboard already uses yours; keep it secret and rotate it there if it leaks."
+  ru: "По официальной документации весь доступ к API и CLI авторизуется bearer-токеном, который выдаётся в веб-панели (раздел API). Этот дашборд уже использует ваш токен; храните его в секрете, при утечке перевыпустите там же."
+create.instruction:
+  en: "Creating this resource from twc-rs is coming soon. For now create it in the Timeweb Cloud web panel — your account and API token already work for managing it here."
+  ru: "Создание этого ресурса из twc-rs скоро появится. Пока создайте его в веб-панели Timeweb Cloud — ваш аккаунт и API-токен уже позволяют управлять им здесь."
+create.popup_hint:
+  en: "Esc close"
+  ru: "Esc — закрыть"

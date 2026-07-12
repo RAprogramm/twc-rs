@@ -1238,6 +1238,20 @@ fn create_hub_is_first_and_opens_project_form() {
 }
 
 #[test]
+fn create_enter_on_service_opens_guide_popup() {
+    let mut app = App::new(5);
+    app.nav_selected = 0;
+    app.nav_open();
+    app.resource_cols = 4;
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Right));
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Enter));
+    assert!(app.info_popup_open());
+    assert!(!app.create_form_open());
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Esc));
+    assert!(!app.info_popup_open());
+}
+
+#[test]
 fn create_hub_grid_walk_is_clamped() {
     let mut app = App::new(5);
     app.nav_selected = 0;
