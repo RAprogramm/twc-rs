@@ -22,7 +22,8 @@ fn make_database(id: i32, name: &str, engine: &str) -> DatabaseSummary {
         name: name.to_string(),
         status: "active".to_string(),
         engine: engine.to_string(),
-        size_mb: 512
+        size_mb: 512,
+        ..Default::default()
     }
 }
 

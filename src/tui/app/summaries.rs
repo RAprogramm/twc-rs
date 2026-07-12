@@ -49,14 +49,36 @@ pub struct ServerSummary {
     pub location: String
 }
 
-/// Summary of a single database.
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+/// Summary of a single database cluster, carrying every field the list
+/// endpoint exposes (the password is deliberately not kept: summaries are
+/// persisted to the on-disk snapshot).
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct DatabaseSummary {
-    pub id:      i32,
-    pub name:    String,
-    pub status:  String,
-    pub engine:  String,
-    pub size_mb: i64
+    pub id:           i32,
+    pub name:         String,
+    pub status:       String,
+    pub engine:       String,
+    pub size_mb:      i64,
+    #[serde(default)]
+    pub disk_used_mb: i64,
+    #[serde(default)]
+    pub created_at:   String,
+    #[serde(default)]
+    pub location:     String,
+    #[serde(default)]
+    pub port:         i32,
+    #[serde(default)]
+    pub public_ip:    String,
+    #[serde(default)]
+    pub local_ip:     String,
+    #[serde(default)]
+    pub preset_id:    i32,
+    #[serde(default)]
+    pub hash_type:    String,
+    #[serde(default)]
+    pub local_only:   bool,
+    #[serde(default)]
+    pub config:       Vec<(String, String)>
 }
 
 /// Summary of a single S3 storage.

@@ -63,7 +63,14 @@ pub(super) fn render_database_details(app: &App, palette: Palette) -> Vec<Line<'
     }
 
     let db = &app.databases[app.selected_real_index().min(app.databases.len() - 1)];
-    vec![
+    let yes_no = |flag: bool| {
+        if flag {
+            t!("details.yes").into_owned()
+        } else {
+            t!("details.no").into_owned()
+        }
+    };
+    let mut lines = vec![
         heading(&db.name, palette),
         rule(palette),
         kv(
@@ -80,12 +87,55 @@ pub(super) fn render_database_details(app: &App, palette: Palette) -> Vec<Line<'
         ),
         status_chip(&t!("details.status"), &db.status, palette),
         kv(
-            &t!("details.size"),
-            format!("{} MB", db.size_mb),
+            &t!("details.disk"),
+            format!("{} / {} MB", db.disk_used_mb, db.size_mb),
             name_style(palette),
             palette
         ),
-    ]
+    ];
+    let optional = [
+        (t!("details.location"), db.location.clone()),
+        (t!("details.created"), db.created_at.clone()),
+        (t!("details.public_ip"), db.public_ip.clone()),
+        (t!("details.local_ip"), db.local_ip.clone()),
+        (
+            t!("details.port"),
+            if db.port > 0 {
+                db.port.to_string()
+            } else {
+                String::new()
+            }
+        ),
+        (
+            t!("details.preset"),
+            if db.preset_id > 0 {
+                format!("#{}", db.preset_id)
+            } else {
+                String::new()
+            }
+        ),
+        (t!("details.hash_type"), db.hash_type.clone())
+    ];
+    for (label, value) in optional {
+        if !value.is_empty() {
+            lines.push(kv(&label, value, name_style(palette), palette));
+        }
+    }
+    lines.push(kv(
+        &t!("details.local_only"),
+        yes_no(db.local_only),
+        name_style(palette),
+        palette
+    ));
+    if !db.config.is_empty() {
+        lines.push(Line::from(""));
+        lines.push(heading(&t!("details.config"), palette));
+        lines.push(rule(palette));
+        for (key, value) in &db.config {
+            lines.push(kv(key, value.clone(), name_style(palette), palette));
+        }
+    }
+    lines
 }
 
 pub(super) fn render_s3_details(app: &App, palette: Palette) -> Vec<Line<'static>> {

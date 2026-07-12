@@ -278,10 +278,7 @@ async fn load_servers_and_floating_ips(c: &Configuration, tx: &Tx) {
     );
 }
 
-#[expect(clippy::cast_possible_truncation)]
 async fn load_databases(c: &Configuration, tx: &Tx) {
-    use tui::app::DatabaseSummary;
-
     let res = fetch_all_pages(move |limit, offset| {
         Box::pin(async move {
             timeweb_rs::apis::databases_api::get_database_clusters(c, Some(limit), Some(offset))
@@ -291,21 +288,7 @@ async fn load_databases(c: &Configuration, tx: &Tx) {
     })
     .await;
     send_result(tx, "databases", res, |dbs| {
-        DataSlice::Databases(
-            dbs.iter()
-                .map(|d| DatabaseSummary {
-                    id:      d.id as i32,
-                    name:    d.name.clone(),
-                    status:  format!("{:?}", d.status),
-                    engine:  d.r#type.clone(),
-                    size_mb: d
-                        .disk
-                        .as_ref()
-                        .and_then(|disk| disk.as_deref())
-                        .map_or(0, |disk| (disk.size / 1024.0) as i64)
-                })
-                .collect()
-        )
+        DataSlice::Databases(dbs.iter().map(map_database).collect())
     });
 }
 
@@ -787,4 +770,64 @@ async fn load_finances(c: &Configuration, tx: &Tx) {
             }
         }
     );
+}
+
+/// Maps the API's full database-cluster model onto the dashboard summary,
+/// keeping every field the list endpoint exposes. Engine tuning parameters
+/// keep only the values actually set.
+#[expect(clippy::cast_possible_truncation)]
+fn map_database(d: &timeweb_rs::models::DatabaseCluster) -> crate::tui::app::DatabaseSummary {
+    use timeweb_rs::models::database_cluster_networks_inner::Type;
+
+    let (size_mb, used_mb) = d
+        .disk
+        .as_ref()
+        .and_then(|disk| disk.as_deref())
+        .map_or((0, 0), |disk| {
+            ((disk.size / 1024.0) as i64, (disk.used / 1024.0) as i64)
+        });
+    let ip_of = |wanted: Type| {
+        d.networks
+            .iter()
+            .filter(|n| n.r#type == wanted)
+            .flat_map(|n| n.ips.iter().flatten())
+            .map(|ip| ip.ip.clone())
+            .next()
+            .unwrap_or_default()
+    };
+    let config = serde_json::to_value(d.config_parameters.as_ref())
+        .ok()
+        .and_then(|v| match v {
+            serde_json::Value::Object(map) => Some(
+                map.into_iter()
+                    .filter_map(|(k, v)| match v {
+                        serde_json::Value::String(s) => Some((k, s)),
+                        serde_json::Value::Number(n) => Some((k, n.to_string())),
+                        _ => None
+                    })
+                    .collect::<Vec<_>>()
+            ),
+            _ => None
+        })
+        .unwrap_or_default();
+    crate::tui::app::DatabaseSummary {
+        id: d.id as i32,
+        name: d.name.clone(),
+        status: format!("{:?}", d.status),
+        engine: d.r#type.clone(),
+        size_mb,
+        disk_used_mb: used_mb,
+        created_at: d.created_at.clone(),
+        location: d.location.clone().unwrap_or_default(),
+        port: d.port.unwrap_or(0),
+        public_ip: ip_of(Type::Public),
+        local_ip: ip_of(Type::Local),
+        preset_id: d.preset_id,
+        hash_type: d
+            .hash_type
+            .map(|h| format!("{h:?}").to_lowercase())
+            .unwrap_or_default(),
+        local_only: !d.is_enabled_public_network,
+        config
+    }
 }

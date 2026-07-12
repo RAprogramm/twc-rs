@@ -196,3 +196,42 @@ details.no_ai_agents:
 details.no_knowledge:
   en: "No knowledge bases available"
   ru: "Баз знаний нет"
+details.created:
+  en: "Created"
+  ru: "Создан"
+details.host:
+  en: "Host"
+  ru: "Хост"
+details.port:
+  en: "Port"
+  ru: "Порт"
+details.public_ip:
+  en: "Public IP"
+  ru: "Публичный IP"
+details.local_ip:
+  en: "Local IP"
+  ru: "Локальный IP"
+details.login:
+  en: "Login"
+  ru: "Логин"
+details.preset:
+  en: "Preset"
+  ru: "Тариф"
+details.zone:
+  en: "Zone"
+  ru: "Зона"
+details.local_only:
+  en: "Local access only"
+  ru: "Только локальный доступ"
+details.config:
+  en: "Engine parameters"
+  ru: "Параметры движка"
+details.yes:
+  en: "yes"
+  ru: "да"
+details.no:
+  en: "no"
+  ru: "нет"
+details.hash_type:
+  en: "Password hash"
+  ru: "Хеш паролей"

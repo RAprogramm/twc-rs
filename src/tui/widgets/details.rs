@@ -114,12 +114,16 @@ pub(super) fn section(label: &str, palette: Palette) -> Line<'static> {
 }
 
 /// Builds a key/value row, dimming the key via the palette's dim color.
+/// Keys longer than the standard column keep at least two spaces before the
+/// value instead of gluing to it.
 pub(super) fn kv(key: &str, value: String, value_style: Style, palette: Palette) -> Line<'static> {
+    let padded = if key.chars().count() >= KEY_WIDTH {
+        format!("{key}  ")
+    } else {
+        format!("{key:<KEY_WIDTH$}")
+    };
     Line::from(vec![
-        Span::styled(
-            format!("{key:<KEY_WIDTH$}"),
-            Style::default().fg(palette.dim)
-        ),
+        Span::styled(padded, Style::default().fg(palette.dim)),
         Span::styled(value, value_style),
     ])
 }
