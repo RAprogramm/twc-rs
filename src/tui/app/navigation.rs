@@ -33,23 +33,32 @@ impl super::App {
         }
     }
 
-    /// On the first data load, moves off an empty active tab onto the first
-    /// tab that actually has items, so the dashboard never opens on a blank
-    /// list. Runs once; later manual tab changes are left untouched.
+    /// On the first data load, moves the sidebar selection onto the first
+    /// entry that actually has resources (projects first, then services), so
+    /// the dashboard never opens on a blank panel. Runs once; later manual
+    /// navigation is left untouched.
     pub fn select_initial_tab(&mut self) {
+        use super::NavKind;
+
         if self.initial_tab_set {
             return;
         }
-        self.initial_tab_set = true;
-        if self.tab_count(self.active_tab) > 0 {
+        let items = self.nav_items();
+        let Some(index) = items.iter().position(|i| i.count > 0) else {
             return;
-        }
-        if let Some(tab) = ResourceTab::ALL
-            .into_iter()
-            .find(|t| self.tab_count(*t) > 0)
-        {
-            self.active_tab = tab;
-            self.reset_after_tab_change();
+        };
+        self.initial_tab_set = true;
+        self.nav_selected = index;
+        match items[index].kind.clone() {
+            NavKind::Service(tab) => {
+                self.active_tab = tab;
+                self.reset_after_tab_change();
+            }
+            NavKind::Project(project_index) => {
+                self.active_tab = ResourceTab::Projects;
+                self.reset_after_tab_change();
+                self.select_project_drill(project_index);
+            }
         }
     }
 

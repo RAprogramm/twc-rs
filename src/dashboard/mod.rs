@@ -4,8 +4,8 @@
 //! Interactive dashboard runtime: the event loop and preference persistence.
 
 mod actions;
+mod cache;
 mod refresh;
-mod splash;
 mod stats;
 
 use timeweb_rs::authenticated;
@@ -13,7 +13,6 @@ use timeweb_rs::authenticated;
 use self::{
     actions::{fetch_drill, perform_action, perform_create},
     refresh::{spawn_one_shot_refresh, spawn_refresh_loop},
-    splash::draw_splash,
     stats::spawn_stats_fetch
 };
 use crate::{config::AppConfig, error::TwcError, tui};
@@ -68,7 +67,12 @@ pub(crate) async fn run_dashboard(
     }
     app.active_profile = profile.unwrap_or_else(|| "default".to_string());
     app.is_loading = true;
-    draw_splash(&mut terminal);
+    if let Some(snapshot) = cache::load(&app.active_profile) {
+        app.apply_data(snapshot);
+    }
+    terminal
+        .draw(|f| tui::ui::draw(f, &app))
+        .map_err(|e| TwcError::Io(e.to_string()))?;
 
     let (tx, mut rx) = mpsc::unbounded_channel();
     let event_tx = tx.clone();
@@ -98,6 +102,13 @@ pub(crate) async fn run_dashboard(
         if app.prefs_dirty {
             persist_dashboard_prefs(&app);
             app.prefs_dirty = false;
+        }
+
+        if app.snapshot_dirty {
+            app.snapshot_dirty = false;
+            if app.last_load_errors.is_empty() {
+                cache::save(&app.active_profile, tui::app::DashboardData::from_app(&app));
+            }
         }
 
         if app.refresh_requested {
@@ -154,6 +165,9 @@ pub(crate) async fn run_dashboard(
                     app.token = Some(token.clone());
                     app.active_profile.clone_from(&profile);
                     app.is_loading = true;
+                    if let Some(snapshot) = cache::load(&profile) {
+                        app.apply_data(snapshot);
+                    }
                     app.log(
                         LogLevel::Success,
                         format!("switched to profile '{profile}'")

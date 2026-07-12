@@ -103,6 +103,7 @@ impl super::App {
             DataSlice::S3(v) => self.s3_storages = v,
             DataSlice::K8s(v) => self.k8s_clusters = v,
             DataSlice::ProjectsList(v) => {
+                let old_len = self.projects.len();
                 self.projects = v
                     .into_iter()
                     .map(|mut p| {
@@ -118,8 +119,13 @@ impl super::App {
                         p
                     })
                     .collect();
+                self.anchor_nav_selection(old_len, self.projects.len());
             }
-            DataSlice::Projects(v) => self.projects = v,
+            DataSlice::Projects(v) => {
+                let old_len = self.projects.len();
+                self.projects = v;
+                self.anchor_nav_selection(old_len, self.projects.len());
+            }
             DataSlice::Balancers(v) => self.balancers = v,
             DataSlice::Registries(v) => self.registries = v,
             DataSlice::Domains(v) => self.domains = v,
@@ -157,6 +163,17 @@ impl super::App {
         self.clamp_selection();
     }
 
+    /// Keeps the sidebar selection on the same entry when the number of
+    /// projects above the services group changes, so a streamed project list
+    /// never makes the highlight jump.
+    fn anchor_nav_selection(&mut self, old_len: usize, new_len: usize) {
+        if self.nav_selected >= old_len {
+            self.nav_selected = self.nav_selected + new_len - old_len;
+        } else if self.nav_selected >= new_len {
+            self.nav_selected = new_len.saturating_sub(1);
+        }
+    }
+
     /// Finishes a streamed load cycle: logs recoveries, rolls the error set
     /// over, and sets the summary status message.
     pub fn load_finished(&mut self) {
@@ -179,6 +196,7 @@ impl super::App {
         self.services_pending = 0;
         self.initial_cycle_done = true;
         self.manual_refresh_spin = false;
+        self.snapshot_dirty = true;
         if self.last_load_errors.is_empty() {
             self.error_message = None;
             self.status_message = Some(t!("app.load_ok").to_string());

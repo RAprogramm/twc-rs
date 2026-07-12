@@ -27,7 +27,7 @@ pub struct LogEntry {
 }
 
 /// Account information from the API.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct AccountInfo {
     pub login:      String,
     pub account_id: i64,
@@ -36,7 +36,7 @@ pub struct AccountInfo {
 }
 
 /// Summary of a single server.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[allow(dead_code)]
 pub struct ServerSummary {
     pub id:       i32,
@@ -50,7 +50,7 @@ pub struct ServerSummary {
 }
 
 /// Summary of a single database.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct DatabaseSummary {
     pub id:      i32,
     pub name:    String,
@@ -60,7 +60,7 @@ pub struct DatabaseSummary {
 }
 
 /// Summary of a single S3 storage.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct S3Summary {
     pub id:           i32,
     pub name:         String,
@@ -70,7 +70,7 @@ pub struct S3Summary {
 }
 
 /// Summary of a single Kubernetes cluster.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct K8sSummary {
     pub id:      i32,
     pub name:    String,
@@ -82,7 +82,7 @@ pub struct K8sSummary {
 }
 
 /// Summary of a single project with per-type resource counts.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct ProjectSummary {
     pub id:              i32,
     pub name:            String,
@@ -110,7 +110,7 @@ impl ProjectSummary {
 }
 
 /// Summary of a single load balancer.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct BalancerSummary {
@@ -122,7 +122,7 @@ pub struct BalancerSummary {
 }
 
 /// Summary of a single container registry.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct RegistrySummary {
@@ -133,7 +133,7 @@ pub struct RegistrySummary {
 }
 
 /// Summary of a single domain.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct DomainSummary {
@@ -144,7 +144,7 @@ pub struct DomainSummary {
 }
 
 /// Summary of a single firewall.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct FirewallSummary {
@@ -154,7 +154,7 @@ pub struct FirewallSummary {
 }
 
 /// Summary of a single floating IP.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct FloatingIpSummary {
@@ -165,7 +165,7 @@ pub struct FloatingIpSummary {
 }
 
 /// Summary of a single image.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct ImageSummary {
@@ -176,7 +176,7 @@ pub struct ImageSummary {
 }
 
 /// Summary of a single network drive.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct NetworkDriveSummary {
@@ -187,7 +187,7 @@ pub struct NetworkDriveSummary {
 }
 
 /// Summary of a single VPC.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct VpcSummary {
@@ -198,7 +198,7 @@ pub struct VpcSummary {
 }
 
 /// Summary of a single dedicated server.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct DedicatedServerSummary {
@@ -212,7 +212,7 @@ pub struct DedicatedServerSummary {
 }
 
 /// Summary of a single mail service.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct MailSummary {
@@ -222,7 +222,7 @@ pub struct MailSummary {
 }
 
 /// Summary of a single application.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct AppSummary {
@@ -242,7 +242,7 @@ pub struct AppSummary {
 }
 
 /// Summary of a single AI agent.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct AiAgentSummary {
@@ -254,7 +254,7 @@ pub struct AiAgentSummary {
 }
 
 /// Summary of a single knowledge base.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct KnowledgeBaseSummary {
@@ -265,8 +265,8 @@ pub struct KnowledgeBaseSummary {
 }
 
 /// An owned snapshot of all dashboard data, applied in one shot via
-/// [`App::apply_data`].
-#[derive(Debug, Clone)]
+/// `App::apply_data` and persisted between runs for instant startup.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct DashboardData {
     pub account:           AccountInfo,
     pub servers:           Vec<ServerSummary>,
@@ -292,4 +292,38 @@ pub struct DashboardData {
     pub error_message:     Option<String>,
     pub status_message:    Option<String>,
     pub load_errors:       Vec<String>
+}
+
+impl DashboardData {
+    /// Clones the resource data out of a populated `App`, for persisting the
+    /// startup snapshot.
+    #[must_use]
+    pub fn from_app(app: &super::App) -> Self {
+        Self {
+            account:           app.account.clone(),
+            servers:           app.servers.clone(),
+            databases:         app.databases.clone(),
+            s3_storages:       app.s3_storages.clone(),
+            k8s_clusters:      app.k8s_clusters.clone(),
+            projects:          app.projects.clone(),
+            balancers:         app.balancers.clone(),
+            registries:        app.registries.clone(),
+            domains:           app.domains.clone(),
+            firewalls:         app.firewalls.clone(),
+            floating_ips:      app.floating_ips.clone(),
+            images:            app.images.clone(),
+            network_drives:    app.network_drives.clone(),
+            vpcs:              app.vpcs.clone(),
+            dedicated_servers: app.dedicated_servers.clone(),
+            mails:             app.mails.clone(),
+            apps:              app.apps.clone(),
+            ai_agents:         app.ai_agents.clone(),
+            knowledge_bases:   app.knowledge_bases.clone(),
+            ssh_keys:          app.ssh_keys.clone(),
+            finances:          app.finances.clone(),
+            error_message:     None,
+            status_message:    None,
+            load_errors:       Vec::new()
+        }
+    }
 }

@@ -983,38 +983,51 @@ fn create_form_not_for_actionless_tab() {
 }
 
 #[test]
-fn select_initial_tab_moves_off_empty_servers() {
+fn select_initial_tab_moves_sidebar_and_tab_together() {
     let mut app = App::new(5);
     app.databases = vec![make_database(1, "db", "postgres")];
     app.select_initial_tab();
     assert!(app.initial_tab_set);
     assert_eq!(app.active_tab, ResourceTab::Databases);
+    assert!(matches!(
+        app.nav_current(),
+        Some(crate::tui::app::NavKind::Service(ResourceTab::Databases))
+    ));
 }
 
 #[test]
-fn select_initial_tab_keeps_non_empty_active() {
+fn select_initial_tab_prefers_first_project_with_resources() {
     let mut app = App::new(5);
+    app.projects = vec![make_project(7, "Caravan")];
     app.servers = vec![make_server(1, "s", "on")];
-    app.databases = vec![make_database(1, "db", "postgres")];
     app.select_initial_tab();
-    assert_eq!(app.active_tab, ResourceTab::Servers);
+    assert_eq!(app.nav_selected, 0);
+    assert!(matches!(
+        app.nav_current(),
+        Some(crate::tui::app::NavKind::Project(0))
+    ));
+    assert!(app.take_drill_request().is_some());
 }
 
 #[test]
 fn select_initial_tab_runs_only_once() {
     let mut app = App::new(5);
+    app.s3_storages = vec![make_s3(1, "bucket")];
     app.select_initial_tab();
     app.databases = vec![make_database(1, "db", "postgres")];
     app.select_initial_tab();
-    assert_eq!(app.active_tab, ResourceTab::Servers);
+    assert_eq!(app.active_tab, ResourceTab::S3);
 }
 
 #[test]
-fn select_initial_tab_all_empty_stays() {
+fn select_initial_tab_waits_for_first_data() {
     let mut app = App::new(5);
     app.select_initial_tab();
-    assert_eq!(app.active_tab, ResourceTab::Servers);
+    assert!(!app.initial_tab_set);
+    app.databases = vec![make_database(1, "db", "postgres")];
+    app.select_initial_tab();
     assert!(app.initial_tab_set);
+    assert_eq!(app.active_tab, ResourceTab::Databases);
 }
 
 #[test]
@@ -1161,6 +1174,23 @@ fn up_in_project_contents_focuses_create() {
         app.create_form_open(),
         "Enter on Create must open the project form"
     );
+}
+
+#[test]
+fn sidebar_selection_stays_on_service_when_projects_arrive() {
+    let bare = |id: i32, name: &str| ProjectSummary {
+        id,
+        name: name.to_string(),
+        ..Default::default()
+    };
+    let mut app = App::new(5);
+    assert_eq!(app.nav_selected, 0);
+    app.apply_slice(DataSlice::ProjectsList(vec![bare(1, "p1"), bare(2, "p2")]));
+    assert_eq!(app.nav_selected, 2);
+    assert!(matches!(
+        app.nav_current(),
+        Some(crate::tui::app::NavKind::Service(ResourceTab::Servers))
+    ));
 }
 
 #[test]
