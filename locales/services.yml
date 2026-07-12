@@ -1,0 +1,113 @@
+_version: 2
+
+service.desc.servers:
+  en: "Cloud servers (VDS/VPS) with dedicated CPU, RAM, NVMe storage and a public IP. Scale resources up at any moment."
+  ru: "Облачные серверы (VDS/VPS) с выделенными CPU, RAM, NVMe-дисками и публичным IP. Ресурсы можно увеличить в любой момент."
+service.desc.databases:
+  en: "Managed databases: PostgreSQL, MySQL, Redis, MongoDB and more — backups, monitoring and updates are handled for you."
+  ru: "Управляемые базы данных: PostgreSQL, MySQL, Redis, MongoDB и другие — бэкапы, мониторинг и обновления берёт на себя платформа."
+service.desc.s3:
+  en: "S3-compatible object storage for files, backups and static assets, accessible via the Amazon S3 API."
+  ru: "S3-совместимое объектное хранилище для файлов, бэкапов и статики; доступ по API Amazon S3."
+service.desc.kubernetes:
+  en: "Managed Kubernetes clusters: the platform runs the control plane, node groups autoscale on demand."
+  ru: "Управляемые Kubernetes-кластеры: мастер-узлы обслуживает платформа, группы нод автомасштабируются."
+service.desc.balancers:
+  en: "Load balancers spread traffic across your servers with health checks and SSL termination."
+  ru: "Балансировщики распределяют трафик между серверами: проверки здоровья и SSL-терминация."
+service.desc.registry:
+  en: "Private Docker registry to store and serve your container images."
+  ru: "Приватный Docker-реестр для хранения и раздачи образов контейнеров."
+service.desc.domains:
+  en: "Domain registration and DNS management for your projects."
+  ru: "Регистрация доменов и управление DNS-записями."
+service.desc.firewall:
+  en: "Cloud firewall: rule groups controlling inbound and outbound server traffic."
+  ru: "Облачный файрвол: группы правил для входящего и исходящего трафика серверов."
+service.desc.floating_ips:
+  en: "Floating IPs — public addresses you can move between servers without touching DNS."
+  ru: "Плавающие IP — публичные адреса, переносимые между серверами без смены DNS."
+service.desc.images:
+  en: "Disk images: server snapshots for backups, cloning and quick restores."
+  ru: "Образы дисков: снимки серверов для бэкапа, клонирования и быстрого восстановления."
+service.desc.network_drives:
+  en: "Network drives — expandable block storage you attach to servers."
+  ru: "Сетевые диски — расширяемое блочное хранилище, подключаемое к серверам."
+service.desc.vpc:
+  en: "Private networks (VPC): isolated subnets connecting your resources off the public internet."
+  ru: "Приватные сети (VPC): изолированные подсети для связи ресурсов без выхода в интернет."
+service.desc.dedicated:
+  en: "Dedicated bare-metal servers: all the hardware to yourself."
+  ru: "Выделенные физические серверы: всё железо только под вашу нагрузку."
+service.desc.mail:
+  en: "Mail for your domains: mailboxes, aliases and webmail."
+  ru: "Почта для ваших доменов: ящики, алиасы и веб-интерфейс."
+service.desc.apps:
+  en: "Apps (PaaS): deploy applications and static sites straight from a git repository — build, domain and SSL are automatic."
+  ru: "Apps (PaaS): деплой приложений и статики прямо из git-репозитория — сборка, домен и SSL настраиваются автоматически."
+service.desc.ai_agents:
+  en: "AI agents: LLM chat bots grounded on your data, exposed via API and an embeddable widget."
+  ru: "ИИ-агенты: чат-боты на LLM, отвечающие по вашим данным; доступ по API и через встраиваемый виджет."
+service.desc.knowledge_bases:
+  en: "Knowledge bases — document collections your AI agents ground their answers on (RAG)."
+  ru: "Базы знаний — коллекции документов, на которые опираются ответы ИИ-агентов (RAG)."
+service.create.servers:
+  en: "Create server"
+  ru: "Создать сервер"
+service.create.databases:
+  en: "Create database"
+  ru: "Создать базу данных"
+service.create.s3:
+  en: "Create bucket"
+  ru: "Создать хранилище"
+service.create.kubernetes:
+  en: "Create cluster"
+  ru: "Создать кластер"
+service.create.balancers:
+  en: "Create balancer"
+  ru: "Создать балансировщик"
+service.create.registry:
+  en: "Create registry"
+  ru: "Создать реестр"
+service.create.domains:
+  en: "Add domain"
+  ru: "Добавить домен"
+service.create.firewall:
+  en: "Create rule group"
+  ru: "Создать группу правил"
+service.create.floating_ips:
+  en: "Reserve IP"
+  ru: "Зарезервировать IP"
+service.create.images:
+  en: "Create image"
+  ru: "Создать образ"
+service.create.network_drives:
+  en: "Create drive"
+  ru: "Создать диск"
+service.create.vpc:
+  en: "Create network"
+  ru: "Создать сеть"
+service.create.dedicated:
+  en: "Order server"
+  ru: "Заказать сервер"
+service.create.mail:
+  en: "Create mailbox"
+  ru: "Создать ящик"
+service.create.apps:
+  en: "Create app"
+  ru: "Создать приложение"
+service.create.ai_agents:
+  en: "Create agent"
+  ru: "Создать агента"
+service.create.knowledge_bases:
+  en: "Create knowledge base"
+  ru: "Создать базу знаний"
+service.desc.projects:
+  en: "Projects group your resources — servers, databases, apps — by product or team: access control and cost tracking in one place."
+  ru: "Проекты группируют ресурсы — серверы, базы, приложения — по продукту или команде: доступы и учёт затрат в одном месте."
+service.create.projects:
+  en: "Create project"
+  ru: "Создать проект"
+service.your_resources:
+  en: "Nothing here yet — press Enter on the button above to create one."
+  ru: "Пока пусто — нажмите Enter на кнопке выше, чтобы создать."

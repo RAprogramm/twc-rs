@@ -175,11 +175,17 @@ impl fmt::Debug for WidgetRegistry {
 }
 
 pub mod account;
+pub mod button;
+pub mod card_grid;
+pub mod create_panel;
 pub mod details;
 pub mod events;
 pub mod help;
+pub mod resource_cards;
 pub mod resource_list;
-pub mod resource_tabs;
+pub mod service_header;
+pub mod settings_panel;
+pub mod sidebar;
 pub mod skeleton;
 pub mod stats;
 pub mod token_info;

@@ -1,20 +1,16 @@
 // SPDX-FileCopyrightText: 2026 RAprogramm <andrey.rozanov.vl@gmail.com>
 // SPDX-License-Identifier: MIT
 
-//! Resource list widget — shows selected resources in a scrollable list.
+//! Resource list panel — renders the active tab's resources through the shared
+//! [`card_grid`], and exposes the status-to-color helpers reused elsewhere.
 
-use ratatui::{
-    Frame,
-    layout::Rect,
-    style::{Color, Modifier, Style},
-    text::{Line, Span},
-    widgets::{Block, BorderType, Borders, List, ListItem, ListState}
-};
+use ratatui::{Frame, layout::Rect, style::Color};
 use rust_i18n::t;
 
 use crate::tui::{
-    app::{App, ResourceTab},
-    themes::Palette
+    app::App,
+    themes::Palette,
+    widgets::{card_grid, resource_cards}
 };
 
 /// Maps a server status (the API enum's debug name) to a display icon,
@@ -86,364 +82,71 @@ pub fn status_view(status: &str, palette: &Palette) -> (Color, String) {
     (color, label)
 }
 
-/// Computes the integral used-disk percentage of a container registry,
-/// treating a zero-sized disk as fully free.
-fn registry_used_percent(registry: &crate::tui::app::RegistrySummary) -> i64 {
-    if registry.disk_size <= 0 {
-        0
-    } else {
-        registry.disk_used * 100 / registry.disk_size
-    }
-}
-
-/// Renders the resource list panel with a given border color.
-///
-/// # Arguments
-///
-/// * `frame` - The render frame.
-/// * `area` - The area to render in.
-/// * `app` - The application state.
-/// * `border_color` - Color for the panel border.
-// JUSTIFY: Large match expression covering all resource types.
-#[allow(clippy::too_many_lines)]
+/// Renders the service panel: the product info header with its Create button
+/// on top, a separator, and the resource card grid below.
 pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
     let palette = app.theme.palette();
 
-    let items: Vec<ListItem> = match app.active_tab {
-        ResourceTab::Servers => app
-            .servers
-            .iter()
-            .map(|s| {
-                let (icon, status_color, label) = server_status_view(&s.status, &palette);
-                let line = Line::from(vec![
-                    Span::raw(format!("{icon} ")),
-                    Span::styled(&s.name, Style::default().fg(palette.fg)),
-                    Span::raw("  "),
-                    Span::styled(format!("[{label}]"), Style::default().fg(status_color)),
-                ]);
-                ListItem::new(line)
-            })
-            .collect(),
-        ResourceTab::Databases => app
-            .databases
-            .iter()
-            .map(|d| {
-                let line = Line::from(vec![
-                    Span::raw("\u{25CF} "),
-                    Span::styled(&d.name, Style::default().fg(palette.fg)),
-                    Span::raw("  "),
-                    Span::styled(
-                        format!("[{}]", d.engine),
-                        Style::default().fg(palette.accent)
-                    ),
-                ]);
-                ListItem::new(line)
-            })
-            .collect(),
-        ResourceTab::S3 => app
-            .s3_storages
-            .iter()
-            .map(|s| {
-                let line = Line::from(vec![
-                    Span::raw("\u{1F4E6} "),
-                    Span::styled(&s.name, Style::default().fg(palette.fg)),
-                    Span::raw("  "),
-                    Span::styled(&s.region, Style::default().fg(palette.warning)),
-                ]);
-                ListItem::new(line)
-            })
-            .collect(),
-        ResourceTab::Kubernetes => app
-            .k8s_clusters
-            .iter()
-            .map(|c| {
-                let line = Line::from(vec![
-                    Span::raw("\u{2638} "),
-                    Span::styled(&c.name, Style::default().fg(palette.fg)),
-                    Span::raw("  "),
-                    Span::styled(
-                        format!("[v{}]", c.version),
-                        Style::default().fg(palette.accent)
-                    ),
-                ]);
-                ListItem::new(line)
-            })
-            .collect(),
-        ResourceTab::Projects => app
-            .projects
-            .iter()
-            .map(|p| {
-                let line = Line::from(vec![
-                    Span::raw("\u{1F4C1} "),
-                    Span::styled(&p.name, Style::default().fg(palette.fg)),
-                    Span::raw("  "),
-                    Span::styled(
-                        format!(
-                            "[{}]",
-                            t!("resource_list.count_resources", n => p.resource_count())
-                        ),
-                        Style::default().fg(palette.dim)
-                    ),
-                ]);
-                ListItem::new(line)
-            })
-            .collect(),
-        ResourceTab::Balancers => app
-            .balancers
-            .iter()
-            .map(|b| {
-                let line = Line::from(vec![
-                    Span::raw("\u{2696} "),
-                    Span::styled(&b.name, Style::default().fg(palette.fg)),
-                    Span::raw("  "),
-                    Span::styled(&b.ip, Style::default().fg(palette.warning)),
-                ]);
-                ListItem::new(line)
-            })
-            .collect(),
-        ResourceTab::Registry => app
-            .registries
-            .iter()
-            .map(|r| {
-                let line = Line::from(vec![
-                    Span::raw("\u{1F433} "),
-                    Span::styled(&r.name, Style::default().fg(palette.fg)),
-                    Span::raw("  "),
-                    Span::styled(
-                        format!(
-                            "[{}]",
-                            t!("resource_list.disk_used", pct => registry_used_percent(r))
-                        ),
-                        Style::default().fg(palette.accent)
-                    ),
-                ]);
-                ListItem::new(line)
-            })
-            .collect(),
-        ResourceTab::Domains => app
-            .domains
-            .iter()
-            .map(|d| {
-                let (status_color, label) = status_view(&d.status, &palette);
-                let line = Line::from(vec![
-                    Span::raw("\u{1F310} "),
-                    Span::styled(&d.name, Style::default().fg(palette.fg)),
-                    Span::raw("  "),
-                    Span::styled(format!("[{label}]"), Style::default().fg(status_color)),
-                ]);
-                ListItem::new(line)
-            })
-            .collect(),
-        ResourceTab::Firewall => app
-            .firewalls
-            .iter()
-            .map(|f| {
-                let line = Line::from(vec![
-                    Span::raw("\u{1F6E1} "),
-                    Span::styled(&f.name, Style::default().fg(palette.fg)),
-                    Span::raw("  "),
-                    Span::styled(
-                        format!("[{}]", f.policy),
-                        Style::default().fg(palette.accent)
-                    ),
-                ]);
-                ListItem::new(line)
-            })
-            .collect(),
-        ResourceTab::FloatingIps => app
-            .floating_ips
-            .iter()
-            .map(|f| {
-                let line = Line::from(vec![
-                    Span::raw("\u{1F500} "),
-                    Span::styled(&f.ip, Style::default().fg(palette.warning)),
-                    Span::raw("  "),
-                    Span::styled(&f.server_name, Style::default().fg(palette.fg)),
-                ]);
-                ListItem::new(line)
-            })
-            .collect(),
-        ResourceTab::Images => app
-            .images
-            .iter()
-            .map(|i| {
-                let line = Line::from(vec![
-                    Span::raw("\u{1F5BC} "),
-                    Span::styled(&i.name, Style::default().fg(palette.fg)),
-                    Span::raw("  "),
-                    Span::styled(
-                        format!("[{} MB]", i.size_mb),
-                        Style::default().fg(palette.dim)
-                    ),
-                ]);
-                ListItem::new(line)
-            })
-            .collect(),
-        ResourceTab::NetworkDrives => app
-            .network_drives
-            .iter()
-            .map(|n| {
-                let line = Line::from(vec![
-                    Span::raw("\u{1F4BE} "),
-                    Span::styled(&n.name, Style::default().fg(palette.fg)),
-                    Span::raw("  "),
-                    Span::styled(
-                        format!("[{} GB]", n.size_gb),
-                        Style::default().fg(palette.accent)
-                    ),
-                ]);
-                ListItem::new(line)
-            })
-            .collect(),
-        ResourceTab::Vpc => app
-            .vpcs
-            .iter()
-            .map(|v| {
-                let line = Line::from(vec![
-                    Span::raw("\u{1F517} "),
-                    Span::styled(&v.name, Style::default().fg(palette.fg)),
-                    Span::raw("  "),
-                    Span::styled(v.subnet.clone(), Style::default().fg(palette.warning)),
-                ]);
-                ListItem::new(line)
-            })
-            .collect(),
-        ResourceTab::DedicatedServers => app
-            .dedicated_servers
-            .iter()
-            .map(|d| {
-                let (status_color, label) = status_view(&d.status, &palette);
-                let line = Line::from(vec![
-                    Span::raw("\u{1F5A5} "),
-                    Span::styled(&d.name, Style::default().fg(palette.fg)),
-                    Span::raw("  "),
-                    Span::styled(format!("[{label}]"), Style::default().fg(status_color)),
-                ]);
-                ListItem::new(line)
-            })
-            .collect(),
-        ResourceTab::Mail => app
-            .mails
-            .iter()
-            .map(|m| {
-                let line = Line::from(vec![
-                    Span::raw("\u{1F4E7} "),
-                    Span::styled(&m.name, Style::default().fg(palette.fg)),
-                    Span::raw("  "),
-                    Span::styled(m.owner.clone(), Style::default().fg(palette.dim)),
-                ]);
-                ListItem::new(line)
-            })
-            .collect(),
-        ResourceTab::Apps => app
-            .apps
-            .iter()
-            .map(|a| {
-                let line = Line::from(vec![
-                    Span::raw("\u{1F680} "),
-                    Span::styled(&a.name, Style::default().fg(palette.fg)),
-                    Span::raw("  "),
-                    Span::styled(a.location.clone(), Style::default().fg(palette.warning)),
-                ]);
-                ListItem::new(line)
-            })
-            .collect(),
-        ResourceTab::AiAgents => app
-            .ai_agents
-            .iter()
-            .map(|a| {
-                let line = Line::from(vec![
-                    Span::raw("\u{1F916} "),
-                    Span::styled(&a.name, Style::default().fg(palette.fg)),
-                    Span::raw("  "),
-                    Span::styled(
-                        format!("[{}/{}]", a.tokens_used, a.tokens_total),
-                        Style::default().fg(palette.warning)
-                    ),
-                ]);
-                ListItem::new(line)
-            })
-            .collect(),
-        ResourceTab::KnowledgeBases => app
-            .knowledge_bases
-            .iter()
-            .map(|k| {
-                let line = Line::from(vec![
-                    Span::raw("\u{1F4DA} "),
-                    Span::styled(&k.name, Style::default().fg(palette.fg)),
-                    Span::raw("  "),
-                    Span::styled(
-                        format!(
-                            "[{}]",
-                            t!("resource_list.count_docs", n => k.document_count)
-                        ),
-                        Style::default().fg(palette.dim)
-                    ),
-                ]);
-                ListItem::new(line)
-            })
-            .collect(),
-        ResourceTab::SshKeys => app
-            .ssh_keys
-            .iter()
-            .map(|k| {
-                let line = Line::from(vec![
-                    Span::raw("\u{1F511} "),
-                    Span::styled(k, Style::default().fg(palette.fg)),
-                ]);
-                ListItem::new(line)
-            })
-            .collect(),
-        ResourceTab::Finances => app
-            .finances
-            .iter()
-            .map(|f| {
-                let line = Line::from(vec![
-                    Span::raw("\u{1F4B0} "),
-                    Span::styled(f, Style::default().fg(palette.fg)),
-                ]);
-                ListItem::new(line)
-            })
-            .collect()
-    };
-
+    let all = resource_cards::build(app, &palette);
     let indices = app.filtered_indices();
-    let items: Vec<ListItem> = indices
+    let cards: Vec<card_grid::GridCard> = indices
         .iter()
-        .filter_map(|&i| items.get(i).cloned())
+        .filter_map(|&i| all.get(i).cloned())
         .collect();
 
     let tab_name = app.active_tab.display_name();
     let title = if app.filter_active() {
         let cursor = if app.filter_editing { "\u{2588}" } else { "" };
-        format!(" {tab_name} ({})  /{}{cursor} ", items.len(), app.filter)
+        format!(" {tab_name} ({})  /{}{cursor} ", cards.len(), app.filter)
     } else {
-        format!(" {tab_name} ({}) ", items.len())
+        format!(" {tab_name} ({}) ", cards.len())
     };
-    let list = List::new(items)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(border_color))
-                .title(Line::from(Span::styled(
-                    title,
-                    Style::default()
-                        .fg(palette.title)
-                        .add_modifier(Modifier::BOLD)
-                )))
-        )
-        .highlight_style(
-            Style::default()
-                .fg(palette.bg)
-                .bg(palette.accent)
-                .add_modifier(Modifier::BOLD)
-        )
-        .highlight_symbol("\u{2503} ");
 
-    let mut state = ListState::default();
-    state.select(Some(app.selected));
-    frame.render_stateful_widget(list, area, &mut state);
+    let block = ratatui::widgets::Block::default()
+        .borders(ratatui::widgets::Borders::ALL)
+        .border_type(ratatui::widgets::BorderType::Rounded)
+        .border_style(ratatui::style::Style::default().fg(border_color))
+        .title(ratatui::text::Line::from(ratatui::text::Span::styled(
+            title,
+            ratatui::style::Style::default()
+                .fg(palette.title)
+                .add_modifier(ratatui::style::Modifier::BOLD)
+        )));
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+    if inner.height == 0 || inner.width < 6 {
+        return;
+    }
+
+    let focused = app.pane == crate::tui::app::Pane::Content;
+    let (header, grid) = crate::tui::widgets::service_header::layout(inner, app.active_tab);
+    if let Some(header_area) = header {
+        crate::tui::widgets::service_header::render(
+            frame,
+            header_area,
+            app.active_tab,
+            focused && app.content_on_create,
+            &palette
+        );
+    }
+    if cards.is_empty() {
+        let hint = ratatui::widgets::Paragraph::new(ratatui::text::Line::from(
+            ratatui::text::Span::styled(
+                t!("service.your_resources").to_string(),
+                ratatui::style::Style::default().fg(palette.dim)
+            )
+        ));
+        frame.render_widget(hint, grid);
+        return;
+    }
+
+    let cols = card_grid::columns(grid.width, card_grid::longest_title(&cards));
+    let selected = if focused && !app.content_on_create {
+        app.selected
+    } else {
+        usize::MAX
+    };
+    card_grid::render_grid_in(frame, grid, &cards, selected, cols, &palette);
 }
 
 /// Widget wrapper for the resource list panel.
@@ -494,6 +197,8 @@ impl crate::tui::widgets::Widget for ResourceListWidget {
 
 #[cfg(test)]
 mod tests {
+    use ratatui::{Terminal, backend::TestBackend};
+
     use super::*;
     use crate::tui::themes::Theme;
 
@@ -529,5 +234,60 @@ mod tests {
         let (_, color, label) = server_status_view("SomethingNew", &palette);
         assert_eq!(color, palette.warning);
         assert_eq!(label, "somethingnew");
+    }
+
+    fn app_with_servers(n: i32) -> App {
+        use crate::tui::app::ServerSummary;
+        let mut app = App::new(5);
+        app.servers = (0..n)
+            .map(|i| ServerSummary {
+                id:       i,
+                name:     format!("srv-{i}"),
+                status:   "On".to_string(),
+                cpu:      2,
+                ram_mb:   4096,
+                disk_gb:  40,
+                ip:       "1.2.3.4".to_string(),
+                location: "ru-1".to_string()
+            })
+            .collect();
+        app
+    }
+
+    fn draw_at(app: &App, w: u16, h: u16) {
+        let backend = TestBackend::new(w.max(1), h.max(1));
+        let mut terminal = Terminal::new(backend).unwrap();
+        terminal
+            .draw(|frame| {
+                render(
+                    frame,
+                    Rect::new(0, 0, w, h),
+                    app,
+                    app.theme.palette().accent
+                );
+            })
+            .unwrap();
+    }
+
+    #[test]
+    fn grid_renders_across_sizes_without_panic() {
+        let app = app_with_servers(12);
+        for (w, h) in [(0, 0), (1, 1), (3, 3), (20, 6), (80, 24), (200, 60)] {
+            draw_at(&app, w, h);
+        }
+    }
+
+    #[test]
+    fn grid_renders_empty_and_single_item() {
+        draw_at(&app_with_servers(0), 80, 24);
+        draw_at(&app_with_servers(1), 80, 24);
+    }
+
+    #[test]
+    fn grid_renders_with_selection_scrolled_to_end() {
+        let mut app = app_with_servers(40);
+        app.resource_cols = 3;
+        app.selected = 39;
+        draw_at(&app, 60, 12);
     }
 }

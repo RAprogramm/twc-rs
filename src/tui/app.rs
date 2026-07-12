@@ -12,11 +12,14 @@ use std::{
 use rust_i18n::t;
 
 mod actions;
+mod create;
 mod data;
 mod drill;
 mod forms;
+mod nav;
 mod navigation;
 mod palette;
+mod settings;
 mod stats;
 mod summaries;
 mod tabs;
@@ -24,8 +27,12 @@ mod tabs;
 mod tests;
 
 pub use actions::{ActionKind, ActionMenu, PendingAction};
+pub use data::DataSlice;
 pub use drill::{DrillItem, DrillView};
 pub use forms::CreateForm;
+pub use nav::{NavItem, NavKind};
+pub use navigation::grid_step;
+pub use settings::{SETTING_ROWS, SettingRow, SettingsPicker};
 pub use stats::{ResourceStats, StatsRequest};
 pub use summaries::*;
 pub use tabs::ResourceTab;
@@ -40,75 +47,125 @@ pub enum Focus {
     #[default]
     ResourceList,
     /// Details panel (right side).
-    Details
+    Details,
+    /// Stats panel (right info column).
+    Stats,
+    /// Event log panel (bottom).
+    Events
+}
+
+/// A direction for moving focus between widgets on the dashboard grid.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FocusDir {
+    Left,
+    Right,
+    Up,
+    Down
+}
+
+/// Extra detail sections fetched in the background: `(title, rows)`.
+pub type DetailSections = Vec<(String, Vec<(String, String)>)>;
+
+/// Which pane of the sidebar layout owns the keyboard.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum Pane {
+    /// The sidebar navigation list.
+    #[default]
+    Sidebar,
+    /// The content card grid.
+    Content
 }
 
 /// Holds all runtime state for the TUI dashboard.
 #[allow(clippy::struct_excessive_bools)]
 pub struct App {
-    pub account:           AccountInfo,
-    pub servers:           Vec<ServerSummary>,
-    pub databases:         Vec<DatabaseSummary>,
-    pub s3_storages:       Vec<S3Summary>,
-    pub k8s_clusters:      Vec<K8sSummary>,
-    pub projects:          Vec<ProjectSummary>,
-    pub balancers:         Vec<BalancerSummary>,
-    pub registries:        Vec<RegistrySummary>,
-    pub domains:           Vec<DomainSummary>,
-    pub firewalls:         Vec<FirewallSummary>,
-    pub floating_ips:      Vec<FloatingIpSummary>,
-    pub images:            Vec<ImageSummary>,
-    pub network_drives:    Vec<NetworkDriveSummary>,
-    pub vpcs:              Vec<VpcSummary>,
-    pub dedicated_servers: Vec<DedicatedServerSummary>,
-    pub mails:             Vec<MailSummary>,
-    pub apps:              Vec<AppSummary>,
-    pub ai_agents:         Vec<AiAgentSummary>,
-    pub knowledge_bases:   Vec<KnowledgeBaseSummary>,
-    pub ssh_keys:          Vec<String>,
-    pub finances:          Vec<String>,
-    pub selected:          usize,
-    pub active_tab:        ResourceTab,
-    pub theme:             super::themes::Theme,
-    pub token:             Option<String>,
-    pub cpu_history:       VecDeque<f64>,
-    pub ram_history:       VecDeque<f64>,
-    pub net_in_history:    VecDeque<f64>,
-    pub net_out_history:   VecDeque<f64>,
-    pub last_refresh:      Instant,
-    pub refresh_interval:  Duration,
-    pub running:           bool,
-    pub show_help:         bool,
-    pub status_message:    Option<String>,
-    pub error_message:     Option<String>,
-    pub is_loading:        bool,
-    pub widgets:           super::widgets::WidgetRegistry,
-    pub focus:             Focus,
-    pub action_menu:       Option<ActionMenu>,
-    pub confirm:           Option<PendingAction>,
-    pub dispatch:          Option<PendingAction>,
-    pub palette:           Option<super::command_palette::CommandPalette>,
-    pub list_width_pct:    u16,
-    pub anim_tick:         u64,
-    pub prefs_dirty:       bool,
-    pub logs:              VecDeque<LogEntry>,
-    pub last_load_errors:  Vec<String>,
-    pub refresh_requested: bool,
-    pub drill:             Option<DrillView>,
-    pub drill_request:     Option<(ResourceTab, i32, String)>,
-    pub filter:            String,
-    pub filter_editing:    bool,
-    pub hide_empty_tabs:   bool,
-    pub initial_tab_set:   bool,
-    pub language:          crate::config::Language,
-    pub stats_subject:     Option<String>,
-    pub stats_loaded_for:  Option<String>,
-    pub stats_requested:   Option<Instant>,
-    pub create_form:       Option<CreateForm>,
-    pub create_request:    Option<CreateForm>,
-    pub profiles:          Vec<String>,
-    pub active_profile:    String,
-    pub switch_profile:    Option<String>
+    pub account:             AccountInfo,
+    pub servers:             Vec<ServerSummary>,
+    pub databases:           Vec<DatabaseSummary>,
+    pub s3_storages:         Vec<S3Summary>,
+    pub k8s_clusters:        Vec<K8sSummary>,
+    pub projects:            Vec<ProjectSummary>,
+    pub balancers:           Vec<BalancerSummary>,
+    pub registries:          Vec<RegistrySummary>,
+    pub domains:             Vec<DomainSummary>,
+    pub firewalls:           Vec<FirewallSummary>,
+    pub floating_ips:        Vec<FloatingIpSummary>,
+    pub images:              Vec<ImageSummary>,
+    pub network_drives:      Vec<NetworkDriveSummary>,
+    pub vpcs:                Vec<VpcSummary>,
+    pub dedicated_servers:   Vec<DedicatedServerSummary>,
+    pub mails:               Vec<MailSummary>,
+    pub apps:                Vec<AppSummary>,
+    pub ai_agents:           Vec<AiAgentSummary>,
+    pub knowledge_bases:     Vec<KnowledgeBaseSummary>,
+    pub ssh_keys:            Vec<String>,
+    pub finances:            Vec<String>,
+    pub selected:            usize,
+    pub active_tab:          ResourceTab,
+    pub theme:               super::themes::Theme,
+    pub token:               Option<String>,
+    pub cpu_history:         VecDeque<f64>,
+    pub ram_history:         VecDeque<f64>,
+    pub net_in_history:      VecDeque<f64>,
+    pub net_out_history:     VecDeque<f64>,
+    pub last_refresh:        Instant,
+    pub refresh_interval:    Duration,
+    pub running:             bool,
+    pub show_help:           bool,
+    pub status_message:      Option<String>,
+    pub error_message:       Option<String>,
+    pub is_loading:          bool,
+    pub widgets:             super::widgets::WidgetRegistry,
+    pub focus:               Focus,
+    pub action_menu:         Option<ActionMenu>,
+    pub confirm:             Option<PendingAction>,
+    pub dispatch:            Option<PendingAction>,
+    pub palette:             Option<super::command_palette::CommandPalette>,
+    pub list_width_pct:      u16,
+    pub anim_tick:           u64,
+    pub prefs_dirty:         bool,
+    pub logs:                VecDeque<LogEntry>,
+    pub last_load_errors:    Vec<String>,
+    pub cycle_load_errors:   Vec<String>,
+    pub projects_pending:    u8,
+    pub services_pending:    u8,
+    pub initial_cycle_done:  bool,
+    pub manual_refresh_spin: bool,
+    pub drill_cache:         std::collections::HashMap<i32, DrillView>,
+    pub drill_fetching_id:   Option<i32>,
+    pub drill_retried:       Option<i32>,
+    pub content_on_create:   bool,
+    pub snapshot_dirty:      bool,
+    pub settings_selected:   usize,
+    pub picker:              Option<SettingsPicker>,
+    pub create_selected:     usize,
+    pub info_popup:          Option<(String, String)>,
+    pub detail_open:         bool,
+    pub detail_selected:     usize,
+    pub detail_action:       Option<(i32, crate::tui::widgets::details::DetailAction)>,
+    pub detail_extra:        std::collections::HashMap<(ResourceTab, i32), DetailSections>,
+    pub detail_fetch:        Option<(ResourceTab, i32)>,
+    pub refresh_requested:   bool,
+    pub drill:               Option<DrillView>,
+    pub drill_request:       Option<(ResourceTab, i32, String)>,
+    pub filter:              String,
+    pub filter_editing:      bool,
+    pub hide_empty_tabs:     bool,
+    pub initial_tab_set:     bool,
+    pub detail_scroll:       u16,
+    pub focus_active:        bool,
+    pub pane:                Pane,
+    pub nav_selected:        usize,
+    pub resource_cols:       usize,
+    pub language:            crate::config::Language,
+    pub stats_subject:       Option<String>,
+    pub stats_loaded_for:    Option<String>,
+    pub stats_requested:     Option<Instant>,
+    pub create_form:         Option<CreateForm>,
+    pub create_request:      Option<CreateForm>,
+    pub profiles:            Vec<String>,
+    pub active_profile:      String,
+    pub switch_profile:      Option<String>
 }
 
 impl App {
@@ -175,6 +232,25 @@ impl App {
             prefs_dirty: false,
             logs: VecDeque::with_capacity(200),
             last_load_errors: Vec::new(),
+            cycle_load_errors: Vec::new(),
+            projects_pending: 2,
+            services_pending: 17,
+            initial_cycle_done: false,
+            manual_refresh_spin: false,
+            drill_cache: std::collections::HashMap::new(),
+            drill_fetching_id: None,
+            drill_retried: None,
+            content_on_create: false,
+            snapshot_dirty: false,
+            settings_selected: 0,
+            picker: None,
+            create_selected: 0,
+            info_popup: None,
+            detail_open: false,
+            detail_selected: 0,
+            detail_action: None,
+            detail_extra: std::collections::HashMap::new(),
+            detail_fetch: None,
             refresh_requested: false,
             drill: None,
             drill_request: None,
@@ -182,6 +258,11 @@ impl App {
             filter_editing: false,
             hide_empty_tabs: false,
             initial_tab_set: false,
+            detail_scroll: 0,
+            focus_active: false,
+            pane: Pane::default(),
+            nav_selected: 0,
+            resource_cols: 1,
             language: crate::config::Language::default(),
             stats_subject: None,
             stats_loaded_for: None,
@@ -195,7 +276,7 @@ impl App {
     }
 
     /// Takes a pending profile-switch request (the dashboard loop re-auths).
-    pub fn take_switch_profile(&mut self) -> Option<String> {
+    pub const fn take_switch_profile(&mut self) -> Option<String> {
         self.switch_profile.take()
     }
 

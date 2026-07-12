@@ -70,7 +70,7 @@ impl HelpWidget {
         )));
 
         let shortcuts = [
-            ("h/l", t!("help.shortcut_tab")),
+            ("\u{21e5}/\u{21e4}", t!("help.shortcut_tab")),
             ("j/k", t!("help.shortcut_move")),
             ("g/G", t!("help.shortcut_jump")),
             ("Enter", t!("help.shortcut_enter")),

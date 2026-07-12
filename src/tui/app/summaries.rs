@@ -3,8 +3,6 @@
 
 //! Per-resource summary view-models and the full dashboard data snapshot.
 
-use super::App;
-
 /// Severity of an event-log entry.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(dead_code)]
@@ -29,7 +27,7 @@ pub struct LogEntry {
 }
 
 /// Account information from the API.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct AccountInfo {
     pub login:      String,
     pub account_id: i64,
@@ -38,7 +36,7 @@ pub struct AccountInfo {
 }
 
 /// Summary of a single server.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[allow(dead_code)]
 pub struct ServerSummary {
     pub id:       i32,
@@ -51,18 +49,40 @@ pub struct ServerSummary {
     pub location: String
 }
 
-/// Summary of a single database.
-#[derive(Debug, Clone)]
+/// Summary of a single database cluster, carrying every field the list
+/// endpoint exposes (the password is deliberately not kept: summaries are
+/// persisted to the on-disk snapshot).
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct DatabaseSummary {
-    pub id:      i32,
-    pub name:    String,
-    pub status:  String,
-    pub engine:  String,
-    pub size_mb: i64
+    pub id:           i32,
+    pub name:         String,
+    pub status:       String,
+    pub engine:       String,
+    pub size_mb:      i64,
+    #[serde(default)]
+    pub disk_used_mb: i64,
+    #[serde(default)]
+    pub created_at:   String,
+    #[serde(default)]
+    pub location:     String,
+    #[serde(default)]
+    pub port:         i32,
+    #[serde(default)]
+    pub public_ip:    String,
+    #[serde(default)]
+    pub local_ip:     String,
+    #[serde(default)]
+    pub preset_id:    i32,
+    #[serde(default)]
+    pub hash_type:    String,
+    #[serde(default)]
+    pub local_only:   bool,
+    #[serde(default)]
+    pub config:       Vec<(String, String)>
 }
 
 /// Summary of a single S3 storage.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct S3Summary {
     pub id:           i32,
     pub name:         String,
@@ -72,7 +92,7 @@ pub struct S3Summary {
 }
 
 /// Summary of a single Kubernetes cluster.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct K8sSummary {
     pub id:      i32,
     pub name:    String,
@@ -84,7 +104,7 @@ pub struct K8sSummary {
 }
 
 /// Summary of a single project with per-type resource counts.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct ProjectSummary {
     pub id:              i32,
     pub name:            String,
@@ -112,7 +132,7 @@ impl ProjectSummary {
 }
 
 /// Summary of a single load balancer.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct BalancerSummary {
@@ -124,7 +144,7 @@ pub struct BalancerSummary {
 }
 
 /// Summary of a single container registry.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct RegistrySummary {
@@ -135,7 +155,7 @@ pub struct RegistrySummary {
 }
 
 /// Summary of a single domain.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct DomainSummary {
@@ -146,7 +166,7 @@ pub struct DomainSummary {
 }
 
 /// Summary of a single firewall.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct FirewallSummary {
@@ -156,7 +176,7 @@ pub struct FirewallSummary {
 }
 
 /// Summary of a single floating IP.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct FloatingIpSummary {
@@ -167,7 +187,7 @@ pub struct FloatingIpSummary {
 }
 
 /// Summary of a single image.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct ImageSummary {
@@ -178,7 +198,7 @@ pub struct ImageSummary {
 }
 
 /// Summary of a single network drive.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct NetworkDriveSummary {
@@ -189,7 +209,7 @@ pub struct NetworkDriveSummary {
 }
 
 /// Summary of a single VPC.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct VpcSummary {
@@ -200,7 +220,7 @@ pub struct VpcSummary {
 }
 
 /// Summary of a single dedicated server.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct DedicatedServerSummary {
@@ -214,7 +234,7 @@ pub struct DedicatedServerSummary {
 }
 
 /// Summary of a single mail service.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct MailSummary {
@@ -223,28 +243,66 @@ pub struct MailSummary {
     pub comment: String
 }
 
-/// Summary of a single application.
-#[derive(Debug, Clone)]
-// JUSTIFY: Public API type for future API integration.
-#[allow(dead_code)]
+/// Summary of a single application, carrying every field the list endpoint
+/// exposes.
+///
+/// Environment variable values are deliberately not kept (they are secrets
+/// and summaries hit the on-disk snapshot) — only their count is.
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct AppSummary {
-    pub id:          i32,
-    pub name:        String,
-    pub status:      String,
-    pub ip:          String,
-    pub location:    String,
-    pub app_type:    String,
-    pub framework:   String,
-    pub language:    String,
-    pub branch:      String,
-    pub commit:      String,
-    pub auto_deploy: bool,
-    pub comment:     String,
-    pub domains:     Vec<String>
+    pub id:            i32,
+    pub name:          String,
+    pub status:        String,
+    pub ip:            String,
+    pub location:      String,
+    pub app_type:      String,
+    pub framework:     String,
+    pub language:      String,
+    pub branch:        String,
+    pub commit:        String,
+    pub auto_deploy:   bool,
+    pub comment:       String,
+    pub domains:       Vec<String>,
+    #[serde(default)]
+    pub repository:    String,
+    #[serde(default)]
+    pub repo_url:      String,
+    #[serde(default)]
+    pub repo_private:  bool,
+    #[serde(default)]
+    pub provider:      String,
+    #[serde(default)]
+    pub env_version:   String,
+    #[serde(default)]
+    pub env_count:     usize,
+    #[serde(default)]
+    pub preset_id:     i64,
+    #[serde(default)]
+    pub index_dir:     String,
+    #[serde(default)]
+    pub build_cmd:     String,
+    #[serde(default)]
+    pub run_cmd:       String,
+    #[serde(default)]
+    pub cfg_cpu:       i64,
+    #[serde(default)]
+    pub cfg_ram_mb:    i64,
+    #[serde(default)]
+    pub cfg_bandwidth: i64,
+    #[serde(default)]
+    pub cfg_freq:      String,
+    #[serde(default)]
+    pub cfg_disk_type: String,
+    #[serde(default)]
+    pub disk_used_mb:  i64,
+    #[serde(default)]
+    pub disk_size_mb:  i64,
+    #[serde(default)]
+    pub started_at:    String
 }
 
 /// Summary of a single AI agent.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct AiAgentSummary {
@@ -256,7 +314,7 @@ pub struct AiAgentSummary {
 }
 
 /// Summary of a single knowledge base.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 // JUSTIFY: Public API type for future API integration.
 #[allow(dead_code)]
 pub struct KnowledgeBaseSummary {
@@ -266,10 +324,9 @@ pub struct KnowledgeBaseSummary {
     pub status:         String
 }
 
-/// An owned snapshot of all dashboard data, fetched off the UI thread and
-/// applied via [`App::apply_data`]. Cloned out of a throwaway [`App`] by the
-/// background refresh task.
-#[derive(Debug, Clone)]
+/// An owned snapshot of all dashboard data, applied in one shot via
+/// `App::apply_data` and persisted between runs for instant startup.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct DashboardData {
     pub account:           AccountInfo,
     pub servers:           Vec<ServerSummary>,
@@ -298,9 +355,10 @@ pub struct DashboardData {
 }
 
 impl DashboardData {
-    /// Clones the resource data out of an [`App`] populated by `refresh_all`.
+    /// Clones the resource data out of a populated `App`, for persisting the
+    /// startup snapshot.
     #[must_use]
-    pub fn from_app(app: &App) -> Self {
+    pub fn from_app(app: &super::App) -> Self {
         Self {
             account:           app.account.clone(),
             servers:           app.servers.clone(),
@@ -323,9 +381,9 @@ impl DashboardData {
             knowledge_bases:   app.knowledge_bases.clone(),
             ssh_keys:          app.ssh_keys.clone(),
             finances:          app.finances.clone(),
-            error_message:     app.error_message.clone(),
-            status_message:    app.status_message.clone(),
-            load_errors:       app.last_load_errors.clone()
+            error_message:     None,
+            status_message:    None,
+            load_errors:       Vec::new()
         }
     }
 }

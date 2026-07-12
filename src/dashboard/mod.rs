@@ -4,16 +4,17 @@
 //! Interactive dashboard runtime: the event loop and preference persistence.
 
 mod actions;
+mod cache;
 mod refresh;
-mod splash;
 mod stats;
 
 use timeweb_rs::authenticated;
 
 use self::{
-    actions::{fetch_drill, perform_action, perform_create},
+    actions::{
+        fetch_app_extra, fetch_database_extra, fetch_drill, perform_action, perform_create
+    },
     refresh::{spawn_one_shot_refresh, spawn_refresh_loop},
-    splash::draw_splash,
     stats::spawn_stats_fetch
 };
 use crate::{config::AppConfig, error::TwcError, tui};
@@ -30,7 +31,9 @@ fn persist_dashboard_prefs(app: &tui::app::App) {
     let _ = cfg.save();
 }
 
-pub(crate) async fn run_dashboard(
+// JUSTIFY: The single event loop; splitting would only scatter the flow.
+#[allow(clippy::too_many_lines)]
+pub async fn run_dashboard(
     mut token: String,
     interval: u64,
     theme: crate::tui::themes::Theme,
@@ -68,7 +71,12 @@ pub(crate) async fn run_dashboard(
     }
     app.active_profile = profile.unwrap_or_else(|| "default".to_string());
     app.is_loading = true;
-    draw_splash(&mut terminal);
+    if let Some(snapshot) = cache::load(&app.active_profile) {
+        app.apply_data(snapshot);
+    }
+    terminal
+        .draw(|f| tui::ui::draw(f, &mut app))
+        .map_err(|e| TwcError::Io(e.to_string()))?;
 
     let (tx, mut rx) = mpsc::unbounded_channel();
     let event_tx = tx.clone();
@@ -77,15 +85,22 @@ pub(crate) async fn run_dashboard(
         tui::event::run_event_loop(event_tx).await;
     });
 
-    let mut refresh_handle = spawn_refresh_loop(tx.clone(), token.clone(), theme, interval);
+    let mut refresh_handle = spawn_refresh_loop(tx.clone(), token.clone(), interval);
 
     while let Some(event) = rx.recv().await {
         if !tui::event::handle_event(&mut app, event) {
             break;
         }
 
+        if let Ok(size) = terminal.size() {
+            let sidebar_w = tui::widgets::sidebar::width_for(size.width, app.nav_longest_label());
+            let content_w = size.width.saturating_sub(sidebar_w).saturating_sub(2);
+            app.resource_cols =
+                tui::widgets::card_grid::columns(content_w, app.content_longest_label());
+        }
+
         terminal
-            .draw(|f| tui::ui::draw(f, &app))
+            .draw(|f| tui::ui::draw(f, &mut app))
             .map_err(|e| TwcError::Io(e.to_string()))?;
 
         if app.prefs_dirty {
@@ -93,23 +108,110 @@ pub(crate) async fn run_dashboard(
             app.prefs_dirty = false;
         }
 
+        if app.snapshot_dirty {
+            app.snapshot_dirty = false;
+            if app.last_load_errors.is_empty() {
+                cache::save(&app.active_profile, tui::app::DashboardData::from_app(&app));
+            }
+        }
+
         if app.refresh_requested {
             app.refresh_requested = false;
-            spawn_one_shot_refresh(tx.clone(), token.clone(), theme, interval);
+            spawn_one_shot_refresh(tx.clone(), token.clone());
+        }
+
+        if let Some((action_id, action)) = app.take_detail_action() {
+            match action {
+                tui::widgets::details::DetailAction::Kind(_) => {}
+                tui::widgets::details::DetailAction::Redeploy => {
+                    use tui::app::LogLevel;
+                    let config = authenticated(token.clone());
+                    let request = timeweb_rs::models::CreateDeployRequest {
+                        commit_sha: None
+                    };
+                    match timeweb_rs::apis::apps_api::create_deploy(
+                        &config,
+                        &action_id.to_string(),
+                        request
+                    )
+                    .await
+                    {
+                        Ok(_) => {
+                            let msg = format!("redeploy started for app #{action_id}");
+                            app.log(LogLevel::Success, msg.clone());
+                            app.status_message = Some(msg);
+                        }
+                        Err(e) => {
+                            let msg = format!("redeploy failed: {e}");
+                            app.log(LogLevel::Error, msg.clone());
+                            app.error_message = Some(msg);
+                        }
+                    }
+                }
+            }
+        }
+
+        if let Some((detail_tab, detail_id)) = app.take_detail_fetch() {
+            let config = authenticated(token.clone());
+            let extra_tx = tx.clone();
+            match detail_tab {
+                tui::app::ResourceTab::Databases => {
+                    let preset_id = app
+                        .databases
+                        .iter()
+                        .find(|d| d.id == detail_id)
+                        .map_or(0, |d| d.preset_id);
+                    tokio::spawn(async move {
+                        let sections = fetch_database_extra(&config, detail_id, preset_id).await;
+                        if !sections.is_empty() {
+                            let _ = extra_tx.send(tui::event::AppEvent::DetailExtra {
+                                tab: detail_tab,
+                                id: detail_id,
+                                sections
+                            });
+                        }
+                    });
+                }
+                tui::app::ResourceTab::Apps => {
+                    let preset_id = app
+                        .apps
+                        .iter()
+                        .find(|a| a.id == detail_id)
+                        .map_or(0, |a| a.preset_id);
+                    tokio::spawn(async move {
+                        let sections = fetch_app_extra(&config, detail_id, preset_id).await;
+                        if !sections.is_empty() {
+                            let _ = extra_tx.send(tui::event::AppEvent::DetailExtra {
+                                tab: detail_tab,
+                                id: detail_id,
+                                sections
+                            });
+                        }
+                    });
+                }
+                _ => {}
+            }
         }
 
         if let Some((drill_tab, drill_id, drill_name)) = app.take_drill_request() {
-            use tui::app::LogLevel;
             let config = authenticated(token.clone());
-            match fetch_drill(&config, drill_tab, drill_id, &drill_name).await {
-                Ok(view) => {
-                    app.log(LogLevel::Info, format!("opened {drill_name}"));
-                    app.open_drill(view);
+            let drill_tx = tx.clone();
+            tokio::spawn(async move {
+                match fetch_drill(&config, drill_tab, drill_id, &drill_name).await {
+                    Ok(view) => {
+                        let _ = drill_tx.send(tui::event::AppEvent::Drill {
+                            id:   drill_id,
+                            view: Box::new(view)
+                        });
+                    }
+                    Err(e) => {
+                        let _ = drill_tx.send(tui::event::AppEvent::DrillFailed {
+                            name:  drill_name,
+                            error: e
+                        });
+                    }
                 }
-                Err(e) => {
-                    app.log(LogLevel::Error, format!("open {drill_name} failed: {e}"));
-                }
-            }
+            });
         }
 
         if let Some(action) = app.take_dispatch() {
@@ -120,13 +222,13 @@ pub(crate) async fn run_dashboard(
             );
             let config = authenticated(token.clone());
             perform_action(&config, &mut app, action).await;
-            spawn_one_shot_refresh(tx.clone(), token.clone(), theme, interval);
+            spawn_one_shot_refresh(tx.clone(), token.clone());
         }
 
         if let Some(form) = app.take_create_request() {
             let config = authenticated(token.clone());
             perform_create(&config, &mut app, form).await;
-            spawn_one_shot_refresh(tx.clone(), token.clone(), theme, interval);
+            spawn_one_shot_refresh(tx.clone(), token.clone());
         }
 
         if let Some(profile) = app.take_switch_profile() {
@@ -136,11 +238,13 @@ pub(crate) async fn run_dashboard(
                 Ok(Some(new_token)) => {
                     token = new_token;
                     refresh_handle.abort();
-                    refresh_handle =
-                        spawn_refresh_loop(tx.clone(), token.clone(), theme, interval);
+                    refresh_handle = spawn_refresh_loop(tx.clone(), token.clone(), interval);
                     app.token = Some(token.clone());
                     app.active_profile.clone_from(&profile);
                     app.is_loading = true;
+                    if let Some(snapshot) = cache::load(&profile) {
+                        app.apply_data(snapshot);
+                    }
                     app.log(
                         LogLevel::Success,
                         format!("switched to profile '{profile}'")

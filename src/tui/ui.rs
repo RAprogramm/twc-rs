@@ -6,23 +6,21 @@
 mod overlays;
 mod status_bar;
 
-use overlays::{render_action_menu, render_confirm, render_create_form};
+use overlays::{
+    render_action_menu, render_confirm, render_create_form, render_info_popup,
+    render_settings_picker
+};
 use ratatui::{
     Frame,
-    layout::{Constraint, Direction, Layout, Rect},
-    style::{Modifier, Style},
-    text::{Line, Span},
-    widgets::{Block, BorderType, Borders, List, ListItem, ListState}
+    layout::{Constraint, Direction, Layout, Rect}
 };
 use rust_i18n::t;
 use status_bar::render_status_bar;
 
 use crate::tui::{
-    app::{App, DrillView, Focus},
+    app::{App, DrillView, NavKind, Pane},
     themes::Palette,
-    widgets::{
-        Widget, account::AccountWidget, help::HelpWidget, resource_tabs::ResourceTabsWidget
-    }
+    widgets::{Widget, account::AccountWidget, help::HelpWidget}
 };
 
 /// Renders the full dashboard into the given frame area.
@@ -35,218 +33,259 @@ use crate::tui::{
 ///
 /// * `frame` - The render frame.
 /// * `app` - The application state.
-pub fn draw(frame: &mut Frame, app: &App) {
+pub fn draw(frame: &mut Frame, app: &mut App) {
     let size = frame.area();
     let palette = app.theme.palette();
 
     let show_account = app.is_widget_enabled("account") && size.height >= 16;
     let show_events = app.is_widget_enabled("events") && size.height >= 24;
 
-    let mut constraints = Vec::with_capacity(5);
+    let mut constraints = Vec::with_capacity(3);
     if show_account {
         constraints.push(Constraint::Length(3));
     }
-    constraints.push(Constraint::Length(2));
     constraints.push(Constraint::Min(8));
-    if show_events {
-        constraints.push(Constraint::Length(7));
-    }
     constraints.push(Constraint::Length(3));
 
-    let main_chunks = Layout::default()
+    let rows = Layout::default()
         .direction(Direction::Vertical)
         .constraints(constraints)
         .split(size);
 
     let mut idx = 0;
     if show_account {
-        AccountWidget::new(true).render(frame, main_chunks[idx], app);
+        AccountWidget::new(true).render(frame, rows[idx], app);
         idx += 1;
     }
 
-    ResourceTabsWidget::new(true).render(frame, main_chunks[idx], app);
+    let sidebar_w = crate::tui::widgets::sidebar::width_for(size.width, app.nav_longest_label());
+    let body = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Length(sidebar_w), Constraint::Min(10)])
+        .split(rows[idx]);
     idx += 1;
 
-    render_content(frame, main_chunks[idx], app, &palette);
-    idx += 1;
+    crate::tui::widgets::sidebar::render(frame, body[0], app, &palette);
 
     if show_events {
-        crate::tui::widgets::events::render(frame, main_chunks[idx], app);
-        idx += 1;
+        let right = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Min(8), Constraint::Length(7)])
+            .split(body[1]);
+        render_content(frame, right[0], app, &palette);
+        crate::tui::widgets::events::render(frame, right[1], app);
+    } else {
+        render_content(frame, body[1], app, &palette);
     }
 
-    render_status_bar(frame, main_chunks[idx], app, &palette);
+    render_status_bar(frame, rows[idx], app, &palette);
 
+    draw_modals(frame, size, app, &palette);
+}
+
+/// Renders the floating overlays (help, menus, dialogs, palette) shared by all
+/// views.
+fn draw_modals(frame: &mut Frame, size: Rect, app: &App, palette: &Palette) {
     if app.show_help {
         HelpWidget::new().render(frame, size, app);
     }
 
     if app.action_menu_open() {
-        render_action_menu(frame, size, app, &palette);
+        render_action_menu(frame, size, app, palette);
     }
 
     if app.awaiting_confirm() {
-        render_confirm(frame, size, app, &palette);
+        render_confirm(frame, size, app, palette);
+    }
+
+    if app.picker_open() {
+        render_settings_picker(frame, size, app, palette);
+    }
+
+    if app.info_popup_open() {
+        render_info_popup(frame, size, app, palette);
     }
 
     if let Some(form) = app.create_form.as_ref() {
-        render_create_form(frame, size, form, &palette);
+        render_create_form(frame, size, form, palette);
     }
 
     if let Some(cp) = app.palette.as_ref() {
-        crate::tui::command_palette::render(frame, size, &palette, cp);
+        crate::tui::command_palette::render(frame, size, palette, cp);
     }
 }
 
-/// Renders the content area with resource list and details side by side.
-///
-/// The focused panel receives a highlighted border using `palette.accent`.
-/// Non-focused panels use `palette.border`.
-///
-/// # Arguments
-///
-/// * `frame` - The render frame.
-/// * `area` - The content area rectangle.
-/// * `app` - The application state.
-/// * `palette` - The theme color palette.
-fn render_content(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
-    if let Some(view) = app.drill_view() {
-        render_drill(frame, area, view, palette);
+/// Renders the content pane: an opened project's contents, a highlighted
+/// project's local preview, or the selected service's card grid.
+fn render_content(frame: &mut Frame, area: Rect, app: &mut App, palette: &Palette) {
+    let border = if app.pane == Pane::Content {
+        palette.accent
+    } else {
+        palette.border
+    };
+
+    if app.detail_open {
+        app.detail_scroll = crate::tui::widgets::details::render(frame, area, app, border);
         return;
     }
 
-    let list_pct = app.list_width_pct.clamp(20, 70);
-    let chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Percentage(list_pct),
-            Constraint::Percentage(100 - list_pct)
-        ])
-        .split(area);
+    if let Some(view) = app.drill_view() {
+        let selected = if app.pane == Pane::Content {
+            view.selected
+        } else {
+            usize::MAX
+        };
+        render_drill(frame, area, app, view, selected, border, palette);
+        return;
+    }
 
     if app.is_loading {
         crate::tui::widgets::skeleton::render(
             frame,
-            chunks[0],
+            area,
             palette,
             &t!("ui.skeleton_resources"),
             8,
             app.anim_tick
         );
-        crate::tui::widgets::skeleton::render(
+        return;
+    }
+
+    match app.nav_current() {
+        Some(NavKind::Create) => {
+            crate::tui::widgets::create_panel::render(frame, area, app, border);
+            return;
+        }
+        Some(NavKind::Settings) => {
+            crate::tui::widgets::settings_panel::render(frame, area, app, border);
+            return;
+        }
+        Some(NavKind::Project(index)) => {
+            if let Some(project) = app.projects.get(index) {
+                render_project_preview(frame, area, app, project, border, palette);
+                return;
+            }
+        }
+        _ => {}
+    }
+
+    crate::tui::widgets::resource_list::render(frame, area, app, border);
+}
+
+/// Renders a highlighted (not yet opened) project: its per-type resource
+/// counts as cards, built from already loaded data — no fetch needed.
+fn render_project_preview(
+    frame: &mut Frame,
+    area: Rect,
+    app: &App,
+    project: &crate::tui::app::ProjectSummary,
+    border: ratatui::style::Color,
+    palette: &Palette
+) {
+    let cards = crate::tui::widgets::resource_cards::project_preview(project);
+    let title = format!(" {} ({}) ", project.name, project.resource_count());
+    let selected = if app.pane == Pane::Content {
+        app.content_selected()
+    } else {
+        usize::MAX
+    };
+    render_project_panel(frame, area, app, &title, &cards, selected, border, palette);
+}
+
+/// Renders a bordered project panel: the Projects product header with its
+/// Create button on top, then the given cards.
+#[allow(clippy::too_many_arguments)]
+fn render_project_panel(
+    frame: &mut Frame,
+    area: Rect,
+    app: &App,
+    title: &str,
+    cards: &[crate::tui::widgets::card_grid::GridCard],
+    selected: usize,
+    border: ratatui::style::Color,
+    palette: &Palette
+) {
+    use ratatui::{
+        style::{Modifier, Style},
+        text::{Line, Span},
+        widgets::{Block, BorderType, Borders, Paragraph}
+    };
+
+    use crate::tui::{app::ResourceTab, widgets::card_grid};
+
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded)
+        .border_style(Style::default().fg(border))
+        .title(Line::from(Span::styled(
+            title.to_string(),
+            Style::default()
+                .fg(palette.title)
+                .add_modifier(Modifier::BOLD)
+        )));
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+    if inner.height == 0 || inner.width < 6 {
+        return;
+    }
+
+    let focused = app.pane == Pane::Content;
+    let (header, grid) = crate::tui::widgets::service_header::layout(inner, ResourceTab::Projects);
+    if let Some(header_area) = header {
+        crate::tui::widgets::service_header::render(
             frame,
-            chunks[1],
-            palette,
-            &t!("ui.skeleton_details"),
-            6,
-            app.anim_tick
+            header_area,
+            ResourceTab::Projects,
+            focused && app.content_on_create,
+            palette
+        );
+    }
+    if cards.is_empty() {
+        frame.render_widget(
+            Paragraph::new(Line::from(Span::styled(
+                t!("ui.drill_empty").to_string(),
+                Style::default().fg(palette.dim)
+            ))),
+            grid
         );
         return;
     }
-
-    let list_border_color = if app.focus == Focus::ResourceList {
-        palette.accent
+    let cols = card_grid::columns(grid.width, card_grid::longest_title(cards));
+    let shown = if app.content_on_create {
+        usize::MAX
     } else {
-        palette.border
+        selected
     };
-    let detail_border_color = if app.focus == Focus::Details {
-        palette.accent
-    } else {
-        palette.border
-    };
-
-    if area.width < 56 {
-        crate::tui::widgets::resource_list::render(frame, area, app, list_border_color);
-        return;
-    }
-
-    let wide = area.width >= 100;
-    let show_stats = wide && app.is_widget_enabled("stats");
-    let show_token = wide && app.is_widget_enabled("token_info");
-
-    crate::tui::widgets::resource_list::render(frame, chunks[0], app, list_border_color);
-
-    if show_stats || show_token {
-        let right = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([Constraint::Percentage(62), Constraint::Percentage(38)])
-            .split(chunks[1]);
-        crate::tui::widgets::details::render(frame, right[0], app, detail_border_color);
-        render_info_column(frame, right[1], app, show_stats, show_token);
-    } else {
-        crate::tui::widgets::details::render(frame, chunks[1], app, detail_border_color);
-    }
+    card_grid::render_grid_in(frame, grid, cards, shown, cols, palette);
 }
 
-/// Renders the optional right-hand info column with the Stats and Token Info
-/// widgets, stacked according to which are enabled.
-fn render_info_column(frame: &mut Frame, area: Rect, app: &App, stats: bool, token: bool) {
-    use crate::tui::widgets::{Widget, stats::StatsWidget, token_info::TokenInfoWidget};
+/// Renders the drill-in view: a project's contents as the shared card grid,
+/// under the Projects product header.
+fn render_drill(
+    frame: &mut Frame,
+    area: Rect,
+    app: &App,
+    view: &DrillView,
+    selected: usize,
+    border: ratatui::style::Color,
+    palette: &Palette
+) {
+    use crate::tui::widgets::card_grid::GridCard;
 
-    match (stats, token) {
-        (true, true) => {
-            let rows = Layout::default()
-                .direction(Direction::Vertical)
-                .constraints([Constraint::Percentage(55), Constraint::Percentage(45)])
-                .split(area);
-            StatsWidget::new(true).render(frame, rows[0], app);
-            TokenInfoWidget::new(true).render(frame, rows[1], app);
-        }
-        (true, false) => StatsWidget::new(true).render(frame, area, app),
-        (false, true) => TokenInfoWidget::new(true).render(frame, area, app),
-        (false, false) => {}
-    }
-}
+    let cards: Vec<GridCard> = view
+        .items
+        .iter()
+        .map(|item| {
+            let mut card = GridCard::new(item.name.clone());
+            if !item.detail.is_empty() {
+                let (color, _) =
+                    crate::tui::widgets::resource_list::status_view(&item.detail, palette);
+                card = card.status(color, item.detail.clone());
+            }
+            card.meta(item.kind.clone())
+        })
+        .collect();
 
-/// Renders the drill-in view listing the resources contained in a parent.
-fn render_drill(frame: &mut Frame, area: Rect, view: &DrillView, palette: &Palette) {
-    let items: Vec<ListItem> = if view.items.is_empty() {
-        vec![ListItem::new(Line::from(Span::styled(
-            t!("ui.drill_empty").to_string(),
-            Style::default().fg(palette.dim)
-        )))]
-    } else {
-        view.items
-            .iter()
-            .map(|item| {
-                ListItem::new(Line::from(vec![
-                    Span::styled(
-                        format!("{:<11}", item.kind),
-                        Style::default().fg(palette.dim)
-                    ),
-                    Span::styled(
-                        item.name.clone(),
-                        Style::default().fg(palette.fg).add_modifier(Modifier::BOLD)
-                    ),
-                    Span::raw("   "),
-                    Span::styled(item.detail.clone(), Style::default().fg(palette.accent)),
-                ]))
-            })
-            .collect()
-    };
-
-    let list = List::new(items)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(palette.accent))
-                .title(Line::from(Span::styled(
-                    t!("ui.drill_title", title => view.title).to_string(),
-                    Style::default()
-                        .fg(palette.title)
-                        .add_modifier(Modifier::BOLD)
-                )))
-        )
-        .highlight_style(
-            Style::default()
-                .fg(palette.bg)
-                .bg(palette.accent)
-                .add_modifier(Modifier::BOLD)
-        )
-        .highlight_symbol("\u{2503} ");
-
-    let mut state = ListState::default();
-    state.select(Some(view.selected));
-    frame.render_stateful_widget(list, area, &mut state);
+    let title = format!(" {} ({}) ", view.title, view.items.len());
+    render_project_panel(frame, area, app, &title, &cards, selected, border, palette);
 }

@@ -10,7 +10,7 @@ use rust_i18n::t;
 use super::ActionKind;
 
 /// Resource category in the left panel.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ResourceTab {
     Servers,
     Databases,
@@ -30,7 +30,11 @@ pub enum ResourceTab {
     Apps,
     AiAgents,
     KnowledgeBases,
+    // JUSTIFY: Not yet reachable from the sidebar; data still loads and the
+    // variants stay for the upcoming account section.
+    #[allow(dead_code)]
     SshKeys,
+    #[allow(dead_code)]
     Finances
 }
 
@@ -149,6 +153,8 @@ impl ResourceTab {
     }
 
     /// All tabs, in display order.
+    // JUSTIFY: Retained for tests and future full-tab iteration.
+    #[allow(dead_code)]
     pub const ALL: [Self; 20] = [
         Self::Servers,
         Self::Databases,

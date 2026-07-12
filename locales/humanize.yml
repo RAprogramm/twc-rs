@@ -1,0 +1,23 @@
+_version: 2
+
+location.ru_1:
+  en: "St. Petersburg, Russia"
+  ru: "Санкт-Петербург, Россия"
+location.ru_2:
+  en: "St. Petersburg, Russia"
+  ru: "Санкт-Петербург, Россия"
+location.ru_3:
+  en: "Moscow, Russia"
+  ru: "Москва, Россия"
+location.pl_1:
+  en: "Gdansk, Poland"
+  ru: "Гданьск, Польша"
+location.kz_1:
+  en: "Almaty, Kazakhstan"
+  ru: "Алматы, Казахстан"
+location.nl_1:
+  en: "Amsterdam, Netherlands"
+  ru: "Амстердам, Нидерланды"
+location.de_1:
+  en: "Frankfurt, Germany"
+  ru: "Франкфурт, Германия"

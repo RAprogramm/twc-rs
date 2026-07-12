@@ -14,10 +14,46 @@ use super::{
     RegistrySummary, S3Summary, ServerSummary, VpcSummary
 };
 
+/// One independently loaded piece of dashboard data, streamed to the UI as
+/// soon as its endpoint responds so fast resources paint before slow ones.
+#[derive(Debug, Clone)]
+pub enum DataSlice {
+    Account(AccountInfo),
+    Servers(Vec<ServerSummary>),
+    Databases(Vec<DatabaseSummary>),
+    S3(Vec<S3Summary>),
+    K8s(Vec<K8sSummary>),
+    /// The bare project list, streamed before per-project counts are known;
+    /// applied by merging so cached counts never flash back to zero.
+    ProjectsList(Vec<ProjectSummary>),
+    Projects(Vec<ProjectSummary>),
+    Balancers(Vec<BalancerSummary>),
+    Registries(Vec<RegistrySummary>),
+    Domains(Vec<DomainSummary>),
+    Firewalls(Vec<FirewallSummary>),
+    FloatingIps(Vec<FloatingIpSummary>),
+    Images(Vec<ImageSummary>),
+    NetworkDrives(Vec<NetworkDriveSummary>),
+    Vpcs(Vec<VpcSummary>),
+    DedicatedServers(Vec<DedicatedServerSummary>),
+    Mails(Vec<MailSummary>),
+    Apps(Vec<AppSummary>),
+    AiAgents(Vec<AiAgentSummary>),
+    KnowledgeBases(Vec<KnowledgeBaseSummary>),
+    SshKeys(Vec<String>),
+    Finances {
+        balance: String,
+        lines:   Vec<String>
+    },
+    /// A named endpoint failed: `"servers: <message>"`.
+    Error(String)
+}
+
 impl super::App {
     /// Marks that a refresh is needed immediately.
     pub fn force_refresh(&mut self) {
         self.refresh_requested = true;
+        self.manual_refresh_spin = true;
         self.log(LogLevel::Info, t!("app.log_manual_refresh").to_string());
     }
 
@@ -28,160 +64,165 @@ impl super::App {
         self.last_refresh.elapsed() >= self.refresh_interval
     }
 
-    /// Updates account info.
-    pub fn update_account(&mut self, info: AccountInfo) {
-        self.account = info;
+    /// Begins a streamed load cycle: forgets the previous cycle's errors and
+    /// arms the per-group loading indicators (projects stream twice: the bare
+    /// list first, then the list with per-project counts).
+    pub fn load_started(&mut self) {
+        self.cycle_load_errors.clear();
+        self.projects_pending = 2;
+        self.services_pending = 17;
     }
 
-    /// Updates server data.
-    pub fn update_servers(&mut self, servers: Vec<ServerSummary>) {
-        self.servers = servers;
-        self.clamp_selection();
-        self.last_refresh = Instant::now();
-    }
-
-    /// Updates database data.
-    pub fn update_databases(&mut self, databases: Vec<DatabaseSummary>) {
-        self.databases = databases;
-        self.clamp_selection();
-    }
-
-    /// Updates S3 data.
-    pub fn update_s3(&mut self, storages: Vec<S3Summary>) {
-        self.s3_storages = storages;
-        self.clamp_selection();
-    }
-
-    /// Updates Kubernetes data.
-    pub fn update_k8s(&mut self, clusters: Vec<K8sSummary>) {
-        self.k8s_clusters = clusters;
-        self.clamp_selection();
-    }
-
-    /// Updates project data.
-    pub fn update_projects(&mut self, projects: Vec<ProjectSummary>) {
-        self.projects = projects;
-        self.clamp_selection();
-    }
-
-    /// Updates balancer data.
-    // JUSTIFY: Public API method for future API integration.
-    #[allow(dead_code)]
-    pub fn update_balancers(&mut self, balancers: Vec<BalancerSummary>) {
-        self.balancers = balancers;
-        self.clamp_selection();
-    }
-
-    /// Updates registry data.
-    // JUSTIFY: Public API method for future API integration.
-    #[allow(dead_code)]
-    pub fn update_registries(&mut self, registries: Vec<RegistrySummary>) {
-        self.registries = registries;
-        self.clamp_selection();
-    }
-
-    /// Updates domain data.
-    // JUSTIFY: Public API method for future API integration.
-    #[allow(dead_code)]
-    pub fn update_domains(&mut self, domains: Vec<DomainSummary>) {
-        self.domains = domains;
-        self.clamp_selection();
-    }
-
-    /// Updates firewall data.
-    // JUSTIFY: Public API method for future API integration.
-    #[allow(dead_code)]
-    pub fn update_firewalls(&mut self, firewalls: Vec<FirewallSummary>) {
-        self.firewalls = firewalls;
-        self.clamp_selection();
-    }
-
-    /// Updates floating IP data.
-    // JUSTIFY: Public API method for future API integration.
-    #[allow(dead_code)]
-    pub fn update_floating_ips(&mut self, ips: Vec<FloatingIpSummary>) {
-        self.floating_ips = ips;
-        self.clamp_selection();
-    }
-
-    /// Updates image data.
-    // JUSTIFY: Public API method for future API integration.
-    #[allow(dead_code)]
-    pub fn update_images(&mut self, images: Vec<ImageSummary>) {
-        self.images = images;
-        self.clamp_selection();
-    }
-
-    /// Updates network drive data.
-    // JUSTIFY: Public API method for future API integration.
-    #[allow(dead_code)]
-    pub fn update_network_drives(&mut self, drives: Vec<NetworkDriveSummary>) {
-        self.network_drives = drives;
-        self.clamp_selection();
-    }
-
-    /// Updates VPC data.
-    // JUSTIFY: Public API method for future API integration.
-    #[allow(dead_code)]
-    pub fn update_vpcs(&mut self, vpcs: Vec<VpcSummary>) {
-        self.vpcs = vpcs;
-        self.clamp_selection();
-    }
-
-    /// Updates dedicated server data.
-    // JUSTIFY: Public API method for future API integration.
-    #[allow(dead_code)]
-    pub fn update_dedicated_servers(&mut self, servers: Vec<DedicatedServerSummary>) {
-        self.dedicated_servers = servers;
-        self.clamp_selection();
-    }
-
-    /// Updates mail data.
-    // JUSTIFY: Public API method for future API integration.
-    #[allow(dead_code)]
-    pub fn update_mails(&mut self, mails: Vec<MailSummary>) {
-        self.mails = mails;
-        self.clamp_selection();
-    }
-
-    /// Updates application data.
-    // JUSTIFY: Public API method for future API integration.
-    #[allow(dead_code)]
-    pub fn update_apps(&mut self, apps: Vec<AppSummary>) {
-        self.apps = apps;
+    /// Applies one streamed slice the moment it arrives, so the UI shows
+    /// each resource as soon as its endpoint responds.
+    // JUSTIFY: One arm per resource/key path; splitting would only scatter the flow.
+    #[allow(clippy::too_many_lines)]
+    pub fn apply_slice(&mut self, slice: DataSlice) {
+        match &slice {
+            DataSlice::Projects(_) | DataSlice::ProjectsList(_) => {
+                self.projects_pending = self.projects_pending.saturating_sub(1);
+            }
+            DataSlice::Account(_)
+            | DataSlice::SshKeys(_)
+            | DataSlice::Finances {
+                ..
+            }
+            | DataSlice::Error(_) => {}
+            _ => self.services_pending = self.services_pending.saturating_sub(1)
+        }
+        match slice {
+            DataSlice::Account(mut info) => {
+                if info.balance.is_empty() {
+                    info.balance = std::mem::take(&mut self.account.balance);
+                }
+                self.account = info;
+            }
+            DataSlice::Servers(v) => {
+                self.servers = v;
+                self.last_refresh = Instant::now();
+            }
+            DataSlice::Databases(v) => self.databases = v,
+            DataSlice::S3(v) => self.s3_storages = v,
+            DataSlice::K8s(v) => self.k8s_clusters = v,
+            DataSlice::ProjectsList(v) => {
+                let old_len = self.projects.len();
+                self.projects = v
+                    .into_iter()
+                    .map(|mut p| {
+                        if let Some(prev) = self.projects.iter().find(|old| old.id == p.id) {
+                            p.server_count = prev.server_count;
+                            p.database_count = prev.database_count;
+                            p.bucket_count = prev.bucket_count;
+                            p.cluster_count = prev.cluster_count;
+                            p.balancer_count = prev.balancer_count;
+                            p.dedicated_count = prev.dedicated_count;
+                            p.app_count = prev.app_count;
+                        }
+                        p
+                    })
+                    .collect();
+                self.anchor_nav_selection(old_len, self.projects.len());
+            }
+            DataSlice::Projects(v) => {
+                let old_len = self.projects.len();
+                self.projects = v
+                    .into_iter()
+                    .map(|mut p| {
+                        if p.resource_count() == 0
+                            && let Some(prev) = self.projects.iter().find(|old| old.id == p.id)
+                            && prev.resource_count() > 0
+                        {
+                            p.server_count = prev.server_count;
+                            p.database_count = prev.database_count;
+                            p.bucket_count = prev.bucket_count;
+                            p.cluster_count = prev.cluster_count;
+                            p.balancer_count = prev.balancer_count;
+                            p.dedicated_count = prev.dedicated_count;
+                            p.app_count = prev.app_count;
+                        }
+                        p
+                    })
+                    .collect();
+                self.anchor_nav_selection(old_len, self.projects.len());
+            }
+            DataSlice::Balancers(v) => self.balancers = v,
+            DataSlice::Registries(v) => self.registries = v,
+            DataSlice::Domains(v) => self.domains = v,
+            DataSlice::Firewalls(v) => self.firewalls = v,
+            DataSlice::FloatingIps(v) => self.floating_ips = v,
+            DataSlice::Images(v) => self.images = v,
+            DataSlice::NetworkDrives(v) => self.network_drives = v,
+            DataSlice::Vpcs(v) => self.vpcs = v,
+            DataSlice::DedicatedServers(v) => self.dedicated_servers = v,
+            DataSlice::Mails(v) => self.mails = v,
+            DataSlice::Apps(v) => self.apps = v,
+            DataSlice::AiAgents(v) => self.ai_agents = v,
+            DataSlice::KnowledgeBases(v) => self.knowledge_bases = v,
+            DataSlice::SshKeys(v) => self.ssh_keys = v,
+            DataSlice::Finances {
+                balance,
+                lines
+            } => {
+                self.account.balance = balance;
+                self.finances = lines;
+            }
+            DataSlice::Error(entry) => {
+                if !self.last_load_errors.contains(&entry) {
+                    self.log(
+                        LogLevel::Error,
+                        t!("app.log_load_failed", entry => entry).to_string()
+                    );
+                }
+                self.cycle_load_errors.push(entry);
+                return;
+            }
+        }
+        self.is_loading = false;
+        self.select_initial_tab();
         self.clamp_selection();
     }
 
-    /// Updates AI agent data.
-    // JUSTIFY: Public API method for future API integration.
-    #[allow(dead_code)]
-    pub fn update_ai_agents(&mut self, agents: Vec<AiAgentSummary>) {
-        self.ai_agents = agents;
-        self.clamp_selection();
+    /// Keeps the sidebar selection on the same entry when the number of
+    /// projects above the services group changes, so a streamed project list
+    /// never makes the highlight jump.
+    const fn anchor_nav_selection(&mut self, old_len: usize, new_len: usize) {
+        if self.nav_selected >= old_len {
+            self.nav_selected = self.nav_selected + new_len - old_len;
+        } else if self.nav_selected >= new_len {
+            self.nav_selected = new_len.saturating_sub(1);
+        }
     }
 
-    /// Updates knowledge base data.
-    // JUSTIFY: Public API method for future API integration.
-    #[allow(dead_code)]
-    pub fn update_knowledge_bases(&mut self, bases: Vec<KnowledgeBaseSummary>) {
-        self.knowledge_bases = bases;
-        self.clamp_selection();
-    }
-
-    /// Updates SSH key data.
-    // JUSTIFY: Public API method for future API integration.
-    #[allow(dead_code)]
-    pub fn update_ssh_keys(&mut self, keys: Vec<String>) {
-        self.ssh_keys = keys;
-        self.clamp_selection();
-    }
-
-    /// Updates finances data.
-    // JUSTIFY: Public API method for future API integration.
-    #[allow(dead_code)]
-    pub fn update_finances(&mut self, data: Vec<String>) {
-        self.finances = data;
-        self.clamp_selection();
+    /// Finishes a streamed load cycle: logs recoveries, rolls the error set
+    /// over, and sets the summary status message.
+    pub fn load_finished(&mut self) {
+        let recovered: Vec<String> = self
+            .last_load_errors
+            .iter()
+            .filter(|e| !self.cycle_load_errors.contains(e))
+            .cloned()
+            .collect();
+        for entry in recovered {
+            let name = entry.split(':').next().unwrap_or(&entry).to_string();
+            self.log(
+                LogLevel::Success,
+                t!("app.log_recovered", name => name).to_string()
+            );
+        }
+        self.last_load_errors = self.cycle_load_errors.clone();
+        self.is_loading = false;
+        self.projects_pending = 0;
+        self.services_pending = 0;
+        self.initial_cycle_done = true;
+        self.manual_refresh_spin = false;
+        self.snapshot_dirty = true;
+        if self.last_load_errors.is_empty() {
+            self.error_message = None;
+            self.status_message = Some(t!("app.load_ok").to_string());
+        } else {
+            self.error_message =
+                Some(t!("app.load_failures", n => self.last_load_errors.len()).to_string());
+        }
     }
 
     /// Applies a freshly fetched data snapshot, replacing all resource

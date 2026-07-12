@@ -251,10 +251,17 @@ impl crate::tui::widgets::Widget for StatsWidget {
             || format!(" {} ", t!("stats.title")),
             |name| format!(" {} — {name} ", t!("stats.title"))
         );
+        let border_color = if app.focus != crate::tui::app::Focus::Stats {
+            palette.border
+        } else if app.focus_active {
+            palette.success
+        } else {
+            palette.accent
+        };
         let block = Block::default()
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(palette.border))
+            .border_style(Style::default().fg(border_color))
             .title(Line::from(Span::styled(
                 title,
                 Style::default()
@@ -277,8 +284,17 @@ impl crate::tui::widgets::Widget for StatsWidget {
         if rows.is_empty() {
             return;
         }
+        let row_count = u16::try_from(rows.len()).unwrap_or(u16::MAX);
+        let content_height = row_count.saturating_mul(2).saturating_sub(1);
+        let pad = inner.height.saturating_sub(content_height) / 2;
+        let content = Rect {
+            x:      inner.x,
+            y:      inner.y.saturating_add(pad),
+            width:  inner.width,
+            height: content_height.min(inner.height)
+        };
         let constraints: Vec<Constraint> = rows.iter().map(|_| Constraint::Length(1)).collect();
-        let row_areas = Layout::vertical(constraints).spacing(1).split(inner);
+        let row_areas = Layout::vertical(constraints).spacing(1).split(content);
 
         for (row, &row_area) in rows.iter().zip(row_areas.iter()) {
             let cols =

@@ -5,7 +5,7 @@
 
 use crate::tui;
 
-pub(crate) async fn fetch_drill(
+pub async fn fetch_drill(
     config: &timeweb_rs::apis::configuration::Configuration,
     tab: tui::app::ResourceTab,
     id: i32,
@@ -21,6 +21,8 @@ pub(crate) async fn fetch_drill(
             let mut items = Vec::new();
             for s in &resp.servers {
                 items.push(DrillItem {
+                    tab:    tui::app::ResourceTab::Servers,
+                    id:     s.id.to_string(),
                     kind:   "Server".to_string(),
                     name:   s.name.clone(),
                     detail: format!("{:?}", s.status)
@@ -28,6 +30,8 @@ pub(crate) async fn fetch_drill(
             }
             for d in &resp.databases {
                 items.push(DrillItem {
+                    tab:    tui::app::ResourceTab::Databases,
+                    id:     d.id.to_string(),
                     kind:   "Database".to_string(),
                     name:   d.name.clone(),
                     detail: d.r#type.clone()
@@ -35,6 +39,8 @@ pub(crate) async fn fetch_drill(
             }
             for b in &resp.buckets {
                 items.push(DrillItem {
+                    tab:    tui::app::ResourceTab::S3,
+                    id:     b.id.to_string(),
                     kind:   "S3 bucket".to_string(),
                     name:   b.name.clone(),
                     detail: String::new()
@@ -42,6 +48,8 @@ pub(crate) async fn fetch_drill(
             }
             for c in &resp.clusters {
                 items.push(DrillItem {
+                    tab:    tui::app::ResourceTab::Kubernetes,
+                    id:     c.id.to_string(),
                     kind:   "Kubernetes".to_string(),
                     name:   c.name.clone(),
                     detail: format!("{:?}", c.status)
@@ -49,6 +57,8 @@ pub(crate) async fn fetch_drill(
             }
             for b in &resp.balancers {
                 items.push(DrillItem {
+                    tab:    tui::app::ResourceTab::Balancers,
+                    id:     b.id.to_string(),
                     kind:   "Balancer".to_string(),
                     name:   b.name.clone(),
                     detail: format!("{:?}", b.status)
@@ -56,6 +66,8 @@ pub(crate) async fn fetch_drill(
             }
             for d in &resp.dedicated_servers {
                 items.push(DrillItem {
+                    tab:    tui::app::ResourceTab::DedicatedServers,
+                    id:     d.id.to_string(),
                     kind:   "Dedicated".to_string(),
                     name:   d.name.clone(),
                     detail: String::new()
@@ -63,13 +75,15 @@ pub(crate) async fn fetch_drill(
             }
             for a in resp.apps.iter().flatten().flatten() {
                 items.push(DrillItem {
+                    tab:    tui::app::ResourceTab::Apps,
+                    id:     a.id.to_string(),
                     kind:   "App".to_string(),
                     name:   a.name.clone(),
                     detail: format!("{:?}", a.status)
                 });
             }
             Ok(DrillView {
-                title: format!("Project '{name}'  ({} resources)", items.len()),
+                title: name.to_string(),
                 items,
                 selected: 0
             })
@@ -80,7 +94,7 @@ pub(crate) async fn fetch_drill(
 
 /// Performs an in-dashboard resource creation submitted from a create form,
 /// logging the outcome. Only resources with a simple create form are handled.
-pub(crate) async fn perform_create(
+pub async fn perform_create(
     config: &timeweb_rs::apis::configuration::Configuration,
     app: &mut tui::app::App,
     form: tui::app::CreateForm
@@ -125,6 +139,8 @@ pub(crate) async fn perform_create(
 /// Resources with numeric ids parse [`tui::app::PendingAction::resource_id`]
 /// back to `i32`; resources addressed by UUID or FQDN pass it (or the
 /// resource name, for domains) through as-is.
+// JUSTIFY: One arm per resource/key path; splitting would only scatter the flow.
+#[allow(clippy::too_many_lines)]
 async fn dispatch_action(
     config: &timeweb_rs::apis::configuration::Configuration,
     pending: &tui::app::PendingAction
@@ -248,7 +264,7 @@ async fn dispatch_action(
     }
 }
 
-pub(crate) async fn perform_action(
+pub async fn perform_action(
     config: &timeweb_rs::apis::configuration::Configuration,
     app: &mut tui::app::App,
     pending: tui::app::PendingAction
@@ -277,4 +293,182 @@ pub(crate) async fn perform_action(
             app.error_message = Some(msg);
         }
     }
+}
+
+/// Fetches the deep details of a database cluster that the list endpoint does
+/// not carry: connection admins (host and login), the databases inside the
+/// cluster, and the decoded tariff preset. Passwords are never included.
+#[expect(clippy::cast_possible_truncation)]
+pub async fn fetch_database_extra(
+    config: &timeweb_rs::apis::configuration::Configuration,
+    id: i32,
+    preset_id: i32
+) -> tui::app::DetailSections {
+    use rust_i18n::t;
+    use timeweb_rs::apis::databases_api;
+
+    let (users, instances, presets) = tokio::join!(
+        databases_api::get_database_users(config, id),
+        databases_api::get_database_instances(config, id),
+        databases_api::get_databases_presets(config, None)
+    );
+
+    let mut sections = Vec::new();
+
+    if let Ok(resp) = users {
+        let mut rows: Vec<(String, String)> = Vec::new();
+        for admin in &resp.admins {
+            if let Some(host) = admin.host.as_deref().filter(|h| !h.is_empty() && *h != "%") {
+                rows.push((t!("details.host").into_owned(), host.to_string()));
+            }
+            rows.push((t!("details.login").into_owned(), admin.login.clone()));
+        }
+        if !rows.is_empty() {
+            rows.dedup();
+            sections.push((t!("details.connection").into_owned(), rows));
+        }
+    }
+
+    if let Ok(resp) = instances {
+        let rows: Vec<(String, String)> = resp
+            .instances
+            .iter()
+            .map(|db| (db.name.clone(), db.description.clone()))
+            .collect();
+        if !rows.is_empty() {
+            sections.push((t!("details.databases_in").into_owned(), rows));
+        }
+    }
+
+    if let Ok(resp) = presets
+        && let Some(preset) = resp
+            .databases_presets
+            .iter()
+            .find(|p| p.id == Some(i64::from(preset_id)))
+    {
+        let mut rows: Vec<(String, String)> = Vec::new();
+        if let Some(cpu) = preset.cpu {
+            rows.push((t!("details.cpu").into_owned(), format!("{cpu}")));
+        }
+        if let Some(ram) = preset.ram {
+            rows.push((
+                t!("details.ram").into_owned(),
+                crate::tui::humanize::megabytes(ram as i64)
+            ));
+        }
+        if let Some(disk) = preset.disk {
+            rows.push((
+                t!("details.disk").into_owned(),
+                crate::tui::humanize::megabytes(disk as i64)
+            ));
+        }
+        if let Some(price) = preset.price {
+            rows.push((
+                t!("details.price").into_owned(),
+                t!("details.per_month", price => price).into_owned()
+            ));
+        }
+        if let Some(desc) = preset
+            .description_short
+            .as_deref()
+            .filter(|d| !d.is_empty())
+        {
+            rows.push((t!("details.plan").into_owned(), desc.to_string()));
+        }
+        if !rows.is_empty() {
+            sections.push((t!("details.tariff").into_owned(), rows));
+        }
+    }
+
+    sections
+}
+
+/// Fetches the deep details of an application: its recent deploys and the
+/// decoded tariff preset.
+pub async fn fetch_app_extra(
+    config: &timeweb_rs::apis::configuration::Configuration,
+    id: i32,
+    preset_id: i64
+) -> tui::app::DetailSections {
+    use rust_i18n::t;
+    use timeweb_rs::apis::apps_api;
+
+    let id_text = id.to_string();
+    let (deploys, presets) = tokio::join!(
+        apps_api::get_app_deploys(config, &id_text, None, None),
+        apps_api::get_apps_presets(config, &id_text)
+    );
+
+    let mut sections = Vec::new();
+
+    if let Ok(resp) = deploys {
+        let rows: Vec<(String, String)> = resp
+            .deploys
+            .unwrap_or_default()
+            .iter()
+            .take(5)
+            .map(|d| {
+                let sha: String = d.commit_sha.chars().take(7).collect();
+                (
+                    crate::tui::humanize::date(&d.started_at),
+                    format!("{:?} · {sha} · {}", d.status, d.commit_msg)
+                )
+            })
+            .collect();
+        if !rows.is_empty() {
+            sections.push((t!("details.deploys").into_owned(), rows));
+        }
+    }
+
+    if let Ok(resp) = presets {
+        let mut rows: Vec<(String, String)> = Vec::new();
+        if let Some(p) = resp
+            .backend_presets
+            .iter()
+            .flatten()
+            .find(|p| i64::from(p.id) == preset_id)
+        {
+            rows.push((t!("details.cpu").into_owned(), p.cpu.to_string()));
+            rows.push((
+                t!("details.ram").into_owned(),
+                crate::tui::humanize::megabytes(i64::from(p.ram))
+            ));
+            rows.push((
+                t!("details.disk").into_owned(),
+                crate::tui::humanize::megabytes(i64::from(p.disk))
+            ));
+            rows.push((
+                t!("details.price").into_owned(),
+                t!("details.per_month", price => p.price).into_owned()
+            ));
+            if !p.description_short.is_empty() {
+                rows.push((t!("details.plan").into_owned(), p.description_short.clone()));
+            }
+        } else if let Some(p) = resp
+            .frontend_presets
+            .iter()
+            .flatten()
+            .find(|p| i64::from(p.id) == preset_id)
+        {
+            rows.push((
+                t!("details.disk").into_owned(),
+                crate::tui::humanize::megabytes(i64::from(p.disk))
+            ));
+            if let Some(requests) = p.requests {
+                rows.push((t!("details.requests").into_owned(), requests.to_string()));
+            }
+            rows.push((
+                t!("details.price").into_owned(),
+                t!("details.per_month", price => p.price).into_owned()
+            ));
+            if !p.description_short.is_empty() {
+                rows.push((t!("details.plan").into_owned(), p.description_short.clone()));
+            }
+        }
+        if !rows.is_empty() {
+            sections.push((t!("details.tariff").into_owned(), rows));
+        }
+    }
+
+    sections
 }

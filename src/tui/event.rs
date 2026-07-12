@@ -6,7 +6,7 @@
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use tokio::{sync::mpsc, time::Duration};
 
-use super::app::App;
+use super::app::{App, FocusDir, Pane};
 
 /// Events that the TUI event loop can process.
 #[allow(dead_code)]
@@ -27,6 +27,35 @@ pub enum AppEvent {
     Status(String),
     /// A freshly fetched data snapshot from the background refresh task.
     Data(Box<super::app::DashboardData>),
+    /// A streamed load cycle began.
+    LoadStarted,
+    /// One resource finished loading and can be shown immediately.
+    Slice(Box<super::app::DataSlice>),
+    /// All endpoints of a streamed load cycle finished.
+    LoadFinished,
+    /// A project's drill contents finished loading in the background.
+    Drill {
+        /// The project id the contents belong to.
+        id:   i32,
+        /// The fetched contents.
+        view: Box<super::app::DrillView>
+    },
+    /// Deep details for a resource finished loading in the background.
+    DetailExtra {
+        /// The resource category.
+        tab:      super::app::ResourceTab,
+        /// The resource id.
+        id:       i32,
+        /// Extra detail sections: `(title, rows)`.
+        sections: super::app::DetailSections
+    },
+    /// A background drill fetch failed.
+    DrillFailed {
+        /// The project name, for the log entry.
+        name:  String,
+        /// The failure message.
+        error: String
+    },
     /// Live statistics for the selected resource.
     Stats(Box<super::app::ResourceStats>),
     /// A statistics fetch failed; logged without blocking the dashboard.
@@ -54,6 +83,43 @@ pub fn handle_event(app: &mut App, event: AppEvent) -> bool {
         }
         AppEvent::Data(data) => {
             app.apply_data(*data);
+            true
+        }
+        AppEvent::LoadStarted => {
+            app.load_started();
+            true
+        }
+        AppEvent::Slice(slice) => {
+            app.apply_slice(*slice);
+            true
+        }
+        AppEvent::LoadFinished => {
+            app.load_finished();
+            true
+        }
+        AppEvent::Drill {
+            id,
+            view
+        } => {
+            app.apply_drill(id, *view);
+            true
+        }
+        AppEvent::DetailExtra {
+            tab,
+            id,
+            sections
+        } => {
+            app.detail_extra.insert((tab, id), sections);
+            true
+        }
+        AppEvent::DrillFailed {
+            name,
+            error
+        } => {
+            app.log(
+                super::app::LogLevel::Error,
+                format!("open {name} failed: {error}")
+            );
             true
         }
         AppEvent::Stats(stats) => {
@@ -90,6 +156,24 @@ fn handle_overlay_key(app: &mut App, key: KeyEvent) -> Option<bool> {
             KeyCode::Down => app.palette_next(),
             KeyCode::Backspace => app.palette_backspace(),
             KeyCode::Char(c) => app.palette_input(c),
+            _ => {}
+        }
+        return Some(true);
+    }
+
+    if app.info_popup_open() {
+        if matches!(key.code, KeyCode::Esc | KeyCode::Enter | KeyCode::Char('q')) {
+            app.info_popup_close();
+        }
+        return Some(true);
+    }
+
+    if app.picker_open() {
+        match key.code {
+            KeyCode::Esc => app.picker_close(),
+            KeyCode::Enter => app.picker_apply(),
+            KeyCode::Up | KeyCode::Char('k') => app.picker_previous(),
+            KeyCode::Down | KeyCode::Char('j') => app.picker_next(),
             _ => {}
         }
         return Some(true);
@@ -136,20 +220,6 @@ fn handle_overlay_key(app: &mut App, key: KeyEvent) -> Option<bool> {
         return Some(true);
     }
 
-    if app.drill_open() {
-        match key.code {
-            KeyCode::Char('Q') => {
-                app.quit();
-                return Some(false);
-            }
-            KeyCode::Esc | KeyCode::Char('q' | 'h') | KeyCode::Left => app.close_drill(),
-            KeyCode::Char('j') | KeyCode::Down => app.drill_next(),
-            KeyCode::Char('k') | KeyCode::Up => app.drill_previous(),
-            _ => {}
-        }
-        return Some(true);
-    }
-
     if app.filter_editing {
         match key.code {
             KeyCode::Esc => app.filter_clear(),
@@ -164,79 +234,197 @@ fn handle_overlay_key(app: &mut App, key: KeyEvent) -> Option<bool> {
     None
 }
 
+/// Handles a key outside overlays: sidebar navigation on the left pane,
+/// exact one-step grid movement on the content pane.
+/// Handles a key while the settings panel owns the content pane: arrows walk
+/// the setting cards like any grid, Enter toggles or opens the picker.
+fn handle_settings_key(app: &mut App, key: KeyEvent) -> bool {
+    match key.code {
+        KeyCode::Up | KeyCode::Char('k') => app.settings_move(FocusDir::Up),
+        KeyCode::Down | KeyCode::Char('j') => app.settings_move(FocusDir::Down),
+        KeyCode::Right | KeyCode::Char('l') => app.settings_move(FocusDir::Right),
+        KeyCode::Left | KeyCode::Char('h') => app.settings_move(FocusDir::Left),
+        KeyCode::Enter => app.settings_activate(),
+        KeyCode::Esc => app.focus_sidebar(),
+        _ => return false
+    }
+    true
+}
+
+/// Handles a key while the create hub owns the content pane.
+fn handle_create_key(app: &mut App, key: KeyEvent) -> bool {
+    match key.code {
+        KeyCode::Up | KeyCode::Char('k') => app.create_move(FocusDir::Up),
+        KeyCode::Down | KeyCode::Char('j') => app.create_move(FocusDir::Down),
+        KeyCode::Right | KeyCode::Char('l') => app.create_move(FocusDir::Right),
+        KeyCode::Left | KeyCode::Char('h') => app.create_move(FocusDir::Left),
+        KeyCode::Enter => app.create_activate(),
+        KeyCode::Esc => app.focus_sidebar(),
+        _ => return false
+    }
+    true
+}
+
+// JUSTIFY: One arm per resource/key path; splitting would only scatter the
+// flow.
+#[allow(clippy::too_many_lines)]
 fn handle_key(app: &mut App, key: KeyEvent) -> bool {
     if let Some(result) = handle_overlay_key(app, key) {
         return result;
     }
 
+    if app.detail_open {
+        match key.code {
+            KeyCode::Esc | KeyCode::Char('q') => app.detail_open = false,
+            KeyCode::Down | KeyCode::Char('j') => {
+                let len = crate::tui::widgets::details::interactive_len(app);
+                if app.detail_selected + 1 < len {
+                    app.detail_selected += 1;
+                }
+            }
+            KeyCode::Up | KeyCode::Char('k') => {
+                app.detail_selected = app.detail_selected.saturating_sub(1);
+            }
+            KeyCode::Char('y' | 'c') => {
+                if let Some((Some(value), _)) =
+                    crate::tui::widgets::details::interactive_at(app, app.detail_selected)
+                {
+                    crate::tui::clipboard::copy(&value);
+                    app.status_message =
+                        Some(rust_i18n::t!("details.copied", value => value).into_owned());
+                }
+            }
+            KeyCode::Enter => {
+                use crate::tui::widgets::details::DetailAction;
+                if let Some((_, Some(action))) =
+                    crate::tui::widgets::details::interactive_at(app, app.detail_selected)
+                    && let Some((id, name)) = app.selected_resource()
+                {
+                    match action {
+                        DetailAction::Redeploy => {
+                            if let Ok(id) = id.parse::<i32>() {
+                                app.detail_action = Some((id, action));
+                            }
+                        }
+                        DetailAction::Kind(kind) => {
+                            let pending = super::app::PendingAction {
+                                tab: app.active_tab,
+                                kind,
+                                resource_id: id,
+                                resource_name: name
+                            };
+                            if kind.is_destructive() {
+                                app.confirm = Some(pending);
+                            } else {
+                                app.dispatch = Some(pending);
+                            }
+                        }
+                    }
+                }
+            }
+            KeyCode::Char('Q') => {
+                app.quit();
+                return false;
+            }
+            _ => {}
+        }
+        return true;
+    }
+
+    if app.pane == Pane::Content
+        && matches!(app.nav_current(), Some(super::app::NavKind::Settings))
+        && handle_settings_key(app, key)
+    {
+        return true;
+    }
+
+    if app.pane == Pane::Content
+        && matches!(app.nav_current(), Some(super::app::NavKind::Create))
+        && handle_create_key(app, key)
+    {
+        return true;
+    }
+
     match key.code {
         KeyCode::Char('Q') => {
             app.quit();
-            false
+            return false;
         }
+        KeyCode::Char('?') => app.toggle_help(),
+        KeyCode::Char('r') => app.force_refresh(),
+        KeyCode::Char('p') => app.open_profile_switcher(),
         KeyCode::Char('/') => {
-            app.start_filter();
-            true
+            if app.pane == Pane::Content && !app.drill_open() {
+                app.start_filter();
+            }
         }
         KeyCode::Char('n') => {
-            app.open_create_form();
-            true
-        }
-        KeyCode::Char('p') => {
-            app.open_profile_switcher();
-            true
+            if app.pane == Pane::Content {
+                app.open_create_form();
+            }
         }
         KeyCode::Esc => {
-            if app.filter_active() {
-                app.filter_clear();
+            if app.pane == Pane::Content {
+                if app.filter_active() {
+                    app.filter_clear();
+                } else {
+                    app.focus_sidebar();
+                }
             }
-            true
         }
-        KeyCode::Char('?') => {
-            app.toggle_help();
-            true
+        KeyCode::Tab => app.nav_down(),
+        KeyCode::BackTab => app.nav_up(),
+        KeyCode::Up | KeyCode::Char('k') => {
+            if app.pane == Pane::Sidebar {
+                app.nav_up();
+            } else {
+                app.content_move(FocusDir::Up);
+            }
         }
-        KeyCode::Char('r') => {
-            app.force_refresh();
-            true
+        KeyCode::Down | KeyCode::Char('j') => {
+            if app.pane == Pane::Sidebar {
+                app.nav_down();
+            } else {
+                app.content_move(FocusDir::Down);
+            }
         }
-        KeyCode::Tab | KeyCode::Char('l') | KeyCode::Right => {
-            app.next_tab();
-            true
+        KeyCode::Right | KeyCode::Char('l') => {
+            if app.pane == Pane::Content {
+                app.content_move(FocusDir::Right);
+            }
         }
-        KeyCode::BackTab | KeyCode::Char('h') | KeyCode::Left => {
-            app.previous_tab();
-            true
-        }
-        KeyCode::Char('j') | KeyCode::Down => {
-            app.select_next();
-            true
-        }
-        KeyCode::Char('k') | KeyCode::Up => {
-            app.select_previous();
-            true
+        KeyCode::Left | KeyCode::Char('h') => {
+            if app.pane == Pane::Content {
+                app.content_move(FocusDir::Left);
+            }
         }
         KeyCode::Char('g') | KeyCode::Home => {
-            app.selected = 0;
-            true
+            if app.pane == Pane::Content {
+                app.set_content_selected(0);
+            }
         }
         KeyCode::Char('G' | '$') | KeyCode::End => {
-            let len = app.current_list_len();
-            if len > 0 {
-                app.selected = len - 1;
+            if app.pane == Pane::Content {
+                let len = app.content_len();
+                if len > 0 {
+                    app.set_content_selected(len - 1);
+                }
             }
-            true
         }
         KeyCode::Enter => {
-            if app.can_drill() {
-                app.request_drill();
-            } else {
+            if app.pane == Pane::Sidebar {
+                app.nav_open();
+            } else if app.content_on_create {
+                app.open_create_form();
+            } else if app.drill_open() {
+                app.open_drill_item_detail();
+            } else if !matches!(app.nav_current(), Some(super::app::NavKind::Project(_))) {
                 app.open_action_menu();
             }
-            true
         }
-        _ => true
+        _ => {}
     }
+    true
 }
 
 /// Runs the async event loop, sending [`AppEvent`]s through the channel.

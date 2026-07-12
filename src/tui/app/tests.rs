@@ -22,7 +22,8 @@ fn make_database(id: i32, name: &str, engine: &str) -> DatabaseSummary {
         name: name.to_string(),
         status: "active".to_string(),
         engine: engine.to_string(),
-        size_mb: 512
+        size_mb: 512,
+        ..Default::default()
     }
 }
 
@@ -120,26 +121,25 @@ fn select_previous_moves_up() {
 }
 
 #[test]
-fn next_tab_cycles() {
+fn nav_walks_service_tabs_in_order() {
     let mut app = App::new(5);
+    nav_select_service(&mut app, ResourceTab::Servers);
     assert_eq!(app.active_tab, ResourceTab::Servers);
-    app.next_tab();
+    app.nav_down();
     assert_eq!(app.active_tab, ResourceTab::Databases);
-    app.next_tab();
+    app.nav_down();
     assert_eq!(app.active_tab, ResourceTab::S3);
-    app.next_tab();
+    app.nav_down();
     assert_eq!(app.active_tab, ResourceTab::Kubernetes);
-    app.next_tab();
-    assert_eq!(app.active_tab, ResourceTab::Projects);
-    app.next_tab();
+    app.nav_down();
     assert_eq!(app.active_tab, ResourceTab::Balancers);
 
-    for _ in 0..14 {
-        app.next_tab();
+    let last = app.nav_items().len() - 1;
+    for _ in 0..last {
+        app.nav_down();
     }
-    assert_eq!(app.active_tab, ResourceTab::Finances);
-    app.next_tab();
-    assert_eq!(app.active_tab, ResourceTab::Servers);
+    assert_eq!(app.nav_selected, last);
+    assert_eq!(app.active_tab, ResourceTab::KnowledgeBases);
 }
 
 #[test]
@@ -205,7 +205,7 @@ fn update_servers_clamps_selection() {
         make_server(2, "s2", "running"),
     ];
     app.selected = 5;
-    app.update_servers(vec![make_server(3, "s3", "running")]);
+    app.apply_slice(DataSlice::Servers(vec![make_server(3, "s3", "running")]));
     assert_eq!(app.selected, 0);
     assert_eq!(app.servers.len(), 1);
 }
@@ -218,7 +218,7 @@ fn update_databases_clamps_selection() {
         make_database(2, "db2", "mysql"),
     ];
     app.selected = 5;
-    app.update_databases(vec![make_database(3, "db3", "redis")]);
+    app.apply_slice(DataSlice::Databases(vec![make_database(3, "db3", "redis")]));
     assert_eq!(app.selected, 0);
     assert_eq!(app.databases.len(), 1);
 }
@@ -228,7 +228,7 @@ fn update_s3_clamps_selection() {
     let mut app = App::new(5);
     app.s3_storages = vec![make_s3(1, "bucket1")];
     app.selected = 5;
-    app.update_s3(vec![make_s3(2, "bucket2")]);
+    app.apply_slice(DataSlice::S3(vec![make_s3(2, "bucket2")]));
     assert_eq!(app.selected, 0);
     assert_eq!(app.s3_storages.len(), 1);
 }
@@ -238,7 +238,7 @@ fn update_k8s_clamps_selection() {
     let mut app = App::new(5);
     app.k8s_clusters = vec![make_k8s(1, "cluster1")];
     app.selected = 5;
-    app.update_k8s(vec![make_k8s(2, "cluster2")]);
+    app.apply_slice(DataSlice::K8s(vec![make_k8s(2, "cluster2")]));
     assert_eq!(app.selected, 0);
     assert_eq!(app.k8s_clusters.len(), 1);
 }
@@ -248,7 +248,7 @@ fn update_projects_clamps_selection() {
     let mut app = App::new(5);
     app.projects = vec![make_project(1, "proj1")];
     app.selected = 5;
-    app.update_projects(vec![make_project(2, "proj2")]);
+    app.apply_slice(DataSlice::Projects(vec![make_project(2, "proj2")]));
     assert_eq!(app.selected, 0);
     assert_eq!(app.projects.len(), 1);
 }
@@ -302,6 +302,8 @@ fn handle_key_quit() {
 #[test]
 fn handle_key_tab() {
     let mut app = App::new(5);
+    app.pane = Pane::Content;
+    nav_select_service(&mut app, ResourceTab::Servers);
     let event = AppEvent::Key(crossterm::event::KeyEvent {
         code:      KeyCode::Tab,
         modifiers: crossterm::event::KeyModifiers::NONE,
@@ -316,6 +318,8 @@ fn handle_key_tab() {
 #[test]
 fn handle_key_vim_k() {
     let mut app = App::new(5);
+    app.pane = Pane::Content;
+    nav_select_service(&mut app, ResourceTab::Servers);
     app.servers = vec![
         make_server(1, "s1", "running"),
         make_server(2, "s2", "running"),
@@ -335,6 +339,8 @@ fn handle_key_vim_k() {
 #[test]
 fn handle_key_vim_j() {
     let mut app = App::new(5);
+    app.pane = Pane::Content;
+    nav_select_service(&mut app, ResourceTab::Servers);
     app.servers = vec![
         make_server(1, "s1", "running"),
         make_server(2, "s2", "running"),
@@ -350,37 +356,232 @@ fn handle_key_vim_j() {
     assert_eq!(app.selected, 1);
 }
 
-#[test]
-fn handle_key_vim_h() {
-    let mut app = App::new(5);
-    let event = AppEvent::Key(crossterm::event::KeyEvent {
-        code:      KeyCode::Char('h'),
+/// Points the sidebar selection at the first entry matching `pred`.
+fn nav_select_where(app: &mut App, pred: impl Fn(&crate::tui::app::NavKind) -> bool) {
+    let index = app
+        .nav_items()
+        .iter()
+        .position(|i| pred(&i.kind))
+        .expect("nav entry");
+    app.nav_selected = index;
+}
+
+fn nav_select_service(app: &mut App, tab: ResourceTab) {
+    nav_select_where(app, |k| *k == crate::tui::app::NavKind::Service(tab));
+}
+
+fn nav_select_project(app: &mut App, index: usize) {
+    nav_select_where(app, |k| *k == crate::tui::app::NavKind::Project(index));
+}
+
+fn key_event(code: KeyCode) -> AppEvent {
+    AppEvent::Key(crossterm::event::KeyEvent {
+        code,
         modifiers: crossterm::event::KeyModifiers::NONE,
-        kind:      crossterm::event::KeyEventKind::Press,
-        state:     crossterm::event::KeyEventState::NONE
-    });
-    let keep_going = crate::tui::event::handle_event(&mut app, event);
-    assert!(keep_going);
-    assert_eq!(app.active_tab, ResourceTab::Finances);
+        kind: crossterm::event::KeyEventKind::Press,
+        state: crossterm::event::KeyEventState::NONE
+    })
 }
 
 #[test]
-fn handle_key_vim_l() {
+fn handle_key_tab_moves_nav_down() {
     let mut app = App::new(5);
-    let event = AppEvent::Key(crossterm::event::KeyEvent {
-        code:      KeyCode::Char('l'),
-        modifiers: crossterm::event::KeyModifiers::NONE,
-        kind:      crossterm::event::KeyEventKind::Press,
-        state:     crossterm::event::KeyEventState::NONE
-    });
-    let keep_going = crate::tui::event::handle_event(&mut app, event);
-    assert!(keep_going);
+    nav_select_service(&mut app, ResourceTab::Servers);
+    let start = app.nav_selected;
+    assert!(crate::tui::event::handle_event(
+        &mut app,
+        key_event(KeyCode::Tab)
+    ));
+    assert_eq!(app.nav_selected, start + 1);
     assert_eq!(app.active_tab, ResourceTab::Databases);
+}
+
+#[test]
+fn handle_key_backtab_moves_nav_up() {
+    let mut app = App::new(5);
+    nav_select_service(&mut app, ResourceTab::Databases);
+    app.active_tab = ResourceTab::Databases;
+    assert!(crate::tui::event::handle_event(
+        &mut app,
+        key_event(KeyCode::BackTab)
+    ));
+    assert_eq!(app.active_tab, ResourceTab::Servers);
+}
+
+#[test]
+fn sidebar_left_right_are_noop() {
+    let mut app = App::new(5);
+    app.servers = vec![make_server(1, "s1", "On")];
+    for code in [
+        KeyCode::Right,
+        KeyCode::Left,
+        KeyCode::Char('l'),
+        KeyCode::Char('h')
+    ] {
+        assert!(crate::tui::event::handle_event(&mut app, key_event(code)));
+        assert_eq!(app.pane, Pane::Sidebar);
+        assert_eq!(app.nav_selected, 0);
+    }
+}
+
+#[test]
+fn enter_opens_content_esc_returns_left_stays() {
+    let mut app = App::new(5);
+    app.servers = vec![make_server(1, "s1", "On")];
+    assert!(crate::tui::event::handle_event(
+        &mut app,
+        key_event(KeyCode::Enter)
+    ));
+    assert_eq!(app.pane, Pane::Content);
+    for code in [KeyCode::Left, KeyCode::Char('h')] {
+        assert!(crate::tui::event::handle_event(&mut app, key_event(code)));
+        assert_eq!(app.pane, Pane::Content);
+    }
+    assert!(crate::tui::event::handle_event(
+        &mut app,
+        key_event(KeyCode::Esc)
+    ));
+    assert_eq!(app.pane, Pane::Sidebar);
+}
+
+#[test]
+fn projects_list_slice_keeps_cached_counts() {
+    let bare = |id: i32, name: &str| ProjectSummary {
+        id,
+        name: name.to_string(),
+        ..Default::default()
+    };
+    let mut app = App::new(5);
+    let mut with_counts = bare(1, "p1");
+    with_counts.server_count = 4;
+    app.apply_slice(DataSlice::Projects(vec![with_counts]));
+    assert_eq!(app.projects[0].server_count, 4);
+
+    app.apply_slice(DataSlice::ProjectsList(vec![bare(1, "p1"), bare(2, "p2")]));
+    assert_eq!(app.projects.len(), 2);
+    assert_eq!(app.projects[0].server_count, 4);
+    assert_eq!(app.projects[1].server_count, 0);
+}
+
+#[test]
+fn shrunken_drill_response_triggers_silent_refetch() {
+    use crate::tui::app::{DrillItem, DrillView};
+    let item = |tab: ResourceTab, id: &str, name: &str| DrillItem {
+        tab,
+        id: id.to_string(),
+        kind: String::new(),
+        name: name.to_string(),
+        detail: String::new()
+    };
+    let full = DrillView {
+        title:    "Caravan".to_string(),
+        items:    vec![
+            item(ResourceTab::Databases, "42", "db"),
+            item(ResourceTab::Apps, "7", "api"),
+        ],
+        selected: 0
+    };
+    let flapped = DrillView {
+        title:    "Caravan".to_string(),
+        items:    vec![item(ResourceTab::Apps, "7", "api")],
+        selected: 0
+    };
+
+    let mut app = App::new(5);
+    app.projects = vec![make_project(9, "Caravan")];
+    app.select_project_drill(0);
+    let _ = app.take_drill_request();
+    app.apply_drill(9, full.clone());
+    assert_eq!(app.drill_view().expect("full").items.len(), 2);
+
+    app.apply_drill(9, flapped.clone());
+    assert_eq!(
+        app.drill_view().expect("kept").items.len(),
+        2,
+        "flapped response must not clobber the pane"
+    );
+    let retry = app.take_drill_request().expect("silent refetch queued");
+    assert_eq!(retry.1, 9);
+
+    app.apply_drill(9, flapped);
+    assert_eq!(
+        app.drill_view().expect("confirmed").items.len(),
+        1,
+        "a confirming second response must apply (real deletion)"
+    );
+}
+
+#[test]
+fn zeroed_project_counts_do_not_clobber_known_ones() {
+    let mut app = App::new(5);
+    app.apply_slice(DataSlice::Projects(vec![make_project(1, "p1")]));
+    assert_eq!(app.projects[0].server_count, 2);
+    app.apply_slice(DataSlice::Projects(vec![ProjectSummary {
+        id: 1,
+        name: "p1".to_string(),
+        ..Default::default()
+    }]));
+    assert_eq!(app.projects[0].server_count, 2);
+}
+
+#[test]
+fn selecting_project_shows_cache_and_revalidates() {
+    use crate::tui::app::{DrillItem, DrillView};
+    let mut app = App::new(5);
+    app.projects = vec![make_project(7, "Caravan")];
+    app.select_project_drill(0);
+    assert!(!app.drill_open());
+    assert!(app.take_drill_request().is_some());
+
+    app.apply_drill(
+        7,
+        DrillView {
+            title:    "Caravan".to_string(),
+            items:    vec![DrillItem {
+                tab:    ResourceTab::Servers,
+                id:     "1".to_string(),
+                kind:   "Server".to_string(),
+                name:   "a".to_string(),
+                detail: String::new()
+            }],
+            selected: 0
+        }
+    );
+    assert_eq!(app.drill_view().expect("applied").items.len(), 1);
+    app.close_drill();
+
+    app.select_project_drill(0);
+    assert_eq!(app.drill_view().expect("cached").items.len(), 1);
+}
+
+#[test]
+fn stale_drill_result_updates_cache_only() {
+    use crate::tui::app::{DrillItem, DrillView};
+    let mut app = App::new(5);
+    app.projects = vec![make_project(7, "Caravan"), make_project(8, "Other")];
+    app.select_project_drill(1);
+    app.apply_drill(
+        7,
+        DrillView {
+            title:    "Caravan".to_string(),
+            items:    vec![DrillItem {
+                tab:    ResourceTab::Servers,
+                id:     "1".to_string(),
+                kind:   "Server".to_string(),
+                name:   "a".to_string(),
+                detail: String::new()
+            }],
+            selected: 0
+        }
+    );
+    assert!(app.drill_view().is_none());
+    assert_eq!(app.drill_cache.get(&7).expect("cached").items.len(), 1);
 }
 
 #[test]
 fn handle_key_g() {
     let mut app = App::new(5);
+    app.pane = Pane::Content;
     app.servers = vec![
         make_server(1, "s1", "running"),
         make_server(2, "s2", "running"),
@@ -400,6 +601,7 @@ fn handle_key_g() {
 #[test]
 fn handle_key_dollar() {
     let mut app = App::new(5);
+    app.pane = Pane::Content;
     app.servers = vec![
         make_server(1, "s1", "running"),
         make_server(2, "s2", "running"),
@@ -500,6 +702,8 @@ fn menu_select_destructive_requires_confirm() {
 #[test]
 fn enter_opens_menu_then_runs_action() {
     let mut app = App::new(5);
+    app.pane = Pane::Content;
+    nav_select_service(&mut app, ResourceTab::Servers);
     app.servers = vec![make_server(7, "web", "On")];
 
     crate::tui::event::handle_event(&mut app, key(KeyCode::Enter));
@@ -682,28 +886,25 @@ fn filter_narrows_list_and_maps_selection() {
 }
 
 #[test]
-fn filter_resets_on_tab_change() {
+fn filter_resets_on_nav_change() {
     let mut app = App::new(5);
     app.servers = vec![make_server(1, "web", "On")];
     app.start_filter();
     app.filter_push('x');
     assert!(app.filter_active());
-    app.next_tab();
+    app.nav_down();
     assert!(!app.filter_active());
     assert!(app.filter.is_empty());
 }
 
 #[test]
-fn drill_request_only_on_projects() {
+fn select_project_drill_queues_fetch() {
     let mut app = App::new(5);
-    app.servers = vec![make_server(7, "web", "On")];
-    app.request_drill();
+    app.select_project_drill(0);
     assert!(app.take_drill_request().is_none());
 
-    app.active_tab = ResourceTab::Projects;
     app.projects = vec![make_project(3, "ratma")];
-    assert!(app.can_drill());
-    app.request_drill();
+    app.select_project_drill(0);
     let req = app.take_drill_request().expect("drill requested");
     assert_eq!(req, (ResourceTab::Projects, 3, "ratma".to_string()));
 }
@@ -712,15 +913,19 @@ fn drill_request_only_on_projects() {
 fn drill_view_navigation() {
     use crate::tui::app::{DrillItem, DrillView};
     let mut app = App::new(5);
-    app.open_drill(DrillView {
+    app.drill = Some(DrillView {
         title:    "Project 'x'".to_string(),
         items:    vec![
             DrillItem {
+                tab:    ResourceTab::Servers,
+                id:     "1".to_string(),
                 kind:   "Server".to_string(),
                 name:   "a".to_string(),
                 detail: String::new()
             },
             DrillItem {
+                tab:    ResourceTab::Databases,
+                id:     "1".to_string(),
                 kind:   "Database".to_string(),
                 name:   "b".to_string(),
                 detail: String::new()
@@ -729,11 +934,12 @@ fn drill_view_navigation() {
         selected: 0
     });
     assert!(app.drill_open());
-    app.drill_next();
+    app.resource_cols = 1;
+    app.content_move(FocusDir::Down);
     assert_eq!(app.drill_view().unwrap().selected, 1);
-    app.drill_next();
+    app.content_move(FocusDir::Down);
     assert_eq!(app.drill_view().unwrap().selected, 1);
-    app.drill_previous();
+    app.content_move(FocusDir::Up);
     assert_eq!(app.drill_view().unwrap().selected, 0);
     app.close_drill();
     assert!(!app.drill_open());
@@ -755,6 +961,55 @@ fn force_refresh_sets_request_flag() {
     assert!(!app.refresh_requested);
     app.force_refresh();
     assert!(app.refresh_requested);
+}
+
+#[test]
+fn slices_stream_in_progressively() {
+    let mut app = App::new(5);
+    app.is_loading = true;
+    app.load_started();
+    app.apply_slice(DataSlice::Projects(vec![make_project(1, "p1")]));
+    assert!(!app.is_loading);
+    assert_eq!(app.projects.len(), 1);
+    assert!(app.servers.is_empty());
+    app.apply_slice(DataSlice::Servers(vec![make_server(1, "s1", "On")]));
+    assert_eq!(app.servers.len(), 1);
+    app.load_finished();
+    assert!(app.last_load_errors.is_empty());
+    assert!(app.status_message.is_some());
+}
+
+#[test]
+fn group_spinners_clear_as_slices_arrive() {
+    let mut app = App::new(5);
+    app.load_started();
+    assert_eq!(app.projects_pending, 2);
+    assert_eq!(app.services_pending, 17);
+    app.apply_slice(DataSlice::Projects(vec![]));
+    assert_eq!(app.projects_pending, 1);
+    app.apply_slice(DataSlice::Projects(vec![]));
+    assert_eq!(app.projects_pending, 0);
+    app.apply_slice(DataSlice::Servers(vec![]));
+    assert_eq!(app.services_pending, 16);
+    app.load_finished();
+    assert_eq!(app.services_pending, 0);
+}
+
+#[test]
+fn slice_errors_roll_over_and_recover() {
+    let mut app = App::new(5);
+    app.load_started();
+    app.apply_slice(DataSlice::Error("servers: boom".into()));
+    app.load_finished();
+    assert_eq!(app.last_load_errors, vec!["servers: boom".to_string()]);
+    assert!(app.error_message.is_some());
+
+    app.load_started();
+    app.apply_slice(DataSlice::Servers(vec![make_server(1, "s1", "On")]));
+    app.load_finished();
+    assert!(app.last_load_errors.is_empty());
+    assert!(app.error_message.is_none());
+    assert!(app.status_message.is_some());
 }
 
 #[test]
@@ -822,8 +1077,46 @@ fn create_form_not_for_actionless_tab() {
 }
 
 #[test]
-fn select_initial_tab_moves_off_empty_servers() {
+fn select_initial_tab_moves_sidebar_and_tab_together() {
     let mut app = App::new(5);
+    app.databases = vec![make_database(1, "db", "postgres")];
+    app.select_initial_tab();
+    assert!(app.initial_tab_set);
+    assert_eq!(app.active_tab, ResourceTab::Databases);
+    assert!(matches!(
+        app.nav_current(),
+        Some(crate::tui::app::NavKind::Service(ResourceTab::Databases))
+    ));
+}
+
+#[test]
+fn select_initial_tab_prefers_first_project_with_resources() {
+    let mut app = App::new(5);
+    app.projects = vec![make_project(7, "Caravan")];
+    app.servers = vec![make_server(1, "s", "on")];
+    app.select_initial_tab();
+    assert!(matches!(
+        app.nav_current(),
+        Some(crate::tui::app::NavKind::Project(0))
+    ));
+    assert!(app.take_drill_request().is_some());
+}
+
+#[test]
+fn select_initial_tab_runs_only_once() {
+    let mut app = App::new(5);
+    app.s3_storages = vec![make_s3(1, "bucket")];
+    app.select_initial_tab();
+    app.databases = vec![make_database(1, "db", "postgres")];
+    app.select_initial_tab();
+    assert_eq!(app.active_tab, ResourceTab::S3);
+}
+
+#[test]
+fn select_initial_tab_waits_for_first_data() {
+    let mut app = App::new(5);
+    app.select_initial_tab();
+    assert!(!app.initial_tab_set);
     app.databases = vec![make_database(1, "db", "postgres")];
     app.select_initial_tab();
     assert!(app.initial_tab_set);
@@ -831,27 +1124,440 @@ fn select_initial_tab_moves_off_empty_servers() {
 }
 
 #[test]
-fn select_initial_tab_keeps_non_empty_active() {
+fn arrows_move_card_selection_horizontally() {
     let mut app = App::new(5);
-    app.servers = vec![make_server(1, "s", "on")];
-    app.databases = vec![make_database(1, "db", "postgres")];
-    app.select_initial_tab();
+    app.pane = Pane::Content;
+    nav_select_service(&mut app, ResourceTab::Servers);
+    app.servers = vec![
+        make_server(1, "s1", "on"),
+        make_server(2, "s2", "on"),
+        make_server(3, "s3", "on"),
+    ];
+    app.resource_cols = 3;
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Right));
+    assert_eq!(app.selected, 1);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Left));
+    assert_eq!(app.selected, 0);
+}
+
+#[test]
+fn enter_on_leaf_card_opens_action_menu() {
+    let mut app = App::new(5);
+    app.pane = Pane::Content;
+    nav_select_service(&mut app, ResourceTab::Servers);
+    app.servers = vec![make_server(7, "web", "On")];
+    app.selected = 0;
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Enter));
+    assert!(app.action_menu_open());
+}
+
+#[test]
+fn down_moves_card_selection_by_a_row() {
+    let mut app = App::new(5);
+    app.pane = Pane::Content;
+    nav_select_service(&mut app, ResourceTab::Servers);
+    app.servers = vec![
+        make_server(1, "s1", "on"),
+        make_server(2, "s2", "on"),
+        make_server(3, "s3", "on"),
+        make_server(4, "s4", "on"),
+    ];
+    app.resource_cols = 2;
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Down));
+    assert_eq!(app.selected, 2);
+    assert_eq!(app.detail_scroll, 0);
+}
+
+#[test]
+fn down_moves_selection_on_single_column() {
+    let mut app = App::new(5);
+    app.pane = Pane::Content;
+    nav_select_service(&mut app, ResourceTab::Servers);
+    app.servers = vec![make_server(1, "s1", "on"), make_server(2, "s2", "on")];
+    app.resource_cols = 1;
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Down));
+    assert_eq!(app.selected, 1);
+    assert_eq!(app.pane, Pane::Content);
+}
+
+#[test]
+fn right_does_not_wrap_to_next_row() {
+    let mut app = App::new(5);
+    app.pane = Pane::Content;
+    app.servers = vec![
+        make_server(1, "s1", "on"),
+        make_server(2, "s2", "on"),
+        make_server(3, "s3", "on"),
+        make_server(4, "s4", "on"),
+    ];
+    app.resource_cols = 2;
+    app.selected = 1;
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Right));
+    assert_eq!(app.selected, 1);
+}
+
+#[test]
+fn up_on_top_row_stays_put() {
+    let mut app = App::new(5);
+    app.pane = Pane::Content;
+    app.servers = vec![make_server(1, "s1", "on"), make_server(2, "s2", "on")];
+    app.resource_cols = 2;
+    app.selected = 1;
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Up));
+    assert_eq!(app.selected, 1);
+}
+
+#[test]
+fn empty_service_focuses_create_button() {
+    let mut app = App::new(5);
+    nav_select_service(&mut app, ResourceTab::Servers);
+    app.nav_open();
+    assert_eq!(app.pane, Pane::Content);
+    assert!(app.content_on_create);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Enter));
+    assert!(app.status_message.is_some());
+}
+
+#[test]
+fn up_from_first_row_focuses_create_then_down_returns() {
+    let mut app = App::new(5);
+    app.servers = vec![make_server(1, "s1", "On"), make_server(2, "s2", "On")];
+    nav_select_service(&mut app, ResourceTab::Servers);
+    app.nav_open();
+    assert!(!app.content_on_create);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Up));
+    assert!(app.content_on_create);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Up));
+    assert!(app.content_on_create);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Down));
+    assert!(!app.content_on_create);
+    assert_eq!(app.selected, 0);
+}
+
+#[test]
+fn enter_on_project_item_opens_full_details() {
+    use crate::tui::app::{DrillItem, DrillView};
+    let mut app = App::new(5);
+    app.projects = vec![make_project(7, "Caravan")];
+    app.databases = vec![make_database(42, "caravan_db", "postgres")];
+    nav_select_project(&mut app, 0);
+    app.nav_open();
+    app.apply_drill(
+        7,
+        DrillView {
+            title:    "Caravan".to_string(),
+            items:    vec![DrillItem {
+                tab:    ResourceTab::Databases,
+                id:     "42".to_string(),
+                kind:   "Database".to_string(),
+                name:   "caravan_db".to_string(),
+                detail: "postgres".to_string()
+            }],
+            selected: 0
+        }
+    );
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Enter));
+    assert!(app.detail_open);
+    assert_eq!(app.active_tab, ResourceTab::Databases);
+    assert_eq!(app.selected, 0);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Down));
+    assert_eq!(app.detail_selected, 1);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Up));
+    assert_eq!(app.detail_selected, 0);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Esc));
+    assert!(!app.detail_open);
+    assert!(app.drill_open());
+}
+
+#[test]
+fn up_in_project_contents_focuses_create() {
+    use crate::tui::app::{DrillItem, DrillView};
+    let mut app = App::new(5);
+    app.projects = vec![make_project(7, "Caravan")];
+    nav_select_project(&mut app, 0);
+    app.nav_open();
+    app.apply_drill(
+        7,
+        DrillView {
+            title:    "Caravan".to_string(),
+            items:    vec![
+                DrillItem {
+                    tab:    ResourceTab::Databases,
+                    id:     "1".to_string(),
+                    kind:   "Database".into(),
+                    name:   "caravan_db".into(),
+                    detail: "postgres18".into()
+                },
+                DrillItem {
+                    tab:    ResourceTab::Apps,
+                    id:     "1".to_string(),
+                    kind:   "App".into(),
+                    name:   "caravan-api".into(),
+                    detail: "Active".into()
+                },
+            ],
+            selected: 0
+        }
+    );
+    app.resource_cols = 6;
+    assert_eq!(app.pane, Pane::Content);
+    assert!(!app.content_on_create);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Up));
+    assert!(
+        app.content_on_create,
+        "Up from first row must focus the Create button"
+    );
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Enter));
+    assert!(
+        app.create_form_open(),
+        "Enter on Create must open the project form"
+    );
+}
+
+#[test]
+fn sidebar_selection_stays_on_service_when_projects_arrive() {
+    let bare = |id: i32, name: &str| ProjectSummary {
+        id,
+        name: name.to_string(),
+        ..Default::default()
+    };
+    let mut app = App::new(5);
+    nav_select_service(&mut app, ResourceTab::Servers);
+    let start = app.nav_selected;
+    app.apply_slice(DataSlice::ProjectsList(vec![bare(1, "p1"), bare(2, "p2")]));
+    assert_eq!(app.nav_selected, start + 2);
+    assert!(matches!(
+        app.nav_current(),
+        Some(crate::tui::app::NavKind::Service(ResourceTab::Servers))
+    ));
+}
+
+#[test]
+fn create_hub_is_first_and_opens_project_form() {
+    let mut app = App::new(5);
+    assert!(matches!(
+        app.nav_items()[0].kind,
+        crate::tui::app::NavKind::Create
+    ));
+    app.nav_selected = 0;
+    app.nav_open();
+    assert_eq!(app.pane, Pane::Content);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Enter));
+    assert!(app.create_form_open());
+}
+
+#[test]
+fn create_enter_on_service_opens_guide_popup() {
+    let mut app = App::new(5);
+    app.nav_selected = 0;
+    app.nav_open();
+    app.resource_cols = 4;
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Right));
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Enter));
+    assert!(app.info_popup_open());
+    assert!(!app.create_form_open());
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Esc));
+    assert!(!app.info_popup_open());
+}
+
+#[test]
+fn create_hub_grid_walk_is_clamped() {
+    let mut app = App::new(5);
+    app.nav_selected = 0;
+    app.nav_open();
+    app.resource_cols = 4;
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Left));
+    assert_eq!(app.create_selected, 0);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Right));
+    assert_eq!(app.create_selected, 1);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Down));
+    assert_eq!(app.create_selected, 5);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Esc));
+    assert_eq!(app.pane, Pane::Sidebar);
+}
+
+#[test]
+fn settings_entry_is_last_nav_item() {
+    let app = App::new(5);
+    let items = app.nav_items();
+    assert!(matches!(
+        items.last().expect("items").kind,
+        crate::tui::app::NavKind::Settings
+    ));
+    assert!(items.last().expect("items").count.is_none());
+}
+
+#[test]
+fn theme_picker_applies_selection() {
+    let mut app = App::new(5);
+    let start_theme = app.theme;
+    app.settings_selected = 0;
+    app.settings_activate();
+    assert!(app.picker_open());
+    app.picker_next();
+    app.picker_apply();
+    assert!(!app.picker_open());
+    assert_ne!(app.theme, start_theme);
+    assert!(app.prefs_dirty);
+}
+
+#[test]
+fn toggle_setting_flips_in_place_without_picker() {
+    let mut app = App::new(5);
+    let before = app.is_widget_enabled("events");
+    app.settings_selected = 3;
+    app.settings_activate();
+    assert!(!app.picker_open());
+    assert_eq!(app.is_widget_enabled("events"), !before);
+    assert!(app.prefs_dirty);
+}
+
+#[test]
+fn picker_esc_closes_without_applying() {
+    let mut app = App::new(5);
+    let start_theme = app.theme;
+    app.settings_selected = 0;
+    app.settings_activate();
+    app.picker_next();
+    app.picker_close();
+    assert!(!app.picker_open());
+    assert_eq!(app.theme, start_theme);
+}
+
+#[test]
+fn toggling_hide_empty_keeps_selection_on_settings() {
+    let mut app = App::new(5);
+    app.servers = vec![make_server(1, "s1", "On")];
+    app.hide_empty_tabs = true;
+    app.nav_selected = app.nav_items().len() - 1;
+    app.settings_selected = 4;
+    app.settings_activate();
+    assert!(!app.hide_empty_tabs);
+    assert!(matches!(
+        app.nav_current(),
+        Some(crate::tui::app::NavKind::Settings)
+    ));
+    app.settings_activate();
+    assert!(app.hide_empty_tabs);
+    assert!(matches!(
+        app.nav_current(),
+        Some(crate::tui::app::NavKind::Settings)
+    ));
+}
+
+#[test]
+fn hide_empty_sections_filters_sidebar() {
+    let mut app = App::new(5);
+    app.servers = vec![make_server(1, "s1", "On")];
+    let all = app.nav_items().len();
+    app.settings_selected = 4;
+    app.settings_activate();
+    let filtered = app.nav_items().len();
+    assert!(filtered < all);
+    assert!(app.nav_items().iter().all(|i| {
+        !matches!(i.kind, crate::tui::app::NavKind::Service(_)) || i.count.unwrap_or(0) > 0
+    }));
+}
+
+#[test]
+fn settings_keys_walk_cards_and_open_picker() {
+    let mut app = App::new(5);
+    let start_theme = app.theme;
+    let last = app.nav_items().len() - 1;
+    app.nav_selected = last;
+    app.nav_open();
+    assert_eq!(app.pane, Pane::Content);
+    app.resource_cols = 3;
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Right));
+    assert_eq!(app.settings_selected, 1);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Down));
+    assert_eq!(app.settings_selected, 4);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Up));
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Left));
+    assert_eq!(app.settings_selected, 0);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Enter));
+    assert!(app.picker_open());
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Down));
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Enter));
+    assert!(!app.picker_open());
+    assert_ne!(app.theme, start_theme);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Esc));
+    assert_eq!(app.pane, Pane::Sidebar);
+}
+
+#[test]
+fn sidebar_is_default_pane() {
+    let app = App::new(5);
+    assert_eq!(app.pane, Pane::Sidebar);
+}
+
+#[test]
+fn nav_items_create_then_projects_then_services() {
+    let mut app = App::new(5);
+    app.projects = vec![make_project(1, "p1")];
+    let items = app.nav_items();
+    assert!(matches!(items[0].kind, crate::tui::app::NavKind::Create));
+    assert_eq!(items[1].label, "p1");
+    assert!(items.len() > 2);
+}
+
+#[test]
+fn nav_open_project_focuses_content_and_fetches_quietly() {
+    let mut app = App::new(5);
+    app.projects = vec![make_project(7, "Caravan")];
+    nav_select_project(&mut app, 0);
+    app.nav_open();
+    assert_eq!(app.pane, Pane::Content);
+    assert!(!app.drill_open());
+    let req = app.take_drill_request().expect("fetch requested");
+    assert_eq!(req.1, 7);
+}
+
+#[test]
+fn nav_open_service_focuses_content() {
+    let mut app = App::new(5);
+    app.nav_open();
+    assert_eq!(app.pane, Pane::Content);
     assert_eq!(app.active_tab, ResourceTab::Servers);
 }
 
 #[test]
-fn select_initial_tab_runs_only_once() {
+fn esc_from_content_returns_to_sidebar() {
     let mut app = App::new(5);
-    app.select_initial_tab();
-    app.databases = vec![make_database(1, "db", "postgres")];
-    app.select_initial_tab();
+    app.pane = Pane::Content;
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Esc));
+    assert_eq!(app.pane, Pane::Sidebar);
+}
+
+#[test]
+fn nav_up_down_move_selection_and_tab() {
+    let mut app = App::new(5);
+    nav_select_service(&mut app, ResourceTab::Servers);
+    let start = app.nav_selected;
+    app.nav_down();
+    assert_eq!(app.nav_selected, start + 1);
+    assert_eq!(app.active_tab, ResourceTab::Databases);
+    app.nav_up();
+    assert_eq!(app.nav_selected, start);
     assert_eq!(app.active_tab, ResourceTab::Servers);
 }
 
 #[test]
-fn select_initial_tab_all_empty_stays() {
+fn nav_change_closes_open_drill() {
+    use crate::tui::app::DrillView;
     let mut app = App::new(5);
-    app.select_initial_tab();
-    assert_eq!(app.active_tab, ResourceTab::Servers);
-    assert!(app.initial_tab_set);
+    app.projects = vec![make_project(7, "Caravan")];
+    nav_select_project(&mut app, 0);
+    app.nav_open();
+    app.apply_drill(
+        7,
+        DrillView {
+            title:    "Caravan".to_string(),
+            items:    Vec::new(),
+            selected: 0
+        }
+    );
+    assert!(app.drill_open());
+    app.nav_down();
+    assert!(!app.drill_open());
 }

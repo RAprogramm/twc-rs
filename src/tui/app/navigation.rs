@@ -33,40 +33,33 @@ impl super::App {
         }
     }
 
-    /// Returns the tabs to display: all tabs, or only non-empty ones (plus the
-    /// active tab) when empty tabs are hidden.
-    #[must_use]
-    pub fn visible_tabs(&self) -> Vec<ResourceTab> {
-        if !self.hide_empty_tabs {
-            return ResourceTab::ALL.to_vec();
-        }
-        let mut tabs: Vec<ResourceTab> = ResourceTab::ALL
-            .into_iter()
-            .filter(|t| self.tab_count(*t) > 0 || *t == self.active_tab)
-            .collect();
-        if tabs.is_empty() {
-            tabs.push(self.active_tab);
-        }
-        tabs
-    }
-
-    /// On the first data load, moves off an empty active tab onto the first
-    /// tab that actually has items, so the dashboard never opens on a blank
-    /// list. Runs once; later manual tab changes are left untouched.
+    /// On the first data load, moves the sidebar selection onto the first
+    /// entry that actually has resources (projects first, then services), so
+    /// the dashboard never opens on a blank panel. Runs once; later manual
+    /// navigation is left untouched.
     pub fn select_initial_tab(&mut self) {
+        use super::NavKind;
+
         if self.initial_tab_set {
             return;
         }
-        self.initial_tab_set = true;
-        if self.tab_count(self.active_tab) > 0 {
+        let items = self.nav_items();
+        let Some(index) = items.iter().position(|i| i.count.unwrap_or(0) > 0) else {
             return;
-        }
-        if let Some(tab) = ResourceTab::ALL
-            .into_iter()
-            .find(|t| self.tab_count(*t) > 0)
-        {
-            self.active_tab = tab;
-            self.reset_after_tab_change();
+        };
+        self.initial_tab_set = true;
+        self.nav_selected = index;
+        match items[index].kind.clone() {
+            NavKind::Service(tab) => {
+                self.active_tab = tab;
+                self.reset_after_tab_change();
+            }
+            NavKind::Project(project_index) => {
+                self.active_tab = ResourceTab::Projects;
+                self.reset_after_tab_change();
+                self.select_project_drill(project_index);
+            }
+            NavKind::Settings | NavKind::Create => {}
         }
     }
 
@@ -181,7 +174,128 @@ impl super::App {
         self.filtered_indices().len()
     }
 
+    /// Number of items in the content pane: an opened project's contents when
+    /// a drill is open, otherwise the filtered service list.
+    #[must_use]
+    pub fn content_len(&self) -> usize {
+        self.drill
+            .as_ref()
+            .map_or_else(|| self.current_list_len(), |d| d.items.len())
+    }
+
+    /// The longest item name in the content pane, for sizing grid columns.
+    #[must_use]
+    pub fn content_longest_label(&self) -> usize {
+        match self.nav_current() {
+            Some(super::NavKind::Settings) => {
+                return super::SETTING_ROWS
+                    .iter()
+                    .map(|r| r.label().chars().count())
+                    .max()
+                    .unwrap_or(0);
+            }
+            Some(super::NavKind::Create) => {
+                return Self::create_targets()
+                    .iter()
+                    .map(|t| t.display_name().chars().count())
+                    .max()
+                    .unwrap_or(0);
+            }
+            _ => {}
+        }
+        self.drill.as_ref().map_or_else(
+            || {
+                self.current_item_names()
+                    .iter()
+                    .map(|n| n.chars().count())
+                    .max()
+                    .unwrap_or(0)
+            },
+            |d| {
+                d.items
+                    .iter()
+                    .map(|i| i.name.chars().count())
+                    .max()
+                    .unwrap_or(0)
+            }
+        )
+    }
+
+    /// Current content-pane selection index.
+    #[must_use]
+    pub fn content_selected(&self) -> usize {
+        self.drill.as_ref().map_or(self.selected, |d| d.selected)
+    }
+
+    /// Sets the content-pane selection index.
+    pub const fn set_content_selected(&mut self, index: usize) {
+        if let Some(d) = self.drill.as_mut() {
+            d.selected = index;
+        } else {
+            self.selected = index;
+        }
+    }
+
+    /// Moves the content-grid selection exactly one step in the given
+    /// direction: left/right stay within the row, up/down move by a row, and
+    /// every edge clamps in place — leaving the pane is Esc only.
+    ///
+    /// See [`grid_step`] for the shared movement rule.
+    pub fn content_move(&mut self, dir: super::FocusDir) {
+        use super::FocusDir;
+
+        let has_create = matches!(
+            self.nav_current(),
+            Some(super::NavKind::Service(_) | super::NavKind::Project(_))
+        );
+        let len = self.content_len();
+
+        if self.content_on_create {
+            if matches!(dir, FocusDir::Down) && len > 0 {
+                self.content_on_create = false;
+                self.set_content_selected(0);
+            }
+            return;
+        }
+        if len == 0 {
+            if has_create {
+                self.content_on_create = true;
+            }
+            return;
+        }
+        let cols = self.resource_cols.max(1);
+        let cur = self.content_selected().min(len - 1);
+        let col = cur % cols;
+        match dir {
+            FocusDir::Left => {
+                if col > 0 {
+                    self.set_content_selected(cur - 1);
+                }
+            }
+            FocusDir::Right => {
+                if col + 1 < cols && cur + 1 < len {
+                    self.set_content_selected(cur + 1);
+                }
+            }
+            FocusDir::Up => {
+                if cur >= cols {
+                    self.set_content_selected(cur - cols);
+                } else if has_create {
+                    self.content_on_create = true;
+                }
+            }
+            FocusDir::Down => {
+                if cur + cols < len {
+                    self.set_content_selected(cur + cols);
+                }
+            }
+        }
+    }
+
     /// Moves selection up.
+    // JUSTIFY: Retained as part of the App navigation API, exercised by
+    // tests and reserved for the details/stats overlay.
+    #[allow(dead_code)]
     pub const fn select_previous(&mut self) {
         if self.selected > 0 {
             self.selected -= 1;
@@ -189,32 +303,85 @@ impl super::App {
     }
 
     /// Moves selection down.
+    // JUSTIFY: Retained as part of the App navigation API, exercised by
+    // tests and reserved for the details/stats overlay.
+    #[allow(dead_code)]
     pub fn select_next(&mut self) {
         if self.selected + 1 < self.current_list_len() {
             self.selected += 1;
         }
     }
 
-    /// Cycles to the next visible resource tab, resetting any filter.
-    pub fn next_tab(&mut self) {
-        let tabs = self.visible_tabs();
-        let pos = tabs.iter().position(|t| *t == self.active_tab).unwrap_or(0);
-        self.active_tab = tabs[(pos + 1) % tabs.len()];
-        self.reset_after_tab_change();
-    }
-
-    /// Cycles to the previous visible resource tab, resetting any filter.
-    pub fn previous_tab(&mut self) {
-        let tabs = self.visible_tabs();
-        let pos = tabs.iter().position(|t| *t == self.active_tab).unwrap_or(0);
-        self.active_tab = tabs[(pos + tabs.len() - 1) % tabs.len()];
-        self.reset_after_tab_change();
-    }
-
     fn reset_after_tab_change(&mut self) {
         self.selected = 0;
         self.filter.clear();
         self.filter_editing = false;
+        self.detail_scroll = 0;
+    }
+
+    /// The focusable widgets with their grid coordinates `(row, col)`, limited
+    /// to those currently visible. The content row (list, details, stats) is
+    /// row 1; the event log sits below on row 3.
+    #[allow(dead_code)]
+    fn focus_targets(&self) -> Vec<(super::Focus, i8, i8)> {
+        use super::Focus;
+        let mut targets = vec![(Focus::ResourceList, 1, 0), (Focus::Details, 1, 1)];
+        if self.is_widget_enabled("stats") {
+            targets.push((Focus::Stats, 1, 2));
+        }
+        if self.is_widget_enabled("events") {
+            targets.push((Focus::Events, 3, 0));
+        }
+        targets
+    }
+
+    /// Moves focus to the nearest widget in the given direction on the grid,
+    /// leaving any active widget. Horizontal moves stay on the same row;
+    /// vertical moves pick the closest column on the nearest other row.
+    // JUSTIFY: Retained as part of the App navigation API, exercised by
+    // tests and reserved for the details/stats overlay.
+    #[allow(dead_code)]
+    pub fn move_focus(&mut self, dir: super::FocusDir) {
+        use super::FocusDir;
+
+        let targets = self.focus_targets();
+        let (_, row, col) = targets
+            .iter()
+            .copied()
+            .find(|(f, _, _)| *f == self.focus)
+            .unwrap_or((self.focus, 1, 0));
+
+        let pick = match dir {
+            FocusDir::Left => targets
+                .iter()
+                .filter(|(_, r, c)| *r == row && *c < col)
+                .max_by_key(|(_, _, c)| *c),
+            FocusDir::Right => targets
+                .iter()
+                .filter(|(_, r, c)| *r == row && *c > col)
+                .min_by_key(|(_, _, c)| *c),
+            FocusDir::Up => targets
+                .iter()
+                .filter(|(_, r, _)| *r < row)
+                .min_by_key(|(_, r, c)| (row - *r, (col - *c).abs())),
+            FocusDir::Down => targets
+                .iter()
+                .filter(|(_, r, _)| *r > row)
+                .min_by_key(|(_, r, c)| (*r - row, (col - *c).abs()))
+        };
+
+        if let Some((f, _, _)) = pick {
+            self.focus = *f;
+            self.focus_active = false;
+        }
+    }
+
+    /// Activates the focused widget so its own keys (select, scroll) apply.
+    // JUSTIFY: Retained as part of the App navigation API, exercised by
+    // tests and reserved for the details/stats overlay.
+    #[allow(dead_code)]
+    pub const fn activate_focus(&mut self) {
+        self.focus_active = true;
     }
 
     pub(super) fn clamp_selection(&mut self) {
@@ -299,5 +466,27 @@ impl super::App {
             ResourceTab::Vpc => self.vpcs.get(real).map(|v| (v.id.clone(), v.name.clone())),
             _ => None
         }
+    }
+}
+
+/// One clamped step on a card grid `len` items long laid out in `cols`
+/// columns: left/right stay within the row, up/down move by a row, every
+/// edge stays put.
+#[must_use]
+pub fn grid_step(cur: usize, len: usize, cols: usize, dir: super::FocusDir) -> usize {
+    use super::FocusDir;
+
+    if len == 0 {
+        return 0;
+    }
+    let cols = cols.max(1);
+    let cur = cur.min(len - 1);
+    let col = cur % cols;
+    match dir {
+        FocusDir::Left if col > 0 => cur - 1,
+        FocusDir::Right if col + 1 < cols && cur + 1 < len => cur + 1,
+        FocusDir::Up if cur >= cols => cur - cols,
+        FocusDir::Down if cur + cols < len => cur + cols,
+        _ => cur
     }
 }

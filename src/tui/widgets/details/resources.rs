@@ -3,7 +3,6 @@
 
 //! Per-resource renderers for the details panel.
 
-use ratatui::text::Line;
 use rust_i18n::t;
 
 use super::{
@@ -11,7 +10,7 @@ use super::{
 };
 use crate::tui::{app::App, themes::Palette, widgets::resource_list::server_status_view};
 
-pub(super) fn render_server_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_server_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.servers.is_empty() {
         return empty(&t!("details.no_servers"), palette);
     }
@@ -30,11 +29,11 @@ pub(super) fn render_server_details(app: &App, palette: Palette) -> Vec<Line<'st
         chip(&t!("details.status"), &label, color, palette),
         kv(
             &t!("details.location"),
-            server.location.clone(),
+            crate::tui::humanize::location(&server.location),
             warn(palette),
             palette
         ),
-        Line::from(""),
+        super::blank(),
         section(&t!("details.resources"), palette),
         kv(
             &t!("details.cpu"),
@@ -44,7 +43,7 @@ pub(super) fn render_server_details(app: &App, palette: Palette) -> Vec<Line<'st
         ),
         kv(
             &t!("details.ram"),
-            format!("{} MB", server.ram_mb),
+            crate::tui::humanize::megabytes(i64::from(server.ram_mb)),
             accent(palette),
             palette
         ),
@@ -57,13 +56,20 @@ pub(super) fn render_server_details(app: &App, palette: Palette) -> Vec<Line<'st
     ]
 }
 
-pub(super) fn render_database_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_database_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.databases.is_empty() {
         return empty(&t!("details.no_databases"), palette);
     }
 
     let db = &app.databases[app.selected_real_index().min(app.databases.len() - 1)];
-    vec![
+    let yes_no = |flag: bool| {
+        if flag {
+            t!("details.yes").into_owned()
+        } else {
+            t!("details.no").into_owned()
+        }
+    };
+    let mut lines = vec![
         heading(&db.name, palette),
         rule(palette),
         kv(
@@ -80,15 +86,68 @@ pub(super) fn render_database_details(app: &App, palette: Palette) -> Vec<Line<'
         ),
         status_chip(&t!("details.status"), &db.status, palette),
         kv(
-            &t!("details.size"),
-            format!("{} MB", db.size_mb),
+            &t!("details.disk"),
+            format!(
+                "{} / {}",
+                crate::tui::humanize::megabytes(db.disk_used_mb),
+                crate::tui::humanize::megabytes(db.size_mb)
+            ),
             name_style(palette),
             palette
         ),
-    ]
+    ];
+    let optional = [
+        (
+            t!("details.location"),
+            crate::tui::humanize::location(&db.location)
+        ),
+        (
+            t!("details.created"),
+            crate::tui::humanize::date(&db.created_at)
+        ),
+        (t!("details.public_ip"), db.public_ip.clone()),
+        (t!("details.local_ip"), db.local_ip.clone()),
+        (
+            t!("details.port"),
+            if db.port > 0 {
+                db.port.to_string()
+            } else {
+                String::new()
+            }
+        ),
+        (
+            t!("details.preset"),
+            if db.preset_id > 0 {
+                format!("#{}", db.preset_id)
+            } else {
+                String::new()
+            }
+        ),
+        (t!("details.hash_type"), db.hash_type.clone())
+    ];
+    for (label, value) in optional {
+        if !value.is_empty() {
+            lines.push(kv(&label, value, name_style(palette), palette));
+        }
+    }
+    lines.push(kv(
+        &t!("details.local_only"),
+        yes_no(db.local_only),
+        name_style(palette),
+        palette
+    ));
+    if !db.config.is_empty() {
+        lines.push(super::blank());
+        lines.push(heading(&t!("details.config"), palette));
+        lines.push(rule(palette));
+        for (key, value) in &db.config {
+            lines.push(kv(key, value.clone(), name_style(palette), palette));
+        }
+    }
+    lines
 }
 
-pub(super) fn render_s3_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_s3_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.s3_storages.is_empty() {
         return empty(&t!("details.no_s3"), palette);
     }
@@ -105,7 +164,7 @@ pub(super) fn render_s3_details(app: &App, palette: Palette) -> Vec<Line<'static
         ),
         kv(
             &t!("details.region"),
-            storage.region.clone(),
+            crate::tui::humanize::location(&storage.region),
             warn(palette),
             palette
         ),
@@ -124,7 +183,7 @@ pub(super) fn render_s3_details(app: &App, palette: Palette) -> Vec<Line<'static
     ]
 }
 
-pub(super) fn render_k8s_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_k8s_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.k8s_clusters.is_empty() {
         return empty(&t!("details.no_k8s"), palette);
     }
@@ -146,7 +205,7 @@ pub(super) fn render_k8s_details(app: &App, palette: Palette) -> Vec<Line<'stati
             palette
         ),
         status_chip(&t!("details.status"), &cluster.status, palette),
-        Line::from(""),
+        super::blank(),
         section(&t!("details.resources"), palette),
         kv(
             &t!("details.cpu"),
@@ -156,7 +215,7 @@ pub(super) fn render_k8s_details(app: &App, palette: Palette) -> Vec<Line<'stati
         ),
         kv(
             &t!("details.ram"),
-            format!("{} MB", cluster.ram_mb),
+            crate::tui::humanize::megabytes(i64::from(cluster.ram_mb)),
             name_style(palette),
             palette
         ),
@@ -169,7 +228,7 @@ pub(super) fn render_k8s_details(app: &App, palette: Palette) -> Vec<Line<'stati
     ]
 }
 
-pub(super) fn render_project_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_project_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.projects.is_empty() {
         return empty(&t!("details.no_projects"), palette);
     }
@@ -184,7 +243,7 @@ pub(super) fn render_project_details(app: &App, palette: Palette) -> Vec<Line<'s
             accent(palette),
             palette
         ),
-        Line::from(""),
+        super::blank(),
         section(&t!("details.resources"), palette),
     ];
     let counts = [
@@ -219,7 +278,7 @@ pub(super) fn render_string_details(
     app: &App,
     label: &str,
     palette: Palette
-) -> Vec<Line<'static>> {
+) -> Vec<super::DetailLine> {
     if items.is_empty() {
         return empty(&t!("details.no_entries", name => label), palette);
     }
@@ -236,7 +295,7 @@ pub(super) fn render_string_details(
     ]
 }
 
-pub(super) fn render_balancer_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_balancer_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.balancers.is_empty() {
         return empty(&t!("details.no_balancers"), palette);
     }
@@ -261,7 +320,7 @@ pub(super) fn render_balancer_details(app: &App, palette: Palette) -> Vec<Line<'
     ]
 }
 
-pub(super) fn render_registry_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_registry_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.registries.is_empty() {
         return empty(&t!("details.no_registries"), palette);
     }
@@ -286,11 +345,11 @@ pub(super) fn render_registry_details(app: &App, palette: Palette) -> Vec<Line<'
 
 /// Computes an integral used-disk percentage, treating a zero-sized disk as
 /// fully free.
-pub(super) fn disk_used_percent(used: i64, size: i64) -> i64 {
+pub(super) const fn disk_used_percent(used: i64, size: i64) -> i64 {
     if size <= 0 { 0 } else { used * 100 / size }
 }
 
-pub(super) fn render_domain_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_domain_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.domains.is_empty() {
         return empty(&t!("details.no_domains"), palette);
     }
@@ -319,7 +378,7 @@ pub(super) fn render_domain_details(app: &App, palette: Palette) -> Vec<Line<'st
     ]
 }
 
-pub(super) fn render_firewall_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_firewall_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.firewalls.is_empty() {
         return empty(&t!("details.no_firewalls"), palette);
     }
@@ -342,7 +401,7 @@ pub(super) fn render_firewall_details(app: &App, palette: Palette) -> Vec<Line<'
     ]
 }
 
-pub(super) fn render_floating_ip_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_floating_ip_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.floating_ips.is_empty() {
         return empty(&t!("details.no_floating_ips"), palette);
     }
@@ -366,7 +425,7 @@ pub(super) fn render_floating_ip_details(app: &App, palette: Palette) -> Vec<Lin
     ]
 }
 
-pub(super) fn render_image_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_image_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.images.is_empty() {
         return empty(&t!("details.no_images"), palette);
     }
@@ -390,7 +449,7 @@ pub(super) fn render_image_details(app: &App, palette: Palette) -> Vec<Line<'sta
     ]
 }
 
-pub(super) fn render_network_drive_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_network_drive_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.network_drives.is_empty() {
         return empty(&t!("details.no_network_drives"), palette);
     }
@@ -414,7 +473,7 @@ pub(super) fn render_network_drive_details(app: &App, palette: Palette) -> Vec<L
     ]
 }
 
-pub(super) fn render_vpc_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_vpc_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.vpcs.is_empty() {
         return empty(&t!("details.no_vpcs"), palette);
     }
@@ -443,7 +502,7 @@ pub(super) fn render_vpc_details(app: &App, palette: Palette) -> Vec<Line<'stati
     ]
 }
 
-pub(super) fn render_dedicated_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_dedicated_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.dedicated_servers.is_empty() {
         return empty(&t!("details.no_dedicated"), palette);
     }
@@ -461,7 +520,7 @@ pub(super) fn render_dedicated_details(app: &App, palette: Palette) -> Vec<Line<
         ),
         status_chip(&t!("details.status"), &d.status, palette),
         kv(&t!("details.ip"), d.ip.clone(), warn(palette), palette),
-        Line::from(""),
+        super::blank(),
         section(&t!("details.resources"), palette),
         kv(
             &t!("details.cpu"),
@@ -484,7 +543,7 @@ pub(super) fn render_dedicated_details(app: &App, palette: Palette) -> Vec<Line<
     ]
 }
 
-pub(super) fn render_mail_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_mail_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.mails.is_empty() {
         return empty(&t!("details.no_mail"), palette);
     }
@@ -509,7 +568,10 @@ pub(super) fn render_mail_details(app: &App, palette: Palette) -> Vec<Line<'stat
     lines
 }
 
-pub(super) fn render_app_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+// JUSTIFY: One arm per resource/key path; splitting would only scatter the
+// flow.
+#[allow(clippy::too_many_lines)]
+pub(super) fn render_app_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.apps.is_empty() {
         return empty(&t!("details.no_apps"), palette);
     }
@@ -538,29 +600,21 @@ pub(super) fn render_app_details(app: &App, palette: Palette) -> Vec<Line<'stati
             palette
         ),
         kv_field(&t!("details.ip"), &a.ip, warn(palette), palette),
-        kv_field(&t!("details.location"), &a.location, warn(palette), palette),
-        Line::from(""),
-        section(&t!("details.repository"), palette),
-        kv_field(&t!("details.branch"), &a.branch, accent(palette), palette),
-        kv_field(
-            &t!("details.commit"),
-            &a.commit,
-            name_style(palette),
-            palette
-        ),
         kv(
-            &t!("details.auto_deploy"),
-            if a.auto_deploy {
-                t!("details.yes")
-            } else {
-                t!("details.no")
-            }
-            .to_string(),
-            name_style(palette),
+            &t!("details.location"),
+            crate::tui::humanize::location(&a.location),
+            warn(palette),
             palette
         ),
     ];
-
+    if !a.started_at.is_empty() {
+        lines.push(kv(
+            &t!("details.started"),
+            crate::tui::humanize::date(&a.started_at),
+            name_style(palette),
+            palette
+        ));
+    }
     if !a.comment.is_empty() {
         lines.push(kv_field(
             &t!("details.comment"),
@@ -570,8 +624,136 @@ pub(super) fn render_app_details(app: &App, palette: Palette) -> Vec<Line<'stati
         ));
     }
 
+    lines.push(super::blank());
+    lines.push(section(&t!("details.repository"), palette));
+    if !a.repository.is_empty() {
+        let repo = if a.repo_private {
+            format!("{} (private)", a.repository)
+        } else {
+            a.repository.clone()
+        };
+        lines.push(kv(&t!("details.repo"), repo, accent(palette), palette));
+    }
+    if !a.repo_url.is_empty() {
+        lines.push(kv(
+            &t!("details.url"),
+            a.repo_url.clone(),
+            name_style(palette),
+            palette
+        ));
+    }
+    if !a.provider.is_empty() {
+        lines.push(kv_field(
+            &t!("details.provider"),
+            &a.provider,
+            name_style(palette),
+            palette
+        ));
+    }
+    lines.push(kv_field(
+        &t!("details.branch"),
+        &a.branch,
+        accent(palette),
+        palette
+    ));
+    lines.push(kv_field(
+        &t!("details.commit"),
+        &a.commit,
+        name_style(palette),
+        palette
+    ));
+    lines.push(kv(
+        &t!("details.auto_deploy"),
+        if a.auto_deploy {
+            t!("details.yes")
+        } else {
+            t!("details.no")
+        }
+        .to_string(),
+        name_style(palette),
+        palette
+    ));
+
+    let build_rows = [
+        (t!("details.build_cmd"), a.build_cmd.clone()),
+        (t!("details.run_cmd"), a.run_cmd.clone()),
+        (t!("details.index_dir"), a.index_dir.clone()),
+        (t!("details.env_version"), a.env_version.clone()),
+        (
+            t!("details.env_vars"),
+            if a.env_count > 0 {
+                a.env_count.to_string()
+            } else {
+                String::new()
+            }
+        )
+    ];
+    if build_rows.iter().any(|(_, v)| !v.is_empty()) {
+        lines.push(super::blank());
+        lines.push(section(&t!("details.build"), palette));
+        for (label, value) in build_rows {
+            if !value.is_empty() {
+                lines.push(kv(&label, value, name_style(palette), palette));
+            }
+        }
+    }
+
+    if a.cfg_cpu > 0 || a.disk_size_mb > 0 {
+        lines.push(super::blank());
+        lines.push(section(&t!("details.resources"), palette));
+        if a.cfg_cpu > 0 {
+            let freq = if a.cfg_freq.is_empty() {
+                String::new()
+            } else {
+                format!(" x {}", a.cfg_freq)
+            };
+            lines.push(kv(
+                &t!("details.cpu"),
+                format!("{}{freq}", a.cfg_cpu),
+                accent(palette),
+                palette
+            ));
+        }
+        if a.cfg_ram_mb > 0 {
+            lines.push(kv(
+                &t!("details.ram"),
+                crate::tui::humanize::megabytes(a.cfg_ram_mb),
+                accent(palette),
+                palette
+            ));
+        }
+        if a.disk_size_mb > 0 {
+            lines.push(kv(
+                &t!("details.disk"),
+                format!(
+                    "{} / {}",
+                    crate::tui::humanize::megabytes(a.disk_used_mb),
+                    crate::tui::humanize::megabytes(a.disk_size_mb)
+                ),
+                name_style(palette),
+                palette
+            ));
+        }
+        if a.cfg_bandwidth > 0 {
+            lines.push(kv(
+                &t!("details.bandwidth"),
+                format!("{} Mbps", a.cfg_bandwidth),
+                name_style(palette),
+                palette
+            ));
+        }
+        if !a.cfg_disk_type.is_empty() {
+            lines.push(kv_field(
+                &t!("details.disk_type"),
+                &a.cfg_disk_type,
+                name_style(palette),
+                palette
+            ));
+        }
+    }
+
     if !a.domains.is_empty() {
-        lines.push(Line::from(""));
+        lines.push(super::blank());
         lines.push(section(&t!("details.domains"), palette));
         for domain in &a.domains {
             lines.push(kv("", domain.clone(), accent(palette), palette));
@@ -581,7 +763,7 @@ pub(super) fn render_app_details(app: &App, palette: Palette) -> Vec<Line<'stati
     lines
 }
 
-pub(super) fn render_ai_agent_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_ai_agent_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.ai_agents.is_empty() {
         return empty(&t!("details.no_ai_agents"), palette);
     }
@@ -605,7 +787,7 @@ pub(super) fn render_ai_agent_details(app: &App, palette: Palette) -> Vec<Line<'
     ]
 }
 
-pub(super) fn render_knowledge_details(app: &App, palette: Palette) -> Vec<Line<'static>> {
+pub(super) fn render_knowledge_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.knowledge_bases.is_empty() {
         return empty(&t!("details.no_knowledge"), palette);
     }

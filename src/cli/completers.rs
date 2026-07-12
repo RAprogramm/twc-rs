@@ -43,6 +43,7 @@ fn silent_token() -> Option<String> {
 /// with its ID and status) and by numeric ID (annotated with its name). Any
 /// failure — missing token, network error, timeout — yields no candidates so
 /// the shell silently falls back to its default behavior.
+#[must_use]
 pub fn complete_app(current: &OsStr) -> Vec<CompletionCandidate> {
     let Some(prefix) = current.to_str() else {
         return Vec::new();

@@ -239,3 +239,137 @@ pub(super) fn render_confirm(frame: &mut Frame, area: Rect, app: &App, palette: 
     frame.render_widget(Clear, popup);
     frame.render_widget(paragraph, popup);
 }
+
+/// Renders the settings picker popup: a centered list of values for the
+/// setting being changed.
+pub(super) fn render_settings_picker(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
+    let Some(picker) = app.picker.as_ref() else {
+        return;
+    };
+
+    let longest_option = picker
+        .options
+        .iter()
+        .map(|o| o.chars().count())
+        .max()
+        .unwrap_or(10);
+    let is_theme = picker.row == crate::tui::app::SettingRow::Theme;
+    let lines: Vec<Line> = picker
+        .options
+        .iter()
+        .enumerate()
+        .map(|(idx, option)| {
+            let selected = idx == picker.selected;
+            let marker = if selected { "\u{25B6} " } else { "  " };
+            let mut style =
+                Style::default().fg(if selected { palette.accent } else { palette.fg });
+            if selected {
+                style = style.add_modifier(Modifier::BOLD);
+            }
+            let mut spans = vec![
+                Span::styled(marker, Style::default().fg(palette.accent)),
+                Span::styled(format!("{option:<longest_option$}"), style),
+            ];
+            if is_theme && let Some(theme) = crate::tui::themes::Theme::ALL.get(idx) {
+                let swatch = theme.palette();
+                spans.push(Span::raw("  "));
+                for color in [
+                    swatch.bg,
+                    swatch.fg,
+                    swatch.accent,
+                    swatch.success,
+                    swatch.warning,
+                    swatch.error,
+                    swatch.dim
+                ] {
+                    spans.push(Span::styled("\u{2588}\u{2588}", Style::default().fg(color)));
+                }
+            }
+            Line::from(spans)
+        })
+        .collect();
+
+    let swatch_width = if is_theme { 16 } else { 0 };
+    let longest = longest_option.max(picker.title.chars().count()) + swatch_width;
+    let width = u16::try_from(longest + 8)
+        .unwrap_or(32)
+        .clamp(24, area.width.saturating_sub(4));
+    let height = u16::try_from(picker.options.len()).unwrap_or(4) + 2;
+    let popup = Rect {
+        x: area.width.saturating_sub(width) / 2,
+        y: area.height.saturating_sub(height) / 2,
+        width,
+        height
+    };
+
+    let paragraph = Paragraph::new(lines).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(Style::default().fg(palette.accent))
+            .title(Line::from(Span::styled(
+                format!(" {} ", picker.title),
+                Style::default()
+                    .fg(palette.title)
+                    .add_modifier(Modifier::BOLD)
+            )))
+    );
+    frame.render_widget(Clear, popup);
+    frame.render_widget(paragraph, popup);
+}
+
+/// Renders the create-hub guide popup: what the product is and how to get
+/// one today.
+pub(super) fn render_info_popup(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
+    let Some((title, body)) = app.info_popup.as_ref() else {
+        return;
+    };
+
+    let width = 64u16.min(area.width.saturating_sub(4));
+    let wrap_cols = usize::from(width.saturating_sub(4)).max(10);
+    let body_rows =
+        u16::try_from(body.chars().count() / wrap_cols + body.matches('\n').count() + 2)
+            .unwrap_or(6);
+    let height = (body_rows + 4).min(area.height.saturating_sub(2));
+    let popup = Rect {
+        x: area.width.saturating_sub(width) / 2,
+        y: area.height.saturating_sub(height) / 2,
+        width,
+        height
+    };
+
+    let mut lines: Vec<Line> = body
+        .split('\n')
+        .map(|part| {
+            Line::from(Span::styled(
+                part.to_string(),
+                Style::default().fg(palette.fg)
+            ))
+        })
+        .collect();
+    lines.push(Line::from(""));
+    lines.push(Line::from(Span::styled(
+        t!("create.popup_hint").into_owned(),
+        Style::default().fg(palette.dim)
+    )));
+
+    let paragraph = Paragraph::new(lines)
+        .wrap(ratatui::widgets::Wrap {
+            trim: true
+        })
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(palette.accent))
+                .title(Line::from(Span::styled(
+                    format!(" {title} "),
+                    Style::default()
+                        .fg(palette.title)
+                        .add_modifier(Modifier::BOLD)
+                )))
+        )
+        .style(Style::default().bg(palette.bg));
+    frame.render_widget(Clear, popup);
+    frame.render_widget(paragraph, popup);
+}

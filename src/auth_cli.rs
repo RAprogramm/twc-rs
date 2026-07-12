@@ -19,10 +19,7 @@ use crate::{config::AppConfig, error::TwcError};
 /// # Errors
 ///
 /// Returns [`TwcError::TokenMissing`] when no token is found.
-pub(crate) fn resolve_token(
-    cli_token: Option<&str>,
-    profile: Option<&str>
-) -> Result<String, TwcError> {
+pub fn resolve_token(cli_token: Option<&str>, profile: Option<&str>) -> Result<String, TwcError> {
     if let Some(token) = cli_token {
         return Ok(token.to_string());
     }
@@ -46,10 +43,7 @@ pub(crate) fn resolve_token(
 /// # Errors
 ///
 /// Only returns error if config file operations fail catastrophically.
-pub(crate) fn ensure_token(
-    cli_token: Option<&str>,
-    profile: Option<&str>
-) -> Result<String, TwcError> {
+pub fn ensure_token(cli_token: Option<&str>, profile: Option<&str>) -> Result<String, TwcError> {
     if let Ok(token) = resolve_token(cli_token, profile) {
         return Ok(token);
     }
@@ -66,7 +60,7 @@ pub(crate) fn ensure_token(
 }
 
 /// Shows an interactive prompt to get a token, then saves it.
-pub(crate) fn prompt_and_save_token() -> Result<String, TwcError> {
+pub fn prompt_and_save_token() -> Result<String, TwcError> {
     use colored::Colorize as _;
     use dialoguer::Select;
 
@@ -143,7 +137,7 @@ fn prompt_browser_flow() -> Result<String, TwcError> {
 }
 
 /// Saves the token to config file (and keyring if auth feature is on).
-pub(crate) fn save_token_to_config(token: &str) -> Result<(), TwcError> {
+pub fn save_token_to_config(token: &str) -> Result<(), TwcError> {
     use colored::Colorize as _;
 
     #[cfg(feature = "auth")]

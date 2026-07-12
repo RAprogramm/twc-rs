@@ -196,3 +196,111 @@ details.no_ai_agents:
 details.no_knowledge:
   en: "No knowledge bases available"
   ru: "Баз знаний нет"
+details.created:
+  en: "Created"
+  ru: "Создан"
+details.host:
+  en: "Host"
+  ru: "Хост"
+details.port:
+  en: "Port"
+  ru: "Порт"
+details.public_ip:
+  en: "Public IP"
+  ru: "Публичный IP"
+details.local_ip:
+  en: "Local IP"
+  ru: "Локальный IP"
+details.login:
+  en: "Login"
+  ru: "Логин"
+details.preset:
+  en: "Preset"
+  ru: "Тариф"
+details.zone:
+  en: "Zone"
+  ru: "Зона"
+details.local_only:
+  en: "Local access only"
+  ru: "Только локальный доступ"
+details.config:
+  en: "Engine parameters"
+  ru: "Параметры движка"
+details.yes:
+  en: "yes"
+  ru: "да"
+details.no:
+  en: "no"
+  ru: "нет"
+details.hash_type:
+  en: "Password hash"
+  ru: "Хеш паролей"
+details.connection:
+  en: "Connection"
+  ru: "Подключение"
+details.databases_in:
+  en: "Databases in cluster"
+  ru: "Базы в кластере"
+details.tariff:
+  en: "Tariff"
+  ru: "Тариф"
+details.price:
+  en: "Price"
+  ru: "Цена"
+details.plan:
+  en: "Plan"
+  ru: "План"
+details.per_month:
+  en: "%{price} ₽/month"
+  ru: "%{price} ₽/мес"
+details.started:
+  en: "Started"
+  ru: "Запущено"
+details.repo:
+  en: "Repo"
+  ru: "Репозиторий"
+details.url:
+  en: "URL"
+  ru: "URL"
+details.provider:
+  en: "Provider"
+  ru: "Провайдер"
+details.build:
+  en: "Build"
+  ru: "Сборка"
+details.build_cmd:
+  en: "Build cmd"
+  ru: "Команда сборки"
+details.run_cmd:
+  en: "Run cmd"
+  ru: "Команда запуска"
+details.index_dir:
+  en: "Index dir"
+  ru: "Каталог статики"
+details.env_version:
+  en: "Env version"
+  ru: "Версия окружения"
+details.env_vars:
+  en: "Env variables"
+  ru: "Переменные окружения"
+details.bandwidth:
+  en: "Bandwidth"
+  ru: "Канал"
+details.disk_type:
+  en: "Disk type"
+  ru: "Тип диска"
+details.deploys:
+  en: "Recent deploys"
+  ru: "Последние деплои"
+details.requests:
+  en: "Requests"
+  ru: "Запросы"
+details.actions:
+  en: "Actions"
+  ru: "Действия"
+details.redeploy:
+  en: "Redeploy"
+  ru: "Передеплоить"
+details.copied:
+  en: "Copied: %{value}"
+  ru: "Скопировано: %{value}"

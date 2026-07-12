@@ -62,14 +62,20 @@ fn shimmer_line<'a>(width: u16, tick: u64, base: Style, highlight: Style) -> Lin
     Line::from(spans)
 }
 
-/// Returns the visible width of a bar at `row`, slightly varied so the
-/// placeholder resembles real content of differing lengths.
+/// Percentage of the inner width used for the placeholder bar at each row,
+/// cycled so consecutive rows look like list entries of differing lengths.
+const BAR_FRACTIONS: [u16; 6] = [58, 40, 68, 46, 62, 36];
+
+/// Returns the visible width of a bar at `row`, varied so the placeholder
+/// resembles real content of differing lengths and never spans the full width.
 fn bar_width(inner_width: u16, row: usize) -> u16 {
     if inner_width == 0 {
         return 0;
     }
-    let shrink = u16::try_from(row % 4).unwrap_or(0).saturating_mul(2);
-    inner_width.saturating_sub(shrink).max(1)
+    let pct = BAR_FRACTIONS[row % BAR_FRACTIONS.len()];
+    (inner_width.saturating_mul(pct) / 100)
+        .max(3)
+        .min(inner_width)
 }
 
 /// Renders `rows` shimmer placeholder bars inside `area`, bordered, titled
@@ -108,12 +114,13 @@ pub fn render(
         .fg(palette.accent)
         .add_modifier(Modifier::BOLD);
 
-    let visible_rows = rows.min(usize::from(inner.height));
-    let mut lines: Vec<Line> = Vec::with_capacity(visible_rows);
+    let visible_rows = rows.min(usize::from(inner.height).div_ceil(2));
+    let mut lines: Vec<Line> = Vec::with_capacity(visible_rows * 2);
     for row in 0..visible_rows {
         let width = bar_width(inner.width, row);
         let phase = tick.wrapping_add(row as u64 * 3);
         lines.push(shimmer_line(width, phase, base, highlight));
+        lines.push(Line::from(""));
     }
 
     frame.render_widget(Paragraph::new(lines), inner);
