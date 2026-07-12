@@ -203,24 +203,16 @@ fn render_project_panel(
     }
 
     let focused = app.pane == Pane::Content;
-    let header_h = crate::tui::widgets::service_header::height(ResourceTab::Projects, inner.width)
-        .min(inner.height.saturating_sub(1));
-    if header_h >= 3 {
+    let (header, grid) = crate::tui::widgets::service_header::layout(inner, ResourceTab::Projects);
+    if let Some(header_area) = header {
         crate::tui::widgets::service_header::render(
             frame,
-            Rect::new(inner.x, inner.y, inner.width, header_h),
+            header_area,
             ResourceTab::Projects,
             focused && app.content_on_create,
             palette
         );
     }
-
-    let grid = Rect::new(
-        inner.x,
-        inner.y + header_h,
-        inner.width,
-        inner.height.saturating_sub(header_h)
-    );
     if cards.is_empty() {
         frame.render_widget(
             Paragraph::new(Line::from(Span::styled(

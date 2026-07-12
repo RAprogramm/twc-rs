@@ -119,10 +119,8 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
     }
 
     let focused = app.pane == crate::tui::app::Pane::Content;
-    let header_h = crate::tui::widgets::service_header::height(app.active_tab, inner.width)
-        .min(inner.height.saturating_sub(1));
-    if header_h >= 4 {
-        let header_area = Rect::new(inner.x, inner.y, inner.width, header_h);
+    let (header, grid) = crate::tui::widgets::service_header::layout(inner, app.active_tab);
+    if let Some(header_area) = header {
         crate::tui::widgets::service_header::render(
             frame,
             header_area,
@@ -131,13 +129,6 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
             &palette
         );
     }
-
-    let grid = Rect::new(
-        inner.x,
-        inner.y + header_h,
-        inner.width,
-        inner.height.saturating_sub(header_h)
-    );
     if cards.is_empty() {
         let hint = ratatui::widgets::Paragraph::new(ratatui::text::Line::from(
             ratatui::text::Span::styled(
