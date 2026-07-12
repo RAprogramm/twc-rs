@@ -102,6 +102,12 @@ service.create.ai_agents:
 service.create.knowledge_bases:
   en: "Create knowledge base"
   ru: "Создать базу знаний"
+service.desc.projects:
+  en: "Projects group your resources — servers, databases, apps — by product or team: access control and cost tracking in one place."
+  ru: "Проекты группируют ресурсы — серверы, базы, приложения — по продукту или команде: доступы и учёт затрат в одном месте."
+service.create.projects:
+  en: "Create project"
+  ru: "Создать проект"
 service.your_resources:
   en: "Nothing here yet — press Enter on the button above to create one."
   ru: "Пока пусто — нажмите Enter на кнопке выше, чтобы создать."

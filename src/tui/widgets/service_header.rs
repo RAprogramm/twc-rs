@@ -15,7 +15,7 @@ use ratatui::{
 };
 use rust_i18n::t;
 
-use crate::tui::{app::ResourceTab, themes::Palette, widgets::sidebar::tab_icon};
+use crate::tui::{app::ResourceTab, themes::Palette};
 
 /// The description and Create-button label for a service tab, localized.
 #[must_use]
@@ -52,9 +52,8 @@ pub fn texts(tab: ResourceTab) -> (Cow<'static, str>, Cow<'static, str>) {
             t!("service.desc.knowledge_bases"),
             t!("service.create.knowledge_bases")
         ),
-        ResourceTab::Projects | ResourceTab::SshKeys | ResourceTab::Finances => {
-            (Cow::Borrowed(""), Cow::Borrowed(""))
-        }
+        ResourceTab::Projects => (t!("service.desc.projects"), t!("service.create.projects")),
+        ResourceTab::SshKeys | ResourceTab::Finances => (Cow::Borrowed(""), Cow::Borrowed(""))
     }
 }
 
@@ -65,19 +64,22 @@ fn desc_rows(desc: &str, width: u16) -> u16 {
     u16::try_from(rows.clamp(1, 3)).unwrap_or(1)
 }
 
-/// Total height of the header block (title, description, button, separator)
-/// at the given inner width; 0 when the tab has no product description.
+/// Total height of the header block (description, button, separator) at the
+/// given inner width; 0 when the tab has no product description.
 #[must_use]
 pub fn height(tab: ResourceTab, width: u16) -> u16 {
     let (desc, _) = texts(tab);
     if desc.is_empty() {
         return 0;
     }
-    1 + desc_rows(&desc, width) + 2
+    desc_rows(&desc, width) + 2
 }
 
-/// Renders the header block: icon + product name, wrapped description, the
-/// Create button (highlighted while focused) and a separator line.
+/// Renders the header block above a resource grid.
+///
+/// Shows the wrapped product description, a Create button chip (filled while
+/// focused) and a separator line. The panel border already carries the
+/// product name, so it is not repeated here.
 pub fn render(
     frame: &mut Frame,
     area: Rect,
@@ -86,48 +88,37 @@ pub fn render(
     palette: &Palette
 ) {
     let (desc, create) = texts(tab);
-    if desc.is_empty() || area.height < 4 {
+    if desc.is_empty() || area.height < 3 {
         return;
     }
 
-    let mut lines: Vec<Line> = Vec::with_capacity(usize::from(area.height));
-    lines.push(Line::from(vec![
-        Span::styled(
-            format!("{}  ", tab_icon(tab)),
-            Style::default().fg(palette.accent)
-        ),
-        Span::styled(
-            tab.display_name().into_owned(),
-            Style::default()
-                .fg(palette.title)
-                .add_modifier(Modifier::BOLD)
-        ),
-    ]));
-    lines.push(Line::from(Span::styled(
-        desc.into_owned(),
-        Style::default().fg(palette.dim)
-    )));
-
     let text_rows = area.height.saturating_sub(2);
-    let text_area = Rect::new(area.x, area.y, area.width, text_rows);
     frame.render_widget(
-        Paragraph::new(lines).wrap(Wrap {
+        Paragraph::new(Line::from(Span::styled(
+            desc.into_owned(),
+            Style::default().fg(palette.dim)
+        )))
+        .wrap(Wrap {
             trim: true
         }),
-        text_area
+        Rect::new(area.x, area.y, area.width, text_rows)
     );
 
-    let button_style = if button_focused {
-        Style::default()
-            .fg(palette.bg)
-            .bg(palette.accent)
-            .add_modifier(Modifier::BOLD)
+    let (chip_bg, chip_fg) = if button_focused {
+        (palette.accent, palette.bg)
     } else {
-        Style::default()
-            .fg(palette.accent)
-            .add_modifier(Modifier::BOLD)
+        (palette.border, palette.fg)
     };
-    let button = Line::from(Span::styled(format!("[ + {create} ]"), button_style));
+    let cap = Style::default().fg(chip_bg);
+    let body = Style::default()
+        .fg(chip_fg)
+        .bg(chip_bg)
+        .add_modifier(Modifier::BOLD);
+    let button = Line::from(vec![
+        Span::styled("\u{2590}", cap),
+        Span::styled(format!(" + {create} "), body),
+        Span::styled("\u{258C}", cap),
+    ]);
     frame.render_widget(
         Paragraph::new(button),
         Rect::new(area.x, area.y + text_rows, area.width, 1)
@@ -159,6 +150,7 @@ mod tests {
     #[test]
     fn height_scales_with_width() {
         assert!(height(ResourceTab::Servers, 30) >= height(ResourceTab::Servers, 200));
-        assert_eq!(height(ResourceTab::Projects, 80), 0);
+        assert!(height(ResourceTab::Projects, 80) > 0);
+        assert_eq!(height(ResourceTab::Finances, 80), 0);
     }
 }

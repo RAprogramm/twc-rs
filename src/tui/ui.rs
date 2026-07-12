@@ -119,7 +119,7 @@ fn render_content(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
         } else {
             usize::MAX
         };
-        render_drill(frame, area, view, selected, border, palette);
+        render_drill(frame, area, app, view, selected, border, palette);
         return;
     }
 
@@ -155,43 +155,103 @@ fn render_project_preview(
     border: ratatui::style::Color,
     palette: &Palette
 ) {
-    use crate::tui::widgets::card_grid;
-
     let cards = crate::tui::widgets::resource_cards::project_preview(project);
     let title = format!(" {} ({}) ", project.name, project.resource_count());
-    let cols = card_grid::columns(
-        area.width.saturating_sub(2),
-        card_grid::longest_title(&cards)
-    );
     let selected = if app.pane == Pane::Content {
         app.content_selected()
     } else {
         usize::MAX
     };
-    let empty = t!("ui.drill_empty");
-    card_grid::render(
-        frame,
-        area,
-        &title,
-        &cards,
-        selected,
-        cols,
-        empty.as_ref(),
-        border,
-        palette
-    );
+    render_project_panel(frame, area, app, &title, &cards, selected, border, palette);
 }
 
-/// Renders the drill-in view: a project's contents as the shared card grid.
+/// Renders a bordered project panel: the Projects product header with its
+/// Create button on top, then the given cards.
+#[allow(clippy::too_many_arguments)]
+fn render_project_panel(
+    frame: &mut Frame,
+    area: Rect,
+    app: &App,
+    title: &str,
+    cards: &[crate::tui::widgets::card_grid::GridCard],
+    selected: usize,
+    border: ratatui::style::Color,
+    palette: &Palette
+) {
+    use ratatui::{
+        style::{Modifier, Style},
+        text::{Line, Span},
+        widgets::{Block, BorderType, Borders, Paragraph}
+    };
+
+    use crate::tui::{app::ResourceTab, widgets::card_grid};
+
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded)
+        .border_style(Style::default().fg(border))
+        .title(Line::from(Span::styled(
+            title.to_string(),
+            Style::default()
+                .fg(palette.title)
+                .add_modifier(Modifier::BOLD)
+        )));
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+    if inner.height == 0 || inner.width < 6 {
+        return;
+    }
+
+    let focused = app.pane == Pane::Content;
+    let header_h = crate::tui::widgets::service_header::height(ResourceTab::Projects, inner.width)
+        .min(inner.height.saturating_sub(1));
+    if header_h >= 3 {
+        crate::tui::widgets::service_header::render(
+            frame,
+            Rect::new(inner.x, inner.y, inner.width, header_h),
+            ResourceTab::Projects,
+            focused && app.content_on_create,
+            palette
+        );
+    }
+
+    let grid = Rect::new(
+        inner.x,
+        inner.y + header_h,
+        inner.width,
+        inner.height.saturating_sub(header_h)
+    );
+    if cards.is_empty() {
+        frame.render_widget(
+            Paragraph::new(Line::from(Span::styled(
+                t!("ui.drill_empty").to_string(),
+                Style::default().fg(palette.dim)
+            ))),
+            grid
+        );
+        return;
+    }
+    let cols = card_grid::columns(grid.width, card_grid::longest_title(cards));
+    let shown = if app.content_on_create {
+        usize::MAX
+    } else {
+        selected
+    };
+    card_grid::render_grid_in(frame, grid, cards, shown, cols, palette);
+}
+
+/// Renders the drill-in view: a project's contents as the shared card grid,
+/// under the Projects product header.
 fn render_drill(
     frame: &mut Frame,
     area: Rect,
+    app: &App,
     view: &DrillView,
     selected: usize,
     border: ratatui::style::Color,
     palette: &Palette
 ) {
-    use crate::tui::widgets::card_grid::{self, GridCard};
+    use crate::tui::widgets::card_grid::GridCard;
 
     let cards: Vec<GridCard> = view
         .items
@@ -208,20 +268,5 @@ fn render_drill(
         .collect();
 
     let title = format!(" {} ({}) ", view.title, view.items.len());
-    let cols = card_grid::columns(
-        area.width.saturating_sub(2),
-        card_grid::longest_title(&cards)
-    );
-    let empty = t!("ui.drill_empty");
-    card_grid::render(
-        frame,
-        area,
-        &title,
-        &cards,
-        selected,
-        cols,
-        empty.as_ref(),
-        border,
-        palette
-    );
+    render_project_panel(frame, area, app, &title, &cards, selected, border, palette);
 }

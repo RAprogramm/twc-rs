@@ -107,52 +107,6 @@ pub fn longest_title(cards: &[GridCard]) -> usize {
         .unwrap_or(0)
 }
 
-/// Renders a bordered, titled panel filled with an adaptive grid of `cards`.
-///
-/// # Arguments
-///
-/// * `panel_title` - Title drawn on the panel border.
-/// * `cards` - The cards to lay out.
-/// * `selected` - Index of the highlighted card.
-/// * `cols` - Column count (from [`columns`]) so navigation and layout agree.
-/// * `empty_hint` - Text shown when `cards` is empty.
-/// * `border_color` - Panel border color.
-pub fn render(
-    frame: &mut Frame,
-    area: Rect,
-    panel_title: &str,
-    cards: &[GridCard],
-    selected: usize,
-    cols: usize,
-    empty_hint: &str,
-    border_color: Color,
-    palette: &Palette
-) {
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_type(BorderType::Rounded)
-        .border_style(Style::default().fg(border_color))
-        .title(Line::from(Span::styled(
-            panel_title,
-            Style::default()
-                .fg(palette.title)
-                .add_modifier(Modifier::BOLD)
-        )));
-    let inner = block.inner(area);
-    frame.render_widget(block, area);
-
-    if cards.is_empty() {
-        let hint = Paragraph::new(Line::from(Span::styled(
-            empty_hint,
-            Style::default().fg(palette.dim)
-        )));
-        frame.render_widget(hint, inner);
-        return;
-    }
-
-    render_grid(frame, inner, cards, selected, cols.max(1), palette);
-}
-
 /// Renders just the card grid into an already-prepared inner area, for panels
 /// that draw their own border and chrome around it.
 pub fn render_grid_in(
@@ -301,17 +255,7 @@ mod tests {
             terminal
                 .draw(|frame| {
                     let cols = columns(w, longest_title(&cards));
-                    render(
-                        frame,
-                        Rect::new(0, 0, w, h),
-                        " Panel (12) ",
-                        &cards,
-                        0,
-                        cols,
-                        "empty",
-                        palette.accent,
-                        &palette
-                    );
+                    render_grid_in(frame, Rect::new(0, 0, w, h), &cards, 0, cols, &palette);
                 })
                 .unwrap();
         }

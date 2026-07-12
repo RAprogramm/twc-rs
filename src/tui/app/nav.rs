@@ -119,7 +119,10 @@ impl App {
         self.filter_editing = false;
         match self.nav_current() {
             Some(NavKind::Service(tab)) => self.active_tab = tab,
-            Some(NavKind::Project(index)) => self.select_project_drill(index),
+            Some(NavKind::Project(index)) => {
+                self.active_tab = ResourceTab::Projects;
+                self.select_project_drill(index);
+            }
             None => {}
         }
     }
@@ -135,6 +138,7 @@ impl App {
                 self.pane = Pane::Content;
             }
             Some(NavKind::Project(index)) => {
+                self.active_tab = ResourceTab::Projects;
                 if self.drill.is_none() && self.drill_fetching_id.is_none() {
                     self.select_project_drill(index);
                 }
