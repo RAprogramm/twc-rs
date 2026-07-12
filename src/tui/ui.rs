@@ -33,7 +33,7 @@ use crate::tui::{
 ///
 /// * `frame` - The render frame.
 /// * `app` - The application state.
-pub fn draw(frame: &mut Frame, app: &App) {
+pub fn draw(frame: &mut Frame, app: &mut App) {
     let size = frame.area();
     let palette = app.theme.palette();
 
@@ -117,7 +117,7 @@ fn draw_modals(frame: &mut Frame, size: Rect, app: &App, palette: &Palette) {
 
 /// Renders the content pane: an opened project's contents, a highlighted
 /// project's local preview, or the selected service's card grid.
-fn render_content(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
+fn render_content(frame: &mut Frame, area: Rect, app: &mut App, palette: &Palette) {
     let border = if app.pane == Pane::Content {
         palette.accent
     } else {
@@ -125,7 +125,7 @@ fn render_content(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
     };
 
     if app.detail_open {
-        crate::tui::widgets::details::render(frame, area, app, border);
+        app.detail_scroll = crate::tui::widgets::details::render(frame, area, app, border);
         return;
     }
 

@@ -73,7 +73,7 @@ pub(crate) async fn run_dashboard(
         app.apply_data(snapshot);
     }
     terminal
-        .draw(|f| tui::ui::draw(f, &app))
+        .draw(|f| tui::ui::draw(f, &mut app))
         .map_err(|e| TwcError::Io(e.to_string()))?;
 
     let (tx, mut rx) = mpsc::unbounded_channel();
@@ -98,7 +98,7 @@ pub(crate) async fn run_dashboard(
         }
 
         terminal
-            .draw(|f| tui::ui::draw(f, &app))
+            .draw(|f| tui::ui::draw(f, &mut app))
             .map_err(|e| TwcError::Io(e.to_string()))?;
 
         if app.prefs_dirty {

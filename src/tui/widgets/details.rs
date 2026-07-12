@@ -38,7 +38,7 @@ const RULE_WIDTH: usize = 32;
 /// * `area` - The area to render in.
 /// * `app` - The application state.
 /// * `border_color` - Color for the panel border.
-pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
+pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) -> u16 {
     let palette = app.theme.palette();
 
     let text = match app.active_tab {
@@ -81,12 +81,12 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
     let inner = block.inner(area);
     frame.render_widget(block, area);
     if inner.height == 0 || inner.width == 0 {
-        return;
+        return 0;
     }
 
     let mut text = text;
     append_extra_sections(&mut text, app, palette);
-    render_columns(frame, inner, text, app.detail_scroll);
+    render_columns(frame, inner, text, app.detail_scroll)
 }
 
 /// Appends the background-fetched deep-detail sections (connection, nested
@@ -131,7 +131,10 @@ const COLUMN_GAP: u16 = 3;
 /// hiding below the fold. The column width comes from the widest line of the
 /// actual content, so nothing is hardcoded to a terminal size. Scrolling only
 /// kicks in once every column is full.
-fn render_columns(frame: &mut Frame, inner: Rect, text: Vec<Line<'static>>, scroll: u16) {
+///
+/// Returns the clamped scroll offset actually used, so the caller can write
+/// it back and the scroll state never runs past the content.
+fn render_columns(frame: &mut Frame, inner: Rect, text: Vec<Line<'static>>, scroll: u16) -> u16 {
     let height = usize::from(inner.height);
     let column_width = u16::try_from(text.iter().map(Line::width).max().unwrap_or(0))
         .unwrap_or(u16::MAX)
@@ -143,11 +146,12 @@ fn render_columns(frame: &mut Frame, inner: Rect, text: Vec<Line<'static>>, scro
     let capacity = cols * height;
     let max_scroll = text.len().saturating_sub(capacity);
     let offset = usize::from(scroll).min(max_scroll);
+    let clamped = u16::try_from(offset).unwrap_or(u16::MAX);
     let visible: Vec<Line> = text.into_iter().skip(offset).take(capacity).collect();
 
     if cols == 1 {
         frame.render_widget(Paragraph::new(visible), inner);
-        return;
+        return clamped;
     }
 
     let mut constraints = Vec::with_capacity(cols);
@@ -162,6 +166,7 @@ fn render_columns(frame: &mut Frame, inner: Rect, text: Vec<Line<'static>>, scro
     for (chunk, column) in visible.chunks(height).zip(areas.iter()) {
         frame.render_widget(Paragraph::new(chunk.to_vec()), *column);
     }
+    clamped
 }
 
 /// Builds the bold heading line shown at the top of a populated panel.
@@ -327,6 +332,32 @@ mod tests {
     use crate::tui::app::{App, DatabaseSummary};
 
     #[test]
+    fn scroll_state_clamps_to_content_each_frame() {
+        let mut app = App::new(5);
+        app.active_tab = crate::tui::app::ResourceTab::Databases;
+        app.databases = vec![DatabaseSummary {
+            id: 1,
+            name: "db".to_string(),
+            status: "started".to_string(),
+            engine: "postgres".to_string(),
+            size_mb: 100,
+            ..Default::default()
+        }];
+        app.detail_scroll = 500;
+        let backend = TestBackend::new(80, 24);
+        let mut terminal = Terminal::new(backend).unwrap();
+        terminal
+            .draw(|f| {
+                app.detail_scroll = render(f, Rect::new(0, 0, 80, 24), &app, Color::Reset);
+            })
+            .unwrap();
+        assert_eq!(
+            app.detail_scroll, 0,
+            "short content must clamp runaway scroll back to zero"
+        );
+    }
+
+    #[test]
     fn long_details_flow_into_columns_on_wide_panels() {
         let mut app = App::new(5);
         app.active_tab = crate::tui::app::ResourceTab::Databases;
@@ -345,7 +376,9 @@ mod tests {
         let backend = TestBackend::new(w, h);
         let mut terminal = Terminal::new(backend).unwrap();
         terminal
-            .draw(|f| render(f, Rect::new(0, 0, w, h), &app, Color::Reset))
+            .draw(|f| {
+                render(f, Rect::new(0, 0, w, h), &app, Color::Reset);
+            })
             .unwrap();
         let buf = terminal.backend().buffer().clone();
         let mut second_column = String::new();
