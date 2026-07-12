@@ -128,8 +128,8 @@ impl super::App {
         self.filter_editing = false;
         self.selected = index;
         self.detail_scroll = 0;
-        self.detail_selected = 0;
         self.detail_open = true;
+        self.detail_selected = crate::tui::widgets::details::initial_cursor(self);
         if let Ok(id) = item.id.parse::<i32>() {
             self.detail_fetch = Some((item.tab, id));
         }
@@ -144,8 +144,8 @@ impl super::App {
             return false;
         };
         self.detail_scroll = 0;
-        self.detail_selected = 0;
         self.detail_open = true;
+        self.detail_selected = crate::tui::widgets::details::initial_cursor(self);
         if let Ok(id) = id.parse::<i32>() {
             self.detail_fetch = Some((self.active_tab, id));
         }

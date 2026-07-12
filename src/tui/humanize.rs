@@ -51,6 +51,18 @@ pub fn megabytes(mb: i64) -> String {
     }
 }
 
+/// A resource count with the grammatically correct noun form for the
+/// active language ("1 resource", "2 ресурса", "5 ресурсов").
+#[must_use]
+pub fn count_resources(n: i32) -> String {
+    let key = match (n % 10, n % 100) {
+        (1, 1..=9 | 20..=99) => "resource_list.count_resources_one",
+        (2..=4, 1..=11 | 15..=99) => "resource_list.count_resources_few",
+        _ => "resource_list.count_resources_many"
+    };
+    rust_i18n::t!(key, n => n).into_owned()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

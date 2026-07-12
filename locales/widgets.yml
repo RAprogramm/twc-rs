@@ -91,7 +91,13 @@ resource_list.status_installing:
 resource_list.status_removing:
   en: removing
   ru: удаление
-resource_list.count_resources:
+resource_list.count_resources_one:
+  en: "%{n} resource"
+  ru: "%{n} ресурс"
+resource_list.count_resources_few:
+  en: "%{n} resources"
+  ru: "%{n} ресурса"
+resource_list.count_resources_many:
   en: "%{n} resources"
   ru: "%{n} ресурсов"
 resource_list.disk_used:

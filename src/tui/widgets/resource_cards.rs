@@ -34,7 +34,7 @@ pub fn project_preview(project: &ProjectSummary) -> Vec<GridCard> {
         .map(|(tab, count)| {
             GridCard::new(tab.display_name().into_owned())
                 .icon(tab_icon(tab))
-                .meta(t!("resource_list.count_resources", n => count).to_string())
+                .meta(crate::tui::humanize::count_resources(count))
         })
         .collect()
 }

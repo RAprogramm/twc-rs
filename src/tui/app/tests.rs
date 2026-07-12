@@ -634,7 +634,6 @@ fn details_open_lists_action_buttons_first() {
     app.selected = 0;
     assert!(app.open_selected_detail());
     assert!(app.detail_open);
-    assert_eq!(app.detail_selected, 0);
     let (copy, action) = crate::tui::widgets::details::interactive_at(&app, 0).expect("first row");
     assert!(copy.is_none());
     assert_eq!(
@@ -643,6 +642,14 @@ fn details_open_lists_action_buttons_first() {
             ActionKind::Start
         ))
     );
+    let (cursor_copy, cursor_action) =
+        crate::tui::widgets::details::interactive_at(&app, app.detail_selected)
+            .expect("cursor row");
+    assert!(
+        cursor_copy.is_some(),
+        "cursor starts on a field, not a button"
+    );
+    assert!(cursor_action.is_none());
 }
 
 #[test]
@@ -660,6 +667,7 @@ fn details_cursor_clamps_at_edges() {
     app.servers = vec![make_server(7, "web", "On")];
     app.selected = 0;
     assert!(app.open_selected_detail());
+    app.detail_selected = 0;
     crate::tui::event::handle_event(&mut app, key(KeyCode::Up));
     assert_eq!(app.detail_selected, 0);
     let len = crate::tui::widgets::details::interactive_len(&app);
@@ -676,7 +684,7 @@ fn details_destructive_action_requires_confirm() {
     app.databases = vec![make_database(42, "pg-prod", "postgres")];
     app.selected = 0;
     assert!(app.open_selected_detail());
-    crate::tui::event::handle_event(&mut app, key(KeyCode::Char('j')));
+    crate::tui::event::handle_event(&mut app, key(KeyCode::Char('k')));
     crate::tui::event::handle_event(&mut app, key(KeyCode::Enter));
     assert!(app.awaiting_confirm());
     assert!(app.take_dispatch().is_none());
@@ -698,7 +706,14 @@ fn enter_opens_details_then_runs_action() {
     crate::tui::event::handle_event(&mut app, key(KeyCode::Enter));
     assert!(app.detail_open);
 
-    crate::tui::event::handle_event(&mut app, key(KeyCode::Char('j')));
+    crate::tui::event::handle_event(&mut app, key(KeyCode::Enter));
+    assert!(
+        app.take_dispatch().is_none(),
+        "Enter on the initial cursor row must not fire an action"
+    );
+    for _ in 0..4 {
+        crate::tui::event::handle_event(&mut app, key(KeyCode::Char('k')));
+    }
     crate::tui::event::handle_event(&mut app, key(KeyCode::Enter));
     let dispatched = app.take_dispatch().expect("action dispatched");
     assert_eq!(dispatched.kind, ActionKind::Shutdown);
@@ -1228,10 +1243,11 @@ fn enter_on_project_item_opens_full_details() {
     assert!(app.detail_open);
     assert_eq!(app.active_tab, ResourceTab::Databases);
     assert_eq!(app.selected, 0);
+    let start = app.detail_selected;
     crate::tui::event::handle_event(&mut app, key_event(KeyCode::Down));
-    assert_eq!(app.detail_selected, 1);
+    assert_eq!(app.detail_selected, start + 1);
     crate::tui::event::handle_event(&mut app, key_event(KeyCode::Up));
-    assert_eq!(app.detail_selected, 0);
+    assert_eq!(app.detail_selected, start);
     crate::tui::event::handle_event(&mut app, key_event(KeyCode::Esc));
     assert!(!app.detail_open);
     assert!(app.drill_open());

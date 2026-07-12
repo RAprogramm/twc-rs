@@ -128,7 +128,7 @@ fn render_grid(
     if inner.height < 3 || inner.width < 6 {
         return;
     }
-    let cols = cols.min(cards.len()).max(1);
+    let cols = cols.max(1);
     let rows_total = cards.len().div_ceil(cols);
     let rows_fit = usize::from((inner.height + VGAP) / (CARD_H + VGAP)).max(1);
 

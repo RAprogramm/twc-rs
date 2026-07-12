@@ -140,6 +140,24 @@ fn action_rows(app: &App, palette: Palette) -> Vec<DetailLine> {
     rows
 }
 
+/// The interactive index the details cursor should start on.
+///
+/// It lands on the first field below the action buttons, so a stray extra
+/// Enter right after opening never fires an action, while the buttons stay
+/// one `Up` away.
+#[must_use]
+pub fn initial_cursor(app: &App) -> usize {
+    let buttons = action_rows(app, app.theme.palette())
+        .iter()
+        .filter(|r| r.is_interactive())
+        .count();
+    if buttons < interactive_len(app) {
+        buttons
+    } else {
+        0
+    }
+}
+
 /// The copy value and action of the `index`-th interactive row.
 #[must_use]
 pub fn interactive_at(app: &App, index: usize) -> Option<(Option<String>, Option<DetailAction>)> {
