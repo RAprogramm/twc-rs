@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2026 RAprogramm <andrey.rozanov.vl@gmail.com>
 // SPDX-License-Identifier: MIT
 
-//! The settings panel model: the rows shown in the content pane and the
-//! logic that cycles their values.
+//! The settings panel model: setting cards navigated like every other card
+//! grid, toggled with Enter, with a picker popup for multi-value settings.
 
 use std::borrow::Cow;
 
@@ -10,24 +10,24 @@ use rust_i18n::t;
 
 use crate::config::Language;
 
-/// One row of the settings panel.
+/// One setting card.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SettingRow {
-    /// Color theme, cycling through every built-in theme.
+    /// Color theme; Enter opens a picker.
     Theme,
-    /// Interface language.
+    /// Interface language; Enter opens a picker.
     Language,
-    /// The account header widget.
+    /// The account header widget; Enter toggles.
     WidgetAccount,
-    /// The events log widget.
+    /// The events log widget; Enter toggles.
     WidgetEvents,
-    /// Hiding services with zero resources from the sidebar.
+    /// Hiding zero-count services from the sidebar; Enter toggles.
     HideEmptySections,
-    /// The active credentials profile.
+    /// The active credentials profile; Enter opens a picker.
     Profile
 }
 
-/// The rows of the settings panel, in display order.
+/// The setting cards, in display order.
 pub const SETTING_ROWS: [SettingRow; 6] = [
     SettingRow::Theme,
     SettingRow::Language,
@@ -37,8 +37,21 @@ pub const SETTING_ROWS: [SettingRow; 6] = [
     SettingRow::Profile
 ];
 
+/// A picker popup for a multi-value setting.
+#[derive(Debug, Clone)]
+pub struct SettingsPicker {
+    /// The setting being changed.
+    pub row:      SettingRow,
+    /// Popup title.
+    pub title:    String,
+    /// The selectable values.
+    pub options:  Vec<String>,
+    /// Index of the highlighted option.
+    pub selected: usize
+}
+
 impl SettingRow {
-    /// The localized row label.
+    /// The localized card label.
     #[must_use]
     pub fn label(self) -> Cow<'static, str> {
         match self {
@@ -50,69 +63,90 @@ impl SettingRow {
             Self::Profile => t!("settings.profile")
         }
     }
+
+    /// The Nerd Font glyph shown on the card.
+    #[must_use]
+    pub const fn icon(self) -> &'static str {
+        match self {
+            Self::Theme => "\u{f1fc}",
+            Self::Language => "\u{f0ac}",
+            Self::WidgetAccount => "\u{f2bb}",
+            Self::WidgetEvents => "\u{f03a}",
+            Self::HideEmptySections => "\u{f070}",
+            Self::Profile => "\u{f2c0}"
+        }
+    }
 }
 
 impl super::App {
-    /// The current display value of a settings row.
+    /// The current display value of a setting card.
     #[must_use]
     pub fn setting_value(&self, row: SettingRow) -> String {
-        let on_off = |enabled: bool| {
-            if enabled {
-                t!("settings.on").into_owned()
-            } else {
-                t!("settings.off").into_owned()
-            }
-        };
         match row {
             SettingRow::Theme => theme_name(self.theme).to_string(),
-            SettingRow::Language => match self.language {
-                Language::En => "English".to_string(),
-                Language::Ru => "Русский".to_string()
-            },
-            SettingRow::WidgetAccount => on_off(self.is_widget_enabled("account")),
-            SettingRow::WidgetEvents => on_off(self.is_widget_enabled("events")),
-            SettingRow::HideEmptySections => on_off(self.hide_empty_tabs),
+            SettingRow::Language => language_name(self.language).to_string(),
+            SettingRow::WidgetAccount
+            | SettingRow::WidgetEvents
+            | SettingRow::HideEmptySections => {
+                if self.setting_enabled(row).unwrap_or(false) {
+                    t!("settings.on").into_owned()
+                } else {
+                    t!("settings.off").into_owned()
+                }
+            }
             SettingRow::Profile => self.active_profile.clone()
         }
     }
 
-    /// Moves the settings selection one row up.
-    pub const fn settings_up(&mut self) {
-        if self.settings_selected > 0 {
-            self.settings_selected -= 1;
+    /// Whether a toggle setting is on; `None` for value settings.
+    #[must_use]
+    pub fn setting_enabled(&self, row: SettingRow) -> Option<bool> {
+        match row {
+            SettingRow::WidgetAccount => Some(self.is_widget_enabled("account")),
+            SettingRow::WidgetEvents => Some(self.is_widget_enabled("events")),
+            SettingRow::HideEmptySections => Some(self.hide_empty_tabs),
+            SettingRow::Theme | SettingRow::Language | SettingRow::Profile => None
         }
     }
 
-    /// Moves the settings selection one row down.
-    pub fn settings_down(&mut self) {
-        if self.settings_selected + 1 < SETTING_ROWS.len() {
-            self.settings_selected += 1;
+    /// Moves the settings-card selection one step on the grid, clamping at
+    /// every edge exactly like the resource grids.
+    pub fn settings_move(&mut self, dir: super::FocusDir) {
+        use super::FocusDir;
+
+        let len = SETTING_ROWS.len();
+        let cols = self.resource_cols.max(1);
+        let cur = self.settings_selected.min(len - 1);
+        let col = cur % cols;
+        match dir {
+            FocusDir::Left => {
+                if col > 0 {
+                    self.settings_selected = cur - 1;
+                }
+            }
+            FocusDir::Right => {
+                if col + 1 < cols && cur + 1 < len {
+                    self.settings_selected = cur + 1;
+                }
+            }
+            FocusDir::Up => {
+                if cur >= cols {
+                    self.settings_selected = cur - cols;
+                }
+            }
+            FocusDir::Down => {
+                if cur + cols < len {
+                    self.settings_selected = cur + cols;
+                }
+            }
         }
     }
 
-    /// Cycles the selected setting's value forward or backward, applying it
-    /// immediately and marking preferences dirty for persistence.
-    pub fn settings_adjust(&mut self, forward: bool) {
+    /// Activates the selected setting card: toggles a switch in place, or
+    /// opens the picker popup for multi-value settings.
+    pub fn settings_activate(&mut self) {
         let row = SETTING_ROWS[self.settings_selected.min(SETTING_ROWS.len() - 1)];
         match row {
-            SettingRow::Theme => {
-                let all = crate::tui::themes::Theme::ALL;
-                let pos = all.iter().position(|t| *t == self.theme).unwrap_or(0);
-                let next = if forward {
-                    (pos + 1) % all.len()
-                } else {
-                    (pos + all.len() - 1) % all.len()
-                };
-                self.theme = all[next];
-                self.prefs_dirty = true;
-            }
-            SettingRow::Language => {
-                let next = match self.language {
-                    Language::En => Language::Ru,
-                    Language::Ru => Language::En
-                };
-                self.set_language(next);
-            }
             SettingRow::WidgetAccount => {
                 self.widgets.toggle("account");
                 self.prefs_dirty = true;
@@ -131,21 +165,107 @@ impl super::App {
                     self.nav_selected = index;
                 }
             }
+            SettingRow::Theme => {
+                let options: Vec<String> = crate::tui::themes::Theme::ALL
+                    .iter()
+                    .map(|t| theme_name(*t).to_string())
+                    .collect();
+                let selected = crate::tui::themes::Theme::ALL
+                    .iter()
+                    .position(|t| *t == self.theme)
+                    .unwrap_or(0);
+                self.picker = Some(SettingsPicker {
+                    row,
+                    title: row.label().into_owned(),
+                    options,
+                    selected
+                });
+            }
+            SettingRow::Language => {
+                let selected = usize::from(self.language == Language::Ru);
+                self.picker = Some(SettingsPicker {
+                    row,
+                    title: row.label().into_owned(),
+                    options: vec!["English".to_string(), "Русский".to_string()],
+                    selected
+                });
+            }
             SettingRow::Profile => {
-                if self.profiles.len() > 1 {
-                    let pos = self
-                        .profiles
-                        .iter()
-                        .position(|p| *p == self.active_profile)
-                        .unwrap_or(0);
-                    let next = if forward {
-                        (pos + 1) % self.profiles.len()
-                    } else {
-                        (pos + self.profiles.len() - 1) % self.profiles.len()
-                    };
-                    self.switch_profile = Some(self.profiles[next].clone());
+                if self.profiles.len() < 2 {
+                    self.status_message = Some(t!("app.no_other_profiles").to_string());
+                    return;
+                }
+                let selected = self
+                    .profiles
+                    .iter()
+                    .position(|p| *p == self.active_profile)
+                    .unwrap_or(0);
+                self.picker = Some(SettingsPicker {
+                    row,
+                    title: row.label().into_owned(),
+                    options: self.profiles.clone(),
+                    selected
+                });
+            }
+        }
+    }
+
+    /// Returns true while the settings picker popup is open.
+    #[must_use]
+    pub const fn picker_open(&self) -> bool {
+        self.picker.is_some()
+    }
+
+    /// Moves the picker highlight down.
+    pub fn picker_next(&mut self) {
+        if let Some(p) = self.picker.as_mut() {
+            p.selected = (p.selected + 1) % p.options.len().max(1);
+        }
+    }
+
+    /// Moves the picker highlight up.
+    pub fn picker_previous(&mut self) {
+        if let Some(p) = self.picker.as_mut() {
+            let len = p.options.len().max(1);
+            p.selected = (p.selected + len - 1) % len;
+        }
+    }
+
+    /// Closes the picker without applying.
+    pub fn picker_close(&mut self) {
+        self.picker = None;
+    }
+
+    /// Applies the highlighted picker option and closes the popup.
+    pub fn picker_apply(&mut self) {
+        let Some(picker) = self.picker.take() else {
+            return;
+        };
+        match picker.row {
+            SettingRow::Theme => {
+                if let Some(theme) = crate::tui::themes::Theme::ALL.get(picker.selected) {
+                    self.theme = *theme;
+                    self.prefs_dirty = true;
                 }
             }
+            SettingRow::Language => {
+                let next = if picker.selected == 1 {
+                    Language::Ru
+                } else {
+                    Language::En
+                };
+                self.set_language(next);
+            }
+            SettingRow::Profile => {
+                if let Some(profile) = picker.options.get(picker.selected)
+                    && *profile != self.active_profile
+                {
+                    self.switch_profile = Some(profile.clone());
+                }
+            }
+            SettingRow::WidgetAccount
+            | SettingRow::WidgetEvents
+            | SettingRow::HideEmptySections => {}
         }
     }
 }
@@ -158,5 +278,14 @@ pub const fn theme_name(theme: crate::tui::themes::Theme) -> &'static str {
         crate::tui::themes::Theme::GruvboxLight => "Gruvbox Light",
         crate::tui::themes::Theme::CatppuccinMocha => "Catppuccin Mocha",
         crate::tui::themes::Theme::CatppuccinLatte => "Catppuccin Latte"
+    }
+}
+
+/// Human-readable name of a language.
+#[must_use]
+pub const fn language_name(language: Language) -> &'static str {
+    match language {
+        Language::En => "English",
+        Language::Ru => "Русский"
     }
 }

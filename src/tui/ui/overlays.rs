@@ -239,3 +239,63 @@ pub(super) fn render_confirm(frame: &mut Frame, area: Rect, app: &App, palette: 
     frame.render_widget(Clear, popup);
     frame.render_widget(paragraph, popup);
 }
+
+/// Renders the settings picker popup: a centered list of values for the
+/// setting being changed.
+pub(super) fn render_settings_picker(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
+    let Some(picker) = app.picker.as_ref() else {
+        return;
+    };
+
+    let lines: Vec<Line> = picker
+        .options
+        .iter()
+        .enumerate()
+        .map(|(idx, option)| {
+            let selected = idx == picker.selected;
+            let marker = if selected { "\u{25B6} " } else { "  " };
+            let mut style =
+                Style::default().fg(if selected { palette.accent } else { palette.fg });
+            if selected {
+                style = style.add_modifier(Modifier::BOLD);
+            }
+            Line::from(vec![
+                Span::styled(marker, Style::default().fg(palette.accent)),
+                Span::styled(option.clone(), style),
+            ])
+        })
+        .collect();
+
+    let longest = picker
+        .options
+        .iter()
+        .map(|o| o.chars().count())
+        .max()
+        .unwrap_or(10)
+        .max(picker.title.chars().count());
+    let width = u16::try_from(longest + 8)
+        .unwrap_or(32)
+        .clamp(24, area.width.saturating_sub(4));
+    let height = u16::try_from(picker.options.len()).unwrap_or(4) + 2;
+    let popup = Rect {
+        x: area.width.saturating_sub(width) / 2,
+        y: area.height.saturating_sub(height) / 2,
+        width,
+        height
+    };
+
+    let paragraph = Paragraph::new(lines).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(Style::default().fg(palette.accent))
+            .title(Line::from(Span::styled(
+                format!(" {} ", picker.title),
+                Style::default()
+                    .fg(palette.title)
+                    .add_modifier(Modifier::BOLD)
+            )))
+    );
+    frame.render_widget(Clear, popup);
+    frame.render_widget(paragraph, popup);
+}

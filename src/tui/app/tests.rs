@@ -1205,23 +1205,40 @@ fn settings_entry_is_last_nav_item() {
 }
 
 #[test]
-fn settings_adjust_cycles_language_and_theme() {
-    use crate::config::Language;
+fn theme_picker_applies_selection() {
     let mut app = App::new(5);
     let start_theme = app.theme;
     app.settings_selected = 0;
-    app.settings_adjust(true);
+    app.settings_activate();
+    assert!(app.picker_open());
+    app.picker_next();
+    app.picker_apply();
+    assert!(!app.picker_open());
     assert_ne!(app.theme, start_theme);
     assert!(app.prefs_dirty);
-    app.settings_adjust(false);
-    assert_eq!(app.theme, start_theme);
+}
 
-    app.settings_selected = 1;
-    assert_eq!(app.language, Language::En);
-    app.settings_adjust(true);
-    assert_eq!(app.language, Language::Ru);
-    app.settings_adjust(true);
-    assert_eq!(app.language, Language::En);
+#[test]
+fn toggle_setting_flips_in_place_without_picker() {
+    let mut app = App::new(5);
+    let before = app.is_widget_enabled("events");
+    app.settings_selected = 3;
+    app.settings_activate();
+    assert!(!app.picker_open());
+    assert_eq!(app.is_widget_enabled("events"), !before);
+    assert!(app.prefs_dirty);
+}
+
+#[test]
+fn picker_esc_closes_without_applying() {
+    let mut app = App::new(5);
+    let start_theme = app.theme;
+    app.settings_selected = 0;
+    app.settings_activate();
+    app.picker_next();
+    app.picker_close();
+    assert!(!app.picker_open());
+    assert_eq!(app.theme, start_theme);
 }
 
 #[test]
@@ -1231,13 +1248,13 @@ fn toggling_hide_empty_keeps_selection_on_settings() {
     app.hide_empty_tabs = true;
     app.nav_selected = app.nav_items().len() - 1;
     app.settings_selected = 4;
-    app.settings_adjust(true);
+    app.settings_activate();
     assert!(!app.hide_empty_tabs);
     assert!(matches!(
         app.nav_current(),
         Some(crate::tui::app::NavKind::Settings)
     ));
-    app.settings_adjust(true);
+    app.settings_activate();
     assert!(app.hide_empty_tabs);
     assert!(matches!(
         app.nav_current(),
@@ -1251,7 +1268,7 @@ fn hide_empty_sections_filters_sidebar() {
     app.servers = vec![make_server(1, "s1", "On")];
     let all = app.nav_items().len();
     app.settings_selected = 4;
-    app.settings_adjust(true);
+    app.settings_activate();
     let filtered = app.nav_items().len();
     assert!(filtered < all);
     assert!(app.nav_items().iter().all(|i| {
@@ -1260,18 +1277,26 @@ fn hide_empty_sections_filters_sidebar() {
 }
 
 #[test]
-fn settings_keys_navigate_and_change() {
+fn settings_keys_walk_cards_and_open_picker() {
     let mut app = App::new(5);
     let start_theme = app.theme;
     let last = app.nav_items().len() - 1;
     app.nav_selected = last;
     app.nav_open();
     assert_eq!(app.pane, Pane::Content);
-    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Down));
+    app.resource_cols = 3;
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Right));
     assert_eq!(app.settings_selected, 1);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Down));
+    assert_eq!(app.settings_selected, 4);
     crate::tui::event::handle_event(&mut app, key_event(KeyCode::Up));
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Left));
     assert_eq!(app.settings_selected, 0);
     crate::tui::event::handle_event(&mut app, key_event(KeyCode::Enter));
+    assert!(app.picker_open());
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Down));
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Enter));
+    assert!(!app.picker_open());
     assert_ne!(app.theme, start_theme);
     crate::tui::event::handle_event(&mut app, key_event(KeyCode::Esc));
     assert_eq!(app.pane, Pane::Sidebar);

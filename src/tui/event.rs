@@ -144,6 +144,17 @@ fn handle_overlay_key(app: &mut App, key: KeyEvent) -> Option<bool> {
         return Some(true);
     }
 
+    if app.picker_open() {
+        match key.code {
+            KeyCode::Esc => app.picker_close(),
+            KeyCode::Enter => app.picker_apply(),
+            KeyCode::Up | KeyCode::Char('k') => app.picker_previous(),
+            KeyCode::Down | KeyCode::Char('j') => app.picker_next(),
+            _ => {}
+        }
+        return Some(true);
+    }
+
     if app.create_form_open() {
         match key.code {
             KeyCode::Esc => app.close_create_form(),
@@ -201,13 +212,15 @@ fn handle_overlay_key(app: &mut App, key: KeyEvent) -> Option<bool> {
 
 /// Handles a key outside overlays: sidebar navigation on the left pane,
 /// exact one-step grid movement on the content pane.
-/// Handles a key while the settings panel owns the content pane.
+/// Handles a key while the settings panel owns the content pane: arrows walk
+/// the setting cards like any grid, Enter toggles or opens the picker.
 fn handle_settings_key(app: &mut App, key: KeyEvent) -> bool {
     match key.code {
-        KeyCode::Up | KeyCode::Char('k') => app.settings_up(),
-        KeyCode::Down | KeyCode::Char('j') => app.settings_down(),
-        KeyCode::Right | KeyCode::Char('l') | KeyCode::Enter => app.settings_adjust(true),
-        KeyCode::Left | KeyCode::Char('h') => app.settings_adjust(false),
+        KeyCode::Up | KeyCode::Char('k') => app.settings_move(FocusDir::Up),
+        KeyCode::Down | KeyCode::Char('j') => app.settings_move(FocusDir::Down),
+        KeyCode::Right | KeyCode::Char('l') => app.settings_move(FocusDir::Right),
+        KeyCode::Left | KeyCode::Char('h') => app.settings_move(FocusDir::Left),
+        KeyCode::Enter => app.settings_activate(),
         KeyCode::Esc => app.focus_sidebar(),
         _ => return false
     }

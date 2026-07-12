@@ -186,6 +186,13 @@ impl super::App {
     /// The longest item name in the content pane, for sizing grid columns.
     #[must_use]
     pub fn content_longest_label(&self) -> usize {
+        if matches!(self.nav_current(), Some(super::NavKind::Settings)) {
+            return super::SETTING_ROWS
+                .iter()
+                .map(|r| r.label().chars().count())
+                .max()
+                .unwrap_or(0);
+        }
         self.drill.as_ref().map_or_else(
             || {
                 self.current_item_names()
