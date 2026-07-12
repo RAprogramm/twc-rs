@@ -35,12 +35,20 @@ impl super::App {
         matches!(self.active_tab, ResourceTab::Projects) && self.selected_resource().is_some()
     }
 
-    /// Requests a drill-in into the selected resource; the loop fetches it.
+    /// Requests a drill-in into the selected resource. The project panel opens
+    /// immediately (empty, marked loading) so no intermediate screen flashes
+    /// while the event loop fetches the contents.
     pub fn request_drill(&mut self) {
         if self.can_drill()
             && let Some((id, name)) = self.selected_resource()
             && let Ok(id) = id.parse::<i32>()
         {
+            self.drill = Some(DrillView {
+                title:    name.clone(),
+                items:    Vec::new(),
+                selected: 0
+            });
+            self.drill_loading = true;
             self.drill_request = Some((self.active_tab, id, name));
         }
     }
@@ -54,11 +62,19 @@ impl super::App {
     /// Opens the drill-in view with fetched contents.
     pub fn open_drill(&mut self, view: DrillView) {
         self.drill = Some(view);
+        self.drill_loading = false;
     }
 
-    /// Closes the drill-in view, returning to the resource list.
+    /// Closes the drill-in view, returning to wherever it was opened from:
+    /// the overview landing when entered from a project card, otherwise the
+    /// resource list.
     pub fn close_drill(&mut self) {
         self.drill = None;
+        self.drill_loading = false;
+        if self.drill_return_overview {
+            self.drill_return_overview = false;
+            self.view = super::DashboardView::Overview;
+        }
     }
 
     /// Returns true while a drill-in view is open.

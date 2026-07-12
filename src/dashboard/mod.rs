@@ -116,6 +116,7 @@ pub(crate) async fn run_dashboard(
                     app.open_drill(view);
                 }
                 Err(e) => {
+                    app.close_drill();
                     app.log(LogLevel::Error, format!("open {drill_name} failed: {e}"));
                 }
             }

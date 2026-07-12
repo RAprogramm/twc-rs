@@ -166,6 +166,7 @@ impl App {
             OverviewKind::Project(index) => {
                 self.active_tab = ResourceTab::Projects;
                 self.selected = index;
+                self.drill_return_overview = true;
                 self.request_drill();
             }
         }

@@ -187,7 +187,18 @@ fn draw_modals(frame: &mut Frame, size: Rect, app: &App, palette: &Palette) {
 /// * `palette` - The theme color palette.
 fn render_content(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
     if let Some(view) = app.drill_view() {
-        render_drill(frame, area, view, palette);
+        if app.drill_loading {
+            crate::tui::widgets::skeleton::render(
+                frame,
+                area,
+                palette,
+                &view.title,
+                8,
+                app.anim_tick
+            );
+        } else {
+            render_drill(frame, area, view, palette);
+        }
         return;
     }
 

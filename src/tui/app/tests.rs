@@ -966,6 +966,21 @@ fn overview_cards_projects_then_services() {
 }
 
 #[test]
+fn enter_overview_project_opens_drill_immediately() {
+    let mut app = App::new(5);
+    app.projects = vec![make_project(7, "Caravan")];
+    app.overview_selected = 0;
+    app.enter_overview();
+    assert!(app.drill_open());
+    assert!(app.drill_loading);
+    assert_eq!(app.drill_view().expect("drill").title, "Caravan");
+    let req = app.take_drill_request().expect("fetch requested");
+    assert_eq!(req.1, 7);
+    app.close_drill();
+    assert_eq!(app.view, DashboardView::Overview);
+}
+
+#[test]
 fn enter_overview_service_opens_resources() {
     let mut app = App::new(5);
     app.overview_selected = app.overview_project_cards().len();
