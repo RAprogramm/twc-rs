@@ -50,6 +50,13 @@ pub fn tab_icon(tab: crate::tui::app::ResourceTab) -> &'static str {
     NERD_ICONS.get(tab.index()).copied().unwrap_or("\u{25A0}")
 }
 
+/// Braille spinner frames for the per-group loading indicator, advanced by
+/// the animation tick.
+const SPINNER: [&str; 10] = [
+    "\u{280B}", "\u{2819}", "\u{2839}", "\u{2838}", "\u{283C}", "\u{2834}", "\u{2826}",
+    "\u{2827}", "\u{2807}", "\u{280F}"
+];
+
 /// Cells the sidebar spends beside the label: border, selection bar, icon,
 /// gaps and the count badge.
 const CHROME_W: u16 = 12;
@@ -103,12 +110,25 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
             } else {
                 t!("overview.services")
             };
-            lines.push(Line::from(Span::styled(
+            let loading = if is_project {
+                app.projects_pending > 0
+            } else {
+                app.services_pending > 0
+            };
+            let mut spans = vec![Span::styled(
                 format!(" {}", header.to_uppercase()),
                 Style::default()
                     .fg(palette.header)
                     .add_modifier(Modifier::BOLD)
-            )));
+            )];
+            if loading {
+                let frame_idx = usize::try_from(app.anim_tick % SPINNER.len() as u64).unwrap_or(0);
+                spans.push(Span::styled(
+                    format!(" {}", SPINNER[frame_idx]),
+                    Style::default().fg(palette.accent)
+                ));
+            }
+            lines.push(Line::from(spans));
             last_group_project = Some(is_project);
         }
 

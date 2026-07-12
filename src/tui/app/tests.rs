@@ -799,6 +799,22 @@ fn slices_stream_in_progressively() {
 }
 
 #[test]
+fn group_spinners_clear_as_slices_arrive() {
+    let mut app = App::new(5);
+    app.load_started();
+    assert_eq!(app.projects_pending, 2);
+    assert_eq!(app.services_pending, 17);
+    app.apply_slice(DataSlice::Projects(vec![]));
+    assert_eq!(app.projects_pending, 1);
+    app.apply_slice(DataSlice::Projects(vec![]));
+    assert_eq!(app.projects_pending, 0);
+    app.apply_slice(DataSlice::Servers(vec![]));
+    assert_eq!(app.services_pending, 16);
+    app.load_finished();
+    assert_eq!(app.services_pending, 0);
+}
+
+#[test]
 fn slice_errors_roll_over_and_recover() {
     let mut app = App::new(5);
     app.load_started();

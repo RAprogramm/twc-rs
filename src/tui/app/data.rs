@@ -60,14 +60,30 @@ impl super::App {
         self.last_refresh.elapsed() >= self.refresh_interval
     }
 
-    /// Begins a streamed load cycle: forgets the previous cycle's errors.
+    /// Begins a streamed load cycle: forgets the previous cycle's errors and
+    /// arms the per-group loading indicators (projects stream twice: the bare
+    /// list first, then the list with per-project counts).
     pub fn load_started(&mut self) {
         self.cycle_load_errors.clear();
+        self.projects_pending = 2;
+        self.services_pending = 17;
     }
 
     /// Applies one streamed slice the moment it arrives, so the UI shows
     /// each resource as soon as its endpoint responds.
     pub fn apply_slice(&mut self, slice: DataSlice) {
+        match &slice {
+            DataSlice::Projects(_) => {
+                self.projects_pending = self.projects_pending.saturating_sub(1);
+            }
+            DataSlice::Account(_)
+            | DataSlice::SshKeys(_)
+            | DataSlice::Finances {
+                ..
+            }
+            | DataSlice::Error(_) => {}
+            _ => self.services_pending = self.services_pending.saturating_sub(1)
+        }
         match slice {
             DataSlice::Account(info) => self.account = info,
             DataSlice::Servers(v) => {
@@ -133,6 +149,8 @@ impl super::App {
         }
         self.last_load_errors = self.cycle_load_errors.clone();
         self.is_loading = false;
+        self.projects_pending = 0;
+        self.services_pending = 0;
         if self.last_load_errors.is_empty() {
             self.error_message = None;
             self.status_message = Some(t!("app.load_ok").to_string());
