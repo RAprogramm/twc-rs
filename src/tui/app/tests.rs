@@ -1225,6 +1225,27 @@ fn settings_adjust_cycles_language_and_theme() {
 }
 
 #[test]
+fn toggling_hide_empty_keeps_selection_on_settings() {
+    let mut app = App::new(5);
+    app.servers = vec![make_server(1, "s1", "On")];
+    app.hide_empty_tabs = true;
+    app.nav_selected = app.nav_items().len() - 1;
+    app.settings_selected = 4;
+    app.settings_adjust(true);
+    assert!(!app.hide_empty_tabs);
+    assert!(matches!(
+        app.nav_current(),
+        Some(crate::tui::app::NavKind::Settings)
+    ));
+    app.settings_adjust(true);
+    assert!(app.hide_empty_tabs);
+    assert!(matches!(
+        app.nav_current(),
+        Some(crate::tui::app::NavKind::Settings)
+    ));
+}
+
+#[test]
 fn hide_empty_sections_filters_sidebar() {
     let mut app = App::new(5);
     app.servers = vec![make_server(1, "s1", "On")];

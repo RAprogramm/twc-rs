@@ -123,9 +123,12 @@ impl super::App {
             }
             SettingRow::HideEmptySections => {
                 self.toggle_hide_empty_tabs();
-                let len = self.nav_items().len();
-                if self.nav_selected >= len {
-                    self.nav_selected = len.saturating_sub(1);
+                if let Some(index) = self
+                    .nav_items()
+                    .iter()
+                    .position(|i| matches!(i.kind, super::NavKind::Settings))
+                {
+                    self.nav_selected = index;
                 }
             }
             SettingRow::Profile => {
