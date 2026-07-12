@@ -21,6 +21,8 @@ pub(crate) async fn fetch_drill(
             let mut items = Vec::new();
             for s in &resp.servers {
                 items.push(DrillItem {
+                    tab:    tui::app::ResourceTab::Servers,
+                    id:     s.id.to_string(),
                     kind:   "Server".to_string(),
                     name:   s.name.clone(),
                     detail: format!("{:?}", s.status)
@@ -28,6 +30,8 @@ pub(crate) async fn fetch_drill(
             }
             for d in &resp.databases {
                 items.push(DrillItem {
+                    tab:    tui::app::ResourceTab::Databases,
+                    id:     d.id.to_string(),
                     kind:   "Database".to_string(),
                     name:   d.name.clone(),
                     detail: d.r#type.clone()
@@ -35,6 +39,8 @@ pub(crate) async fn fetch_drill(
             }
             for b in &resp.buckets {
                 items.push(DrillItem {
+                    tab:    tui::app::ResourceTab::S3,
+                    id:     b.id.to_string(),
                     kind:   "S3 bucket".to_string(),
                     name:   b.name.clone(),
                     detail: String::new()
@@ -42,6 +48,8 @@ pub(crate) async fn fetch_drill(
             }
             for c in &resp.clusters {
                 items.push(DrillItem {
+                    tab:    tui::app::ResourceTab::Kubernetes,
+                    id:     c.id.to_string(),
                     kind:   "Kubernetes".to_string(),
                     name:   c.name.clone(),
                     detail: format!("{:?}", c.status)
@@ -49,6 +57,8 @@ pub(crate) async fn fetch_drill(
             }
             for b in &resp.balancers {
                 items.push(DrillItem {
+                    tab:    tui::app::ResourceTab::Balancers,
+                    id:     b.id.to_string(),
                     kind:   "Balancer".to_string(),
                     name:   b.name.clone(),
                     detail: format!("{:?}", b.status)
@@ -56,6 +66,8 @@ pub(crate) async fn fetch_drill(
             }
             for d in &resp.dedicated_servers {
                 items.push(DrillItem {
+                    tab:    tui::app::ResourceTab::DedicatedServers,
+                    id:     d.id.to_string(),
                     kind:   "Dedicated".to_string(),
                     name:   d.name.clone(),
                     detail: String::new()
@@ -63,6 +75,8 @@ pub(crate) async fn fetch_drill(
             }
             for a in resp.apps.iter().flatten().flatten() {
                 items.push(DrillItem {
+                    tab:    tui::app::ResourceTab::Apps,
+                    id:     a.id.to_string(),
                     kind:   "App".to_string(),
                     name:   a.name.clone(),
                     detail: format!("{:?}", a.status)

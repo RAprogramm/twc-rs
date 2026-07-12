@@ -124,6 +124,11 @@ fn render_content(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
         palette.border
     };
 
+    if app.detail_open {
+        crate::tui::widgets::details::render(frame, area, app, border);
+        return;
+    }
+
     if let Some(view) = app.drill_view() {
         let selected = if app.pane == Pane::Content {
             view.selected

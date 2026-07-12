@@ -253,6 +253,20 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
         return result;
     }
 
+    if app.detail_open {
+        match key.code {
+            KeyCode::Esc | KeyCode::Char('q') => app.detail_open = false,
+            KeyCode::Down | KeyCode::Char('j') => app.detail_scroll_down(),
+            KeyCode::Up | KeyCode::Char('k') => app.detail_scroll_up(),
+            KeyCode::Char('Q') => {
+                app.quit();
+                return false;
+            }
+            _ => {}
+        }
+        return true;
+    }
+
     if app.pane == Pane::Content
         && matches!(app.nav_current(), Some(super::app::NavKind::Settings))
         && handle_settings_key(app, key)
@@ -338,7 +352,9 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
                 app.nav_open();
             } else if app.content_on_create {
                 app.open_create_form();
-            } else if !app.drill_open() {
+            } else if app.drill_open() {
+                app.open_drill_item_detail();
+            } else if !matches!(app.nav_current(), Some(super::app::NavKind::Project(_))) {
                 app.open_action_menu();
             }
         }

@@ -476,6 +476,8 @@ fn selecting_project_shows_cache_and_revalidates() {
         DrillView {
             title:    "Caravan".to_string(),
             items:    vec![DrillItem {
+                tab:    ResourceTab::Servers,
+                id:     "1".to_string(),
                 kind:   "Server".to_string(),
                 name:   "a".to_string(),
                 detail: String::new()
@@ -501,6 +503,8 @@ fn stale_drill_result_updates_cache_only() {
         DrillView {
             title:    "Caravan".to_string(),
             items:    vec![DrillItem {
+                tab:    ResourceTab::Servers,
+                id:     "1".to_string(),
                 kind:   "Server".to_string(),
                 name:   "a".to_string(),
                 detail: String::new()
@@ -851,11 +855,15 @@ fn drill_view_navigation() {
         title:    "Project 'x'".to_string(),
         items:    vec![
             DrillItem {
+                tab:    ResourceTab::Servers,
+                id:     "1".to_string(),
                 kind:   "Server".to_string(),
                 name:   "a".to_string(),
                 detail: String::new()
             },
             DrillItem {
+                tab:    ResourceTab::Databases,
+                id:     "1".to_string(),
                 kind:   "Database".to_string(),
                 name:   "b".to_string(),
                 detail: String::new()
@@ -1165,6 +1173,39 @@ fn up_from_first_row_focuses_create_then_down_returns() {
 }
 
 #[test]
+fn enter_on_project_item_opens_full_details() {
+    use crate::tui::app::{DrillItem, DrillView};
+    let mut app = App::new(5);
+    app.projects = vec![make_project(7, "Caravan")];
+    app.databases = vec![make_database(42, "caravan_db", "postgres")];
+    nav_select_project(&mut app, 0);
+    app.nav_open();
+    app.apply_drill(
+        7,
+        DrillView {
+            title:    "Caravan".to_string(),
+            items:    vec![DrillItem {
+                tab:    ResourceTab::Databases,
+                id:     "42".to_string(),
+                kind:   "Database".to_string(),
+                name:   "caravan_db".to_string(),
+                detail: "postgres".to_string()
+            }],
+            selected: 0
+        }
+    );
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Enter));
+    assert!(app.detail_open);
+    assert_eq!(app.active_tab, ResourceTab::Databases);
+    assert_eq!(app.selected, 0);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Down));
+    assert_eq!(app.detail_scroll, 1);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Esc));
+    assert!(!app.detail_open);
+    assert!(app.drill_open());
+}
+
+#[test]
 fn up_in_project_contents_focuses_create() {
     use crate::tui::app::{DrillItem, DrillView};
     let mut app = App::new(5);
@@ -1177,11 +1218,15 @@ fn up_in_project_contents_focuses_create() {
             title:    "Caravan".to_string(),
             items:    vec![
                 DrillItem {
+                    tab:    ResourceTab::Databases,
+                    id:     "1".to_string(),
                     kind:   "Database".into(),
                     name:   "caravan_db".into(),
                     detail: "postgres18".into()
                 },
                 DrillItem {
+                    tab:    ResourceTab::Apps,
+                    id:     "1".to_string(),
                     kind:   "App".into(),
                     name:   "caravan-api".into(),
                     detail: "Active".into()

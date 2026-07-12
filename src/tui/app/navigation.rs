@@ -385,17 +385,11 @@ impl super::App {
     }
 
     /// Scrolls the details panel down by one line.
-    // JUSTIFY: Retained as part of the App navigation API, exercised by
-    // tests and reserved for the details/stats overlay.
-    #[allow(dead_code)]
     pub const fn detail_scroll_down(&mut self) {
         self.detail_scroll = self.detail_scroll.saturating_add(1);
     }
 
     /// Scrolls the details panel up by one line.
-    // JUSTIFY: Retained as part of the App navigation API, exercised by
-    // tests and reserved for the details/stats overlay.
-    #[allow(dead_code)]
     pub const fn detail_scroll_up(&mut self) {
         self.detail_scroll = self.detail_scroll.saturating_sub(1);
     }

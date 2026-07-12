@@ -8,6 +8,10 @@ use super::ResourceTab;
 /// A single row inside a drill-in view (a resource contained in a parent).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DrillItem {
+    /// The resource category, for opening the full details view.
+    pub tab:    ResourceTab,
+    /// The resource id within its category.
+    pub id:     String,
     /// Resource kind label (e.g. "Server", "Database").
     pub kind:   String,
     /// Resource name.
@@ -71,6 +75,45 @@ impl super::App {
     pub fn close_drill(&mut self) {
         self.drill = None;
         self.drill_fetching_id = None;
+        self.detail_open = false;
+    }
+
+    /// Opens the full details view for the drill item under the highlight:
+    /// points the detail renderer at that resource in its own category.
+    /// Returns false when the resource is not loaded (yet).
+    pub fn open_drill_item_detail(&mut self) -> bool {
+        let Some(item) = self
+            .drill
+            .as_ref()
+            .and_then(|d| d.items.get(d.selected))
+            .cloned()
+        else {
+            return false;
+        };
+        let index = match item.tab {
+            ResourceTab::Servers => position(&self.servers, |s| s.id.to_string() == item.id),
+            ResourceTab::Databases => position(&self.databases, |d| d.id.to_string() == item.id),
+            ResourceTab::S3 => position(&self.s3_storages, |s| s.id.to_string() == item.id),
+            ResourceTab::Kubernetes => {
+                position(&self.k8s_clusters, |c| c.id.to_string() == item.id)
+            }
+            ResourceTab::Balancers => position(&self.balancers, |b| b.id.to_string() == item.id),
+            ResourceTab::DedicatedServers => {
+                position(&self.dedicated_servers, |d| d.id.to_string() == item.id)
+            }
+            ResourceTab::Apps => position(&self.apps, |a| a.id.to_string() == item.id),
+            _ => None
+        };
+        let Some(index) = index else {
+            return false;
+        };
+        self.active_tab = item.tab;
+        self.filter.clear();
+        self.filter_editing = false;
+        self.selected = index;
+        self.detail_scroll = 0;
+        self.detail_open = true;
+        true
     }
 
     /// Returns true while a drill-in view is open.
@@ -84,4 +127,9 @@ impl super::App {
     pub const fn drill_view(&self) -> Option<&DrillView> {
         self.drill.as_ref()
     }
+}
+
+/// Index of the first element matching the predicate.
+fn position<T>(items: &[T], pred: impl Fn(&T) -> bool) -> Option<usize> {
+    items.iter().position(pred)
 }
