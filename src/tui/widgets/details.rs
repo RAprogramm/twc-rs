@@ -68,21 +68,76 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
         }
     };
 
-    let max_scroll = u16::try_from(text.len().saturating_sub(1)).unwrap_or(u16::MAX);
-    let scroll = app.detail_scroll.min(max_scroll);
-    let paragraph = Paragraph::new(text).scroll((scroll, 0)).block(
-        Block::default()
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(border_color))
-            .title(Line::from(Span::styled(
-                format!(" {} ", t!("details.title")),
-                Style::default()
-                    .fg(palette.title)
-                    .add_modifier(Modifier::BOLD)
-            )))
-    );
-    frame.render_widget(paragraph, area);
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_type(BorderType::Rounded)
+        .border_style(Style::default().fg(border_color))
+        .title(Line::from(Span::styled(
+            format!(" {} ", breadcrumbs(app)),
+            Style::default()
+                .fg(palette.title)
+                .add_modifier(Modifier::BOLD)
+        )));
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+    if inner.height == 0 || inner.width == 0 {
+        return;
+    }
+
+    render_columns(frame, inner, text, app.detail_scroll);
+}
+
+/// Builds the breadcrumb trail for the panel border: the project the user
+/// drilled through (when any) and the resource the details describe.
+fn breadcrumbs(app: &App) -> String {
+    let name = app
+        .selected_resource()
+        .map_or_else(|| t!("details.title").into_owned(), |(_, name)| name);
+    app.drill_view().map_or_else(
+        || format!("{} \u{2192} {name}", app.active_tab.display_name()),
+        |drill| format!("{} \u{2192} {name}", drill.title)
+    )
+}
+
+/// Horizontal gap between details columns.
+const COLUMN_GAP: u16 = 3;
+
+/// Lays the detail lines out smartly: when they exceed the panel height and
+/// the panel is wide enough, they flow into additional columns instead of
+/// hiding below the fold. The column width comes from the widest line of the
+/// actual content, so nothing is hardcoded to a terminal size. Scrolling only
+/// kicks in once every column is full.
+fn render_columns(frame: &mut Frame, inner: Rect, text: Vec<Line<'static>>, scroll: u16) {
+    let height = usize::from(inner.height);
+    let column_width = u16::try_from(text.iter().map(Line::width).max().unwrap_or(0))
+        .unwrap_or(u16::MAX)
+        .clamp(1, inner.width);
+    let max_cols = usize::from((inner.width + COLUMN_GAP) / (column_width + COLUMN_GAP)).max(1);
+    let needed = text.len().div_ceil(height.max(1));
+    let cols = needed.clamp(1, max_cols);
+
+    let capacity = cols * height;
+    let max_scroll = text.len().saturating_sub(capacity);
+    let offset = usize::from(scroll).min(max_scroll);
+    let visible: Vec<Line> = text.into_iter().skip(offset).take(capacity).collect();
+
+    if cols == 1 {
+        frame.render_widget(Paragraph::new(visible), inner);
+        return;
+    }
+
+    let mut constraints = Vec::with_capacity(cols);
+    for _ in 0..cols - 1 {
+        constraints.push(ratatui::layout::Constraint::Length(column_width));
+    }
+    constraints.push(ratatui::layout::Constraint::Min(10));
+    let areas = ratatui::layout::Layout::horizontal(constraints)
+        .spacing(COLUMN_GAP)
+        .split(inner);
+
+    for (chunk, column) in visible.chunks(height).zip(areas.iter()) {
+        frame.render_widget(Paragraph::new(chunk.to_vec()), *column);
+    }
 }
 
 /// Builds the bold heading line shown at the top of a populated panel.
@@ -237,5 +292,47 @@ impl crate::tui::widgets::Widget for DetailsWidget {
             app.theme.palette().border
         };
         render(frame, area, app, border_color);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use ratatui::{Terminal, backend::TestBackend};
+
+    use super::*;
+    use crate::tui::app::{App, DatabaseSummary};
+
+    #[test]
+    fn long_details_flow_into_columns_on_wide_panels() {
+        let mut app = App::new(5);
+        app.active_tab = crate::tui::app::ResourceTab::Databases;
+        app.databases = vec![DatabaseSummary {
+            id: 1,
+            name: "db".to_string(),
+            status: "started".to_string(),
+            engine: "postgres".to_string(),
+            size_mb: 100,
+            config: (0..40)
+                .map(|i| (format!("param_{i}"), i.to_string()))
+                .collect(),
+            ..Default::default()
+        }];
+        let (w, h) = (140u16, 14u16);
+        let backend = TestBackend::new(w, h);
+        let mut terminal = Terminal::new(backend).unwrap();
+        terminal
+            .draw(|f| render(f, Rect::new(0, 0, w, h), &app, Color::Reset))
+            .unwrap();
+        let buf = terminal.backend().buffer().clone();
+        let mut second_column = String::new();
+        for y in 1..h - 1 {
+            for x in w / 3..w - 1 {
+                second_column.push_str(buf[(x, y)].symbol());
+            }
+        }
+        assert!(
+            second_column.contains("param_"),
+            "expected a second column of parameters on a wide panel"
+        );
     }
 }
