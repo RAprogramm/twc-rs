@@ -148,10 +148,17 @@ impl App {
     /// resource list, a project card opens that project's resources.
     pub fn enter_overview(&mut self) {
         let cards = self.overview_cards();
-        let Some(card) = cards.get(self.overview_selected) else {
+        let Some(kind) = cards.get(self.overview_selected).map(|c| c.kind.clone()) else {
             return;
         };
-        match card.kind {
+        self.view = DashboardView::Resources;
+        self.focus = super::Focus::ResourceList;
+        self.focus_active = false;
+        self.filter.clear();
+        self.filter_editing = false;
+        self.detail_scroll = 0;
+
+        match kind {
             OverviewKind::Service(tab) => {
                 self.active_tab = tab;
                 self.selected = 0;
@@ -159,14 +166,9 @@ impl App {
             OverviewKind::Project(index) => {
                 self.active_tab = ResourceTab::Projects;
                 self.selected = index;
+                self.request_drill();
             }
         }
-        self.view = DashboardView::Resources;
-        self.focus = super::Focus::ResourceList;
-        self.focus_active = false;
-        self.filter.clear();
-        self.filter_editing = false;
-        self.detail_scroll = 0;
     }
 
     /// Returns to the overview landing screen from the resource view.

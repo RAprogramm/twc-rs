@@ -1,22 +1,16 @@
 // SPDX-FileCopyrightText: 2026 RAprogramm <andrey.rozanov.vl@gmail.com>
 // SPDX-License-Identifier: MIT
 
-//! Resource list widget — shows the active tab's resources as a responsive
-//! grid of data cards that flex to fill the whole content area.
+//! Resource list panel — renders the active tab's resources through the shared
+//! [`card_grid`], and exposes the status-to-color helpers reused elsewhere.
 
-use ratatui::{
-    Frame,
-    layout::{Constraint, Layout, Rect},
-    style::{Color, Modifier, Style},
-    text::{Line, Span},
-    widgets::{Block, BorderType, Borders, Paragraph}
-};
+use ratatui::{Frame, layout::Rect, style::Color};
 use rust_i18n::t;
 
 use crate::tui::{
-    app::{App, ResourceTab},
+    app::App,
     themes::Palette,
-    widgets::overview
+    widgets::{card_grid, resource_cards}
 };
 
 /// Maps a server status (the API enum's debug name) to a display icon,
@@ -88,267 +82,16 @@ pub fn status_view(status: &str, palette: &Palette) -> (Color, String) {
     (color, label)
 }
 
-/// Computes the integral used-disk percentage of a container registry,
-/// treating a zero-sized disk as fully free.
-fn registry_used_percent(registry: &crate::tui::app::RegistrySummary) -> i64 {
-    if registry.disk_size <= 0 {
-        0
-    } else {
-        registry.disk_used * 100 / registry.disk_size
-    }
-}
-
-/// A single resource rendered as a card: a title, an optional colored status
-/// badge and a secondary metric line.
-struct Card {
-    title:  String,
-    status: Option<(Color, String)>,
-    meta:   String
-}
-
-/// Builds the card view-models for every item on the active tab, in list order.
-// JUSTIFY: Large match expression covering all resource types.
-#[allow(clippy::too_many_lines)]
-fn build_cards(app: &App, palette: &Palette) -> Vec<Card> {
-    match app.active_tab {
-        ResourceTab::Servers => app
-            .servers
-            .iter()
-            .map(|s| {
-                let (_, color, label) = server_status_view(&s.status, palette);
-                Card {
-                    title:  s.name.clone(),
-                    status: Some((color, label)),
-                    meta:   format!("{}c · {} MB · {}", s.cpu, s.ram_mb, s.location)
-                }
-            })
-            .collect(),
-        ResourceTab::Databases => app
-            .databases
-            .iter()
-            .map(|d| {
-                let (color, label) = status_view(&d.status, palette);
-                Card {
-                    title:  d.name.clone(),
-                    status: Some((color, label)),
-                    meta:   format!("{} · {} MB", d.engine, d.size_mb)
-                }
-            })
-            .collect(),
-        ResourceTab::S3 => app
-            .s3_storages
-            .iter()
-            .map(|s| Card {
-                title:  s.name.clone(),
-                status: None,
-                meta:   format!("{} · {} obj", s.region, s.object_count)
-            })
-            .collect(),
-        ResourceTab::Kubernetes => app
-            .k8s_clusters
-            .iter()
-            .map(|c| {
-                let (color, label) = status_view(&c.status, palette);
-                Card {
-                    title:  c.name.clone(),
-                    status: Some((color, label)),
-                    meta:   format!("v{} · {}c · {} MB", c.version, c.cpu, c.ram_mb)
-                }
-            })
-            .collect(),
-        ResourceTab::Projects => app
-            .projects
-            .iter()
-            .map(|p| Card {
-                title:  p.name.clone(),
-                status: None,
-                meta:   t!("resource_list.count_resources", n => p.resource_count()).to_string()
-            })
-            .collect(),
-        ResourceTab::Balancers => app
-            .balancers
-            .iter()
-            .map(|b| {
-                let (color, label) = status_view(&b.status, palette);
-                Card {
-                    title:  b.name.clone(),
-                    status: Some((color, label)),
-                    meta:   format!("{} · {}", b.ip, b.location)
-                }
-            })
-            .collect(),
-        ResourceTab::Registry => app
-            .registries
-            .iter()
-            .map(|r| Card {
-                title:  r.name.clone(),
-                status: None,
-                meta:   t!("resource_list.disk_used", pct => registry_used_percent(r)).to_string()
-            })
-            .collect(),
-        ResourceTab::Domains => app
-            .domains
-            .iter()
-            .map(|d| {
-                let (color, label) = status_view(&d.status, palette);
-                let prolong = if d.auto_prolong {
-                    t!("resource_list.auto_prolong")
-                } else {
-                    t!("resource_list.manual_prolong")
-                };
-                Card {
-                    title:  d.name.clone(),
-                    status: Some((color, label)),
-                    meta:   prolong.to_string()
-                }
-            })
-            .collect(),
-        ResourceTab::Firewall => app
-            .firewalls
-            .iter()
-            .map(|f| Card {
-                title:  f.name.clone(),
-                status: None,
-                meta:   f.policy.clone()
-            })
-            .collect(),
-        ResourceTab::FloatingIps => app
-            .floating_ips
-            .iter()
-            .map(|f| {
-                let (color, label) = status_view(&f.status, palette);
-                Card {
-                    title:  f.ip.clone(),
-                    status: Some((color, label)),
-                    meta:   f.server_name.clone()
-                }
-            })
-            .collect(),
-        ResourceTab::Images => app
-            .images
-            .iter()
-            .map(|i| {
-                let (color, label) = status_view(&i.status, palette);
-                Card {
-                    title:  i.name.clone(),
-                    status: Some((color, label)),
-                    meta:   format!("{} MB", i.size_mb)
-                }
-            })
-            .collect(),
-        ResourceTab::NetworkDrives => app
-            .network_drives
-            .iter()
-            .map(|n| {
-                let (color, label) = status_view(&n.status, palette);
-                Card {
-                    title:  n.name.clone(),
-                    status: Some((color, label)),
-                    meta:   format!("{} GB", n.size_gb)
-                }
-            })
-            .collect(),
-        ResourceTab::Vpc => app
-            .vpcs
-            .iter()
-            .map(|v| Card {
-                title:  v.name.clone(),
-                status: None,
-                meta:   format!("{} · {}", v.subnet, v.location)
-            })
-            .collect(),
-        ResourceTab::DedicatedServers => app
-            .dedicated_servers
-            .iter()
-            .map(|d| {
-                let (color, label) = status_view(&d.status, palette);
-                Card {
-                    title:  d.name.clone(),
-                    status: Some((color, label)),
-                    meta:   format!("{} · {}", d.cpu, d.ram)
-                }
-            })
-            .collect(),
-        ResourceTab::Mail => app
-            .mails
-            .iter()
-            .map(|m| Card {
-                title:  m.name.clone(),
-                status: None,
-                meta:   m.owner.clone()
-            })
-            .collect(),
-        ResourceTab::Apps => app
-            .apps
-            .iter()
-            .map(|a| {
-                let (color, label) = status_view(&a.status, palette);
-                Card {
-                    title:  a.name.clone(),
-                    status: Some((color, label)),
-                    meta:   format!("{} · {}", a.location, a.framework)
-                }
-            })
-            .collect(),
-        ResourceTab::AiAgents => app
-            .ai_agents
-            .iter()
-            .map(|a| {
-                let (color, label) = status_view(&a.status, palette);
-                Card {
-                    title:  a.name.clone(),
-                    status: Some((color, label)),
-                    meta:   format!("{}/{} tok", a.tokens_used, a.tokens_total)
-                }
-            })
-            .collect(),
-        ResourceTab::KnowledgeBases => app
-            .knowledge_bases
-            .iter()
-            .map(|k| {
-                let (color, label) = status_view(&k.status, palette);
-                Card {
-                    title:  k.name.clone(),
-                    status: Some((color, label)),
-                    meta:   t!("resource_list.count_docs", n => k.document_count).to_string()
-                }
-            })
-            .collect(),
-        ResourceTab::SshKeys => app
-            .ssh_keys
-            .iter()
-            .map(|k| Card {
-                title:  k.clone(),
-                status: None,
-                meta:   String::new()
-            })
-            .collect(),
-        ResourceTab::Finances => app
-            .finances
-            .iter()
-            .map(|f| Card {
-                title:  f.clone(),
-                status: None,
-                meta:   String::new()
-            })
-            .collect()
-    }
-}
-
 /// Renders the resource card grid into `area` with a given border color.
-///
-/// # Arguments
-///
-/// * `frame` - The render frame.
-/// * `area` - The area to render in.
-/// * `app` - The application state.
-/// * `border_color` - Color for the outer panel border.
 pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
     let palette = app.theme.palette();
 
-    let all = build_cards(app, &palette);
+    let all = resource_cards::build(app, &palette);
     let indices = app.filtered_indices();
-    let cards: Vec<&Card> = indices.iter().filter_map(|&i| all.get(i)).collect();
+    let cards: Vec<card_grid::GridCard> = indices
+        .iter()
+        .filter_map(|&i| all.get(i).cloned())
+        .collect();
 
     let tab_name = app.active_tab.display_name();
     let title = if app.filter_active() {
@@ -358,139 +101,22 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
         format!(" {tab_name} ({}) ", cards.len())
     };
 
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_type(BorderType::Rounded)
-        .border_style(Style::default().fg(border_color))
-        .title(Line::from(Span::styled(
-            title,
-            Style::default()
-                .fg(palette.title)
-                .add_modifier(Modifier::BOLD)
-        )));
-    let inner = block.inner(area);
-    frame.render_widget(block, area);
-
-    if cards.is_empty() {
-        let empty = Paragraph::new(Line::from(Span::styled(
-            t!("ui.drill_empty").to_string(),
-            Style::default().fg(palette.dim)
-        )));
-        frame.render_widget(empty, inner);
-        return;
-    }
-
-    render_grid(frame, inner, &cards, app, &palette);
-}
-
-/// Total height of a card cell (border included) when the grid must scroll.
-const CARD_H: u16 = 5;
-/// Vertical gap between card rows, in rows.
-const VGAP: u16 = 1;
-/// Horizontal gap between card cells, in cells.
-const HGAP: u16 = 2;
-
-fn render_grid(frame: &mut Frame, inner: Rect, cards: &[&Card], app: &App, palette: &Palette) {
-    if inner.height < 3 || inner.width < 6 {
-        return;
-    }
-    let icon = overview::tab_icon(app.active_tab);
-    let longest = cards
-        .iter()
-        .map(|c| c.title.chars().count())
-        .max()
-        .unwrap_or(0);
-    let cols = overview::grid_columns(inner.width, longest);
-    let rows_total = cards.len().div_ceil(cols);
-    let rows_fit = usize::from((inner.height + VGAP) / (CARD_H + VGAP)).max(1);
-
-    let selected_row = app.selected / cols;
-    let first_row = if rows_total <= rows_fit || selected_row < rows_fit {
-        0
-    } else {
-        selected_row + 1 - rows_fit
-    };
-
-    let visible_rows = rows_fit.min(rows_total - first_row);
-    let row_areas = Layout::vertical(vec![Constraint::Length(CARD_H); visible_rows])
-        .spacing(VGAP)
-        .split(inner);
-
-    for (ri, row_area) in row_areas.iter().enumerate() {
-        let grid_row = first_row + ri;
-        let cells = Layout::horizontal(vec![Constraint::Fill(1); cols])
-            .spacing(HGAP)
-            .split(*row_area);
-        for (ci, cell) in cells.iter().enumerate() {
-            let idx = grid_row * cols + ci;
-            let Some(card) = cards.get(idx) else {
-                break;
-            };
-            render_card(frame, *cell, card, icon, idx == app.selected, palette);
-        }
-    }
-}
-
-fn render_card(
-    frame: &mut Frame,
-    rect: Rect,
-    card: &Card,
-    icon: &str,
-    selected: bool,
-    palette: &Palette
-) {
-    if rect.height < 3 || rect.width < 6 {
-        return;
-    }
-    let border = if selected {
-        palette.accent
-    } else {
-        palette.border
-    };
-    let inner_w = usize::from(rect.width.saturating_sub(2));
-
-    let title_line = Line::from(vec![
-        Span::styled(format!("{icon}  "), Style::default().fg(palette.accent)),
-        Span::styled(
-            truncate(&card.title, inner_w.saturating_sub(3)),
-            Style::default().fg(palette.fg).add_modifier(Modifier::BOLD)
-        ),
-    ]);
-
-    let mut lines = vec![title_line];
-    if let Some((color, label)) = &card.status {
-        lines.push(Line::from(Span::styled(
-            format!("\u{25CF} {}", truncate(label, inner_w.saturating_sub(2))),
-            Style::default().fg(*color)
-        )));
-    }
-    if !card.meta.is_empty() {
-        lines.push(Line::from(Span::styled(
-            truncate(&card.meta, inner_w),
-            Style::default().fg(palette.dim)
-        )));
-    }
-
-    let filled = lines.len();
-    let capacity = usize::from(rect.height.saturating_sub(2));
-    for _ in filled..capacity {
-        lines.push(Line::from(""));
-    }
-
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_type(BorderType::Rounded)
-        .border_style(Style::default().fg(border));
-    frame.render_widget(Paragraph::new(lines).block(block), rect);
-}
-
-fn truncate(s: &str, max: usize) -> String {
-    if s.chars().count() <= max {
-        return s.to_string();
-    }
-    let mut out: String = s.chars().take(max.saturating_sub(1)).collect();
-    out.push('\u{2026}');
-    out
+    let cols = card_grid::columns(
+        area.width.saturating_sub(2),
+        card_grid::longest_title(&cards)
+    );
+    let empty = t!("ui.drill_empty");
+    card_grid::render(
+        frame,
+        area,
+        &title,
+        &cards,
+        app.selected,
+        cols,
+        empty.as_ref(),
+        border_color,
+        &palette
+    );
 }
 
 /// Widget wrapper for the resource list panel.
@@ -541,6 +167,8 @@ impl crate::tui::widgets::Widget for ResourceListWidget {
 
 #[cfg(test)]
 mod tests {
+    use ratatui::{Terminal, backend::TestBackend};
+
     use super::*;
     use crate::tui::themes::Theme;
 
@@ -597,7 +225,6 @@ mod tests {
     }
 
     fn draw_at(app: &App, w: u16, h: u16) {
-        use ratatui::{Terminal, backend::TestBackend};
         let backend = TestBackend::new(w.max(1), h.max(1));
         let mut terminal = Terminal::new(backend).unwrap();
         terminal

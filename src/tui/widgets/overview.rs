@@ -44,35 +44,12 @@ const NERD_ICONS: [&str; 20] = [
     "\u{f155}"   // Finances
 ];
 
-/// Smallest width a card cell may shrink to before dropping a column.
-const MIN_CELL_W: u16 = 16;
-/// Widest a single card cell is sized to fit its label before columns stop
-/// growing wider (extra width past this is shared out by [`Constraint::Fill`]).
-const MAX_CELL_W: u16 = 34;
-/// Cells a card spends on its border plus the icon and its trailing spaces.
-const LABEL_OVERHEAD: u16 = 6;
 /// Horizontal gap between card cells, in cells.
 const GAP: u16 = 2;
 /// Vertical gap between card rows, in rows.
 const VGAP: u16 = 1;
 /// Fixed card height: top border, title, count, bottom border.
 const CARD_H: u16 = 4;
-/// Upper bound on the number of grid columns.
-const MAX_COLS: usize = 8;
-
-/// Number of grid columns for a grid `avail` cells wide.
-///
-/// Cards are sized wide enough to fit the `longest_label` (capped at
-/// [`MAX_CELL_W`]), then as many columns as fit are used. Rendering and
-/// keyboard navigation both derive columns from this so they never disagree.
-#[must_use]
-pub fn grid_columns(avail: u16, longest_label: usize) -> usize {
-    let needed = u16::try_from(longest_label)
-        .unwrap_or(MAX_CELL_W)
-        .saturating_add(LABEL_OVERHEAD)
-        .clamp(MIN_CELL_W, MAX_CELL_W);
-    usize::from((avail + GAP) / (needed + GAP)).clamp(1, MAX_COLS)
-}
 
 /// The Nerd Font glyph representing a resource category, shared with the
 /// resource card grid so both screens use one icon set.
@@ -86,7 +63,7 @@ pub fn tab_icon(tab: crate::tui::app::ResourceTab) -> &'static str {
 pub fn render(frame: &mut Frame, area: Rect, app: &App, palette: Palette) {
     let projects = app.overview_project_cards();
     let services = app.overview_service_cards();
-    let cols = grid_columns(area.width, app.overview_longest_label());
+    let cols = crate::tui::widgets::card_grid::columns(area.width, app.overview_longest_label());
 
     let mut zones: Vec<(String, &[OverviewCard])> = Vec::with_capacity(2);
     if !projects.is_empty() {
@@ -233,19 +210,6 @@ mod tests {
 
     use super::*;
     use crate::tui::{app::ProjectSummary, themes::Theme};
-
-    #[test]
-    fn columns_grow_with_width_and_clamp() {
-        assert_eq!(grid_columns(0, 8), 1);
-        assert_eq!(grid_columns(20, 8), 1);
-        assert!(grid_columns(120, 8) > grid_columns(40, 8));
-        assert!(grid_columns(4000, 8) <= MAX_COLS);
-    }
-
-    #[test]
-    fn columns_shrink_for_longer_labels() {
-        assert!(grid_columns(120, 30) <= grid_columns(120, 6));
-    }
 
     #[test]
     fn overview_renders_across_sizes_without_panic() {

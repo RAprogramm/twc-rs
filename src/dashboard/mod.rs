@@ -86,8 +86,8 @@ pub(crate) async fn run_dashboard(
 
         if let Ok(size) = terminal.size() {
             app.overview_cols =
-                tui::widgets::overview::grid_columns(size.width, app.overview_longest_label());
-            app.resource_cols = tui::widgets::overview::grid_columns(
+                tui::widgets::card_grid::columns(size.width, app.overview_longest_label());
+            app.resource_cols = tui::widgets::card_grid::columns(
                 size.width.saturating_sub(2),
                 app.current_longest_label()
             );

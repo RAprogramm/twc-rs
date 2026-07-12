@@ -11,8 +11,7 @@ use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
-    text::{Line, Span},
-    widgets::{Block, BorderType, Borders, List, ListItem, ListState}
+    text::{Line, Span}
 };
 use rust_i18n::t;
 use status_bar::render_status_bar;
@@ -47,12 +46,15 @@ pub fn draw(frame: &mut Frame, app: &App) {
     }
 
     let show_events = app.is_widget_enabled("events") && size.height >= 24;
+    let show_tabs = !app.drill_open();
 
     let mut constraints = Vec::with_capacity(5);
     if show_account {
         constraints.push(Constraint::Length(3));
     }
-    constraints.push(Constraint::Length(2));
+    if show_tabs {
+        constraints.push(Constraint::Length(2));
+    }
     constraints.push(Constraint::Min(8));
     if show_events {
         constraints.push(Constraint::Length(7));
@@ -70,8 +72,10 @@ pub fn draw(frame: &mut Frame, app: &App) {
         idx += 1;
     }
 
-    ResourceTabsWidget::new(true).render(frame, main_chunks[idx], app);
-    idx += 1;
+    if show_tabs {
+        ResourceTabsWidget::new(true).render(frame, main_chunks[idx], app);
+        idx += 1;
+    }
 
     render_content(frame, main_chunks[idx], app, &palette);
     idx += 1;
@@ -202,55 +206,39 @@ fn render_content(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
     crate::tui::widgets::resource_list::render(frame, area, app, palette.accent);
 }
 
-/// Renders the drill-in view listing the resources contained in a parent.
+/// Renders the drill-in view: a project's contents as the shared card grid.
 fn render_drill(frame: &mut Frame, area: Rect, view: &DrillView, palette: &Palette) {
-    let items: Vec<ListItem> = if view.items.is_empty() {
-        vec![ListItem::new(Line::from(Span::styled(
-            t!("ui.drill_empty").to_string(),
-            Style::default().fg(palette.dim)
-        )))]
-    } else {
-        view.items
-            .iter()
-            .map(|item| {
-                ListItem::new(Line::from(vec![
-                    Span::styled(
-                        format!("{:<11}", item.kind),
-                        Style::default().fg(palette.dim)
-                    ),
-                    Span::styled(
-                        item.name.clone(),
-                        Style::default().fg(palette.fg).add_modifier(Modifier::BOLD)
-                    ),
-                    Span::raw("   "),
-                    Span::styled(item.detail.clone(), Style::default().fg(palette.accent)),
-                ]))
-            })
-            .collect()
-    };
+    use crate::tui::widgets::card_grid::{self, GridCard};
 
-    let list = List::new(items)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(palette.accent))
-                .title(Line::from(Span::styled(
-                    t!("ui.drill_title", title => view.title).to_string(),
-                    Style::default()
-                        .fg(palette.title)
-                        .add_modifier(Modifier::BOLD)
-                )))
-        )
-        .highlight_style(
-            Style::default()
-                .fg(palette.bg)
-                .bg(palette.accent)
-                .add_modifier(Modifier::BOLD)
-        )
-        .highlight_symbol("\u{2503} ");
+    let cards: Vec<GridCard> = view
+        .items
+        .iter()
+        .map(|item| {
+            let mut card = GridCard::new(item.name.clone());
+            if !item.detail.is_empty() {
+                let (color, _) =
+                    crate::tui::widgets::resource_list::status_view(&item.detail, palette);
+                card = card.status(color, item.detail.clone());
+            }
+            card.meta(item.kind.clone())
+        })
+        .collect();
 
-    let mut state = ListState::default();
-    state.select(Some(view.selected));
-    frame.render_stateful_widget(list, area, &mut state);
+    let title = format!(" {} ({}) ", view.title, view.items.len());
+    let cols = card_grid::columns(
+        area.width.saturating_sub(2),
+        card_grid::longest_title(&cards)
+    );
+    let empty = t!("ui.drill_empty");
+    card_grid::render(
+        frame,
+        area,
+        &title,
+        &cards,
+        view.selected,
+        cols,
+        empty.as_ref(),
+        palette.accent,
+        palette
+    );
 }
