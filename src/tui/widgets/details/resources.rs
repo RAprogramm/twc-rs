@@ -345,7 +345,7 @@ pub(super) fn render_registry_details(app: &App, palette: Palette) -> Vec<super:
 
 /// Computes an integral used-disk percentage, treating a zero-sized disk as
 /// fully free.
-pub(super) fn disk_used_percent(used: i64, size: i64) -> i64 {
+pub(super) const fn disk_used_percent(used: i64, size: i64) -> i64 {
     if size <= 0 { 0 } else { used * 100 / size }
 }
 
@@ -568,6 +568,9 @@ pub(super) fn render_mail_details(app: &App, palette: Palette) -> Vec<super::Det
     lines
 }
 
+// JUSTIFY: One arm per resource/key path; splitting would only scatter the
+// flow.
+#[allow(clippy::too_many_lines)]
 pub(super) fn render_app_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
     if app.apps.is_empty() {
         return empty(&t!("details.no_apps"), palette);

@@ -12,7 +12,7 @@ use crate::{
 
 /// Dispatches a server subcommand. Kept separate so its future is boxed at the
 /// call site, keeping the main `run` stack frame small.
-pub(crate) async fn handle_server(
+pub async fn handle_server(
     cmd: ServerCommands,
     config: &timeweb_rs::apis::configuration::Configuration,
     format: OutputFormat
@@ -119,7 +119,7 @@ fn app_selector(app: Option<String>, id: Option<String>) -> String {
 }
 
 /// Dispatches an apps subcommand (boxed at the call site to keep `run` small).
-pub(crate) async fn handle_apps(
+pub async fn handle_apps(
     cmd: AppsCommands,
     config: &timeweb_rs::apis::configuration::Configuration,
     format: OutputFormat
@@ -196,7 +196,7 @@ pub(crate) async fn handle_apps(
 }
 
 /// Dispatches an image subcommand (boxed at the call site to keep `run` small).
-pub(crate) async fn handle_image(
+pub async fn handle_image(
     cmd: ImageCommands,
     config: &timeweb_rs::apis::configuration::Configuration,
     format: OutputFormat
@@ -225,7 +225,7 @@ pub(crate) async fn handle_image(
 }
 
 /// Dispatches a floating IP subcommand (boxed to keep `run` small).
-pub(crate) async fn handle_ip(
+pub async fn handle_ip(
     cmd: IpCommands,
     config: &timeweb_rs::apis::configuration::Configuration,
     format: OutputFormat
@@ -256,7 +256,7 @@ pub(crate) async fn handle_ip(
 }
 
 /// Dispatches a VPC subcommand (boxed to keep `run` small).
-pub(crate) async fn handle_vpc(
+pub async fn handle_vpc(
     cmd: VpcCommands,
     config: &timeweb_rs::apis::configuration::Configuration,
     format: OutputFormat

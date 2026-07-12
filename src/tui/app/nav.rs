@@ -34,7 +34,7 @@ pub struct NavItem {
 
 impl App {
     /// The resource categories shown as service entries, in display order.
-    pub(crate) fn service_tabs() -> [ResourceTab; 17] {
+    pub(crate) const fn service_tabs() -> [ResourceTab; 17] {
         [
             ResourceTab::Servers,
             ResourceTab::Databases,

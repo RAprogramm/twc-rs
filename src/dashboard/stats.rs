@@ -9,7 +9,7 @@ use crate::tui;
 
 /// Spawns a background task that fetches live statistics for a resource and
 /// sends them back to the event loop.
-pub(crate) fn spawn_stats_fetch(
+pub fn spawn_stats_fetch(
     tx: tokio::sync::mpsc::UnboundedSender<tui::event::AppEvent>,
     token: String,
     req: tui::app::StatsRequest

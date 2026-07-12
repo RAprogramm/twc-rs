@@ -692,10 +692,7 @@ fn filter_log_lines(
         if let Some(ts) = line_timestamp(line) {
             current = Some(ts.with_timezone(&Local));
         }
-        let keep = match since {
-            None => true,
-            Some(bound) => current.is_some_and(|ts| ts >= bound)
-        };
+        let keep = since.is_none_or(|bound| current.is_some_and(|ts| ts >= bound));
         if keep {
             kept.push(line.clone());
         }
@@ -811,7 +808,7 @@ pub async fn list_deploys(
     format: OutputFormat
 ) -> Result<(), TwcError> {
     let resp = apps_api::get_app_deploys(config, id, None, None).await?;
-    let mut deploys = resp.deploys.clone().unwrap_or_default();
+    let mut deploys = resp.deploys.unwrap_or_default();
     deploys.sort_by(|a, b| b.started_at.cmp(&a.started_at));
 
     let rows: Vec<DeployRow> = deploys

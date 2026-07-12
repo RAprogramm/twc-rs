@@ -28,11 +28,7 @@ fn send_result<T>(
     }
 }
 
-pub(crate) fn spawn_refresh_loop(
-    tx: Tx,
-    token: String,
-    interval: u64
-) -> tokio::task::JoinHandle<()> {
+pub fn spawn_refresh_loop(tx: Tx, token: String, interval: u64) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
         let period = tokio::time::Duration::from_secs(interval.max(2));
         loop {
@@ -42,7 +38,7 @@ pub(crate) fn spawn_refresh_loop(
     })
 }
 
-pub(crate) fn spawn_one_shot_refresh(tx: Tx, token: String) {
+pub fn spawn_one_shot_refresh(tx: Tx, token: String) {
     tokio::spawn(async move {
         run_cycle(&tx, &token).await;
     });
@@ -559,6 +555,7 @@ async fn load_images(c: &Configuration, tx: &Tx) {
     });
 }
 
+#[expect(clippy::cast_possible_truncation)]
 async fn load_network_drives(c: &Configuration, tx: &Tx) {
     use tui::app::NetworkDriveSummary;
 

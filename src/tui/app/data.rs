@@ -75,6 +75,8 @@ impl super::App {
 
     /// Applies one streamed slice the moment it arrives, so the UI shows
     /// each resource as soon as its endpoint responds.
+    // JUSTIFY: One arm per resource/key path; splitting would only scatter the flow.
+    #[allow(clippy::too_many_lines)]
     pub fn apply_slice(&mut self, slice: DataSlice) {
         match &slice {
             DataSlice::Projects(_) | DataSlice::ProjectsList(_) => {
@@ -183,7 +185,7 @@ impl super::App {
     /// Keeps the sidebar selection on the same entry when the number of
     /// projects above the services group changes, so a streamed project list
     /// never makes the highlight jump.
-    fn anchor_nav_selection(&mut self, old_len: usize, new_len: usize) {
+    const fn anchor_nav_selection(&mut self, old_len: usize, new_len: usize) {
         if self.nav_selected >= old_len {
             self.nav_selected = self.nav_selected + new_len - old_len;
         } else if self.nav_selected >= new_len {

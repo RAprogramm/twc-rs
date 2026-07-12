@@ -246,7 +246,8 @@ fn render_charts(frame: &mut Frame, area: Rect, app: &App, palette: Palette) {
     .split(area);
 
     let chart = |title: String, data: &[f64], color: Color| {
-        let points: Vec<u64> = data.iter().map(|v| (*v * 100.0) as u64).collect();
+        #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        let points: Vec<u64> = data.iter().map(|v| (v.max(0.0) * 100.0) as u64).collect();
         let last = data.last().copied().unwrap_or(0.0);
         Sparkline::default()
             .block(

@@ -40,7 +40,7 @@ pub fn project_preview(project: &ProjectSummary) -> Vec<GridCard> {
 }
 
 /// Integral used-disk percentage of a registry, treating a zero disk as free.
-fn registry_used_percent(registry: &RegistrySummary) -> i64 {
+const fn registry_used_percent(registry: &RegistrySummary) -> i64 {
     if registry.disk_size <= 0 {
         0
     } else {

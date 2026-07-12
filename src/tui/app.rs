@@ -31,7 +31,7 @@ pub use data::DataSlice;
 pub use drill::{DrillItem, DrillView};
 pub use forms::CreateForm;
 pub use nav::{NavItem, NavKind};
-pub(crate) use navigation::grid_step;
+pub use navigation::grid_step;
 pub use settings::{SETTING_ROWS, SettingRow, SettingsPicker};
 pub use stats::{ResourceStats, StatsRequest};
 pub use summaries::*;
@@ -276,7 +276,7 @@ impl App {
     }
 
     /// Takes a pending profile-switch request (the dashboard loop re-auths).
-    pub fn take_switch_profile(&mut self) -> Option<String> {
+    pub const fn take_switch_profile(&mut self) -> Option<String> {
         self.switch_profile.take()
     }
 

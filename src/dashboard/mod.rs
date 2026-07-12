@@ -31,7 +31,9 @@ fn persist_dashboard_prefs(app: &tui::app::App) {
     let _ = cfg.save();
 }
 
-pub(crate) async fn run_dashboard(
+// JUSTIFY: The single event loop; splitting would only scatter the flow.
+#[allow(clippy::too_many_lines)]
+pub async fn run_dashboard(
     mut token: String,
     interval: u64,
     theme: crate::tui::themes::Theme,
@@ -205,7 +207,7 @@ pub(crate) async fn run_dashboard(
                     Err(e) => {
                         let _ = drill_tx.send(tui::event::AppEvent::DrillFailed {
                             name:  drill_name,
-                            error: e.clone()
+                            error: e
                         });
                     }
                 }

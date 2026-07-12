@@ -43,7 +43,9 @@ pub fn megabytes(mb: i64) -> String {
     if mb >= 1024 && mb % 1024 == 0 {
         format!("{} GB", mb / 1024)
     } else if mb >= 1024 {
-        format!("{:.1} GB", mb as f64 / 1024.0)
+        #[expect(clippy::cast_precision_loss)]
+        let gb = mb as f64 / 1024.0;
+        format!("{gb:.1} GB")
     } else {
         format!("{mb} MB")
     }

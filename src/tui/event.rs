@@ -265,6 +265,9 @@ fn handle_create_key(app: &mut App, key: KeyEvent) -> bool {
     true
 }
 
+// JUSTIFY: One arm per resource/key path; splitting would only scatter the
+// flow.
+#[allow(clippy::too_many_lines)]
 fn handle_key(app: &mut App, key: KeyEvent) -> bool {
     if let Some(result) = handle_overlay_key(app, key) {
         return result;

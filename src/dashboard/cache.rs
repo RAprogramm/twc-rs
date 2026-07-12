@@ -35,7 +35,7 @@ fn snapshot_path(profile: &str) -> Option<PathBuf> {
 /// Loads the last persisted snapshot for the profile, if a compatible one
 /// exists. Any read or parse failure just means a cold start.
 #[must_use]
-pub(crate) fn load(profile: &str) -> Option<DashboardData> {
+pub fn load(profile: &str) -> Option<DashboardData> {
     let path = snapshot_path(profile)?;
     let bytes = std::fs::read(path).ok()?;
     let snapshot: Snapshot = serde_json::from_slice(&bytes).ok()?;
@@ -44,7 +44,7 @@ pub(crate) fn load(profile: &str) -> Option<DashboardData> {
 
 /// Persists the snapshot for the profile in the background: written to a
 /// temp file with owner-only permissions, then renamed into place.
-pub(crate) fn save(profile: &str, data: DashboardData) {
+pub fn save(profile: &str, data: DashboardData) {
     let Some(path) = snapshot_path(profile) else {
         return;
     };

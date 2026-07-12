@@ -5,7 +5,7 @@
 
 use crate::tui;
 
-pub(crate) async fn fetch_drill(
+pub async fn fetch_drill(
     config: &timeweb_rs::apis::configuration::Configuration,
     tab: tui::app::ResourceTab,
     id: i32,
@@ -94,7 +94,7 @@ pub(crate) async fn fetch_drill(
 
 /// Performs an in-dashboard resource creation submitted from a create form,
 /// logging the outcome. Only resources with a simple create form are handled.
-pub(crate) async fn perform_create(
+pub async fn perform_create(
     config: &timeweb_rs::apis::configuration::Configuration,
     app: &mut tui::app::App,
     form: tui::app::CreateForm
@@ -139,6 +139,8 @@ pub(crate) async fn perform_create(
 /// Resources with numeric ids parse [`tui::app::PendingAction::resource_id`]
 /// back to `i32`; resources addressed by UUID or FQDN pass it (or the
 /// resource name, for domains) through as-is.
+// JUSTIFY: One arm per resource/key path; splitting would only scatter the flow.
+#[allow(clippy::too_many_lines)]
 async fn dispatch_action(
     config: &timeweb_rs::apis::configuration::Configuration,
     pending: &tui::app::PendingAction
@@ -262,7 +264,7 @@ async fn dispatch_action(
     }
 }
 
-pub(crate) async fn perform_action(
+pub async fn perform_action(
     config: &timeweb_rs::apis::configuration::Configuration,
     app: &mut tui::app::App,
     pending: tui::app::PendingAction
@@ -296,7 +298,8 @@ pub(crate) async fn perform_action(
 /// Fetches the deep details of a database cluster that the list endpoint does
 /// not carry: connection admins (host and login), the databases inside the
 /// cluster, and the decoded tariff preset. Passwords are never included.
-pub(crate) async fn fetch_database_extra(
+#[expect(clippy::cast_possible_truncation)]
+pub async fn fetch_database_extra(
     config: &timeweb_rs::apis::configuration::Configuration,
     id: i32,
     preset_id: i32
@@ -382,7 +385,7 @@ pub(crate) async fn fetch_database_extra(
 
 /// Fetches the deep details of an application: its recent deploys and the
 /// decoded tariff preset.
-pub(crate) async fn fetch_app_extra(
+pub async fn fetch_app_extra(
     config: &timeweb_rs::apis::configuration::Configuration,
     id: i32,
     preset_id: i64

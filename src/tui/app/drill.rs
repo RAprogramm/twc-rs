@@ -138,7 +138,7 @@ impl super::App {
 
     /// Takes the pending detail action for the loop to execute.
     #[must_use]
-    pub fn take_detail_action(
+    pub const fn take_detail_action(
         &mut self
     ) -> Option<(i32, crate::tui::widgets::details::DetailAction)> {
         self.detail_action.take()

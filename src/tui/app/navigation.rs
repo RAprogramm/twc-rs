@@ -228,7 +228,7 @@ impl super::App {
     }
 
     /// Sets the content-pane selection index.
-    pub fn set_content_selected(&mut self, index: usize) {
+    pub const fn set_content_selected(&mut self, index: usize) {
         if let Some(d) = self.drill.as_mut() {
             d.selected = index;
         } else {
@@ -473,7 +473,7 @@ impl super::App {
 /// columns: left/right stay within the row, up/down move by a row, every
 /// edge stays put.
 #[must_use]
-pub(crate) fn grid_step(cur: usize, len: usize, cols: usize, dir: super::FocusDir) -> usize {
+pub fn grid_step(cur: usize, len: usize, cols: usize, dir: super::FocusDir) -> usize {
     use super::FocusDir;
 
     if len == 0 {

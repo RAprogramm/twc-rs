@@ -130,7 +130,7 @@ impl super::App {
     }
 
     /// Takes a submitted create request for the dashboard loop to perform.
-    pub fn take_create_request(&mut self) -> Option<CreateForm> {
+    pub const fn take_create_request(&mut self) -> Option<CreateForm> {
         self.create_request.take()
     }
 }
