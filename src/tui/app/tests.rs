@@ -1123,6 +1123,47 @@ fn up_from_first_row_focuses_create_then_down_returns() {
 }
 
 #[test]
+fn up_in_project_contents_focuses_create() {
+    use crate::tui::app::{DrillItem, DrillView};
+    let mut app = App::new(5);
+    app.projects = vec![make_project(7, "Caravan")];
+    app.nav_selected = 0;
+    app.nav_open();
+    app.apply_drill(
+        7,
+        DrillView {
+            title:    "Caravan".to_string(),
+            items:    vec![
+                DrillItem {
+                    kind:   "Database".into(),
+                    name:   "caravan_db".into(),
+                    detail: "postgres18".into()
+                },
+                DrillItem {
+                    kind:   "App".into(),
+                    name:   "caravan-api".into(),
+                    detail: "Active".into()
+                },
+            ],
+            selected: 0
+        }
+    );
+    app.resource_cols = 6;
+    assert_eq!(app.pane, Pane::Content);
+    assert!(!app.content_on_create);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Up));
+    assert!(
+        app.content_on_create,
+        "Up from first row must focus the Create button"
+    );
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Enter));
+    assert!(
+        app.create_form_open(),
+        "Enter on Create must open the project form"
+    );
+}
+
+#[test]
 fn sidebar_is_default_pane() {
     let app = App::new(5);
     assert_eq!(app.pane, Pane::Sidebar);

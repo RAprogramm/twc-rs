@@ -215,8 +215,10 @@ impl super::App {
     pub fn content_move(&mut self, dir: super::FocusDir) {
         use super::FocusDir;
 
-        let has_create =
-            self.drill.is_none() && matches!(self.nav_current(), Some(super::NavKind::Service(_)));
+        let has_create = matches!(
+            self.nav_current(),
+            Some(super::NavKind::Service(_) | super::NavKind::Project(_))
+        );
         let len = self.content_len();
 
         if self.content_on_create {

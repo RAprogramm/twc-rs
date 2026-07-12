@@ -89,7 +89,12 @@ impl super::App {
             _ => self.services_pending = self.services_pending.saturating_sub(1)
         }
         match slice {
-            DataSlice::Account(info) => self.account = info,
+            DataSlice::Account(mut info) => {
+                if info.balance.is_empty() {
+                    info.balance = std::mem::take(&mut self.account.balance);
+                }
+                self.account = info;
+            }
             DataSlice::Servers(v) => {
                 self.servers = v;
                 self.last_refresh = Instant::now();

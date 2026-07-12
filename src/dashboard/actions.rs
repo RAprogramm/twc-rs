@@ -69,7 +69,7 @@ pub(crate) async fn fetch_drill(
                 });
             }
             Ok(DrillView {
-                title: format!("Project '{name}'  ({} resources)", items.len()),
+                title: name.to_string(),
                 items,
                 selected: 0
             })
