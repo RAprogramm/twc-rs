@@ -264,7 +264,7 @@ mod tests {
                     Rect::new(0, 0, w, h),
                     app,
                     app.theme.palette().accent
-                )
+                );
             })
             .unwrap();
     }
