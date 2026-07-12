@@ -120,6 +120,7 @@ pub(crate) async fn run_dashboard(
 
         if let Some((action_id, action)) = app.take_detail_action() {
             match action {
+                tui::widgets::details::DetailAction::Kind(_) => {}
                 tui::widgets::details::DetailAction::Redeploy => {
                     use tui::app::LogLevel;
                     let config = authenticated(token.clone());

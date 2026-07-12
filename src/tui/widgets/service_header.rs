@@ -9,7 +9,7 @@ use std::borrow::Cow;
 use ratatui::{
     Frame,
     layout::Rect,
-    style::{Modifier, Style},
+    style::Style,
     text::{Line, Span},
     widgets::{Paragraph, Wrap}
 };
@@ -126,21 +126,8 @@ pub fn render(
         Rect::new(area.x, area.y, area.width, text_rows)
     );
 
-    let (chip_bg, chip_fg) = if button_focused {
-        (palette.accent, palette.bg)
-    } else {
-        (palette.border, palette.fg)
-    };
-    let cap = Style::default().fg(chip_bg);
-    let body = Style::default()
-        .fg(chip_fg)
-        .bg(chip_bg)
-        .add_modifier(Modifier::BOLD);
-    let button = Line::from(vec![
-        Span::styled("\u{2590}", cap),
-        Span::styled(format!(" + {create} "), body),
-        Span::styled("\u{258C}", cap),
-    ]);
+    let button =
+        crate::tui::widgets::button::chip(&format!("+ {create}"), button_focused, palette);
     frame.render_widget(
         Paragraph::new(button),
         Rect::new(area.x, area.y + text_rows, area.width, 1)

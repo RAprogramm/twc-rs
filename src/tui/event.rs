@@ -292,12 +292,31 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
                 }
             }
             KeyCode::Enter => {
+                use crate::tui::widgets::details::DetailAction;
                 if let Some((_, Some(action))) =
                     crate::tui::widgets::details::interactive_at(app, app.detail_selected)
-                    && let Some((id, _)) = app.selected_resource()
-                    && let Ok(id) = id.parse::<i32>()
+                    && let Some((id, name)) = app.selected_resource()
                 {
-                    app.detail_action = Some((id, action));
+                    match action {
+                        DetailAction::Redeploy => {
+                            if let Ok(id) = id.parse::<i32>() {
+                                app.detail_action = Some((id, action));
+                            }
+                        }
+                        DetailAction::Kind(kind) => {
+                            let pending = super::app::PendingAction {
+                                tab: app.active_tab,
+                                kind,
+                                resource_id: id,
+                                resource_name: name
+                            };
+                            if kind.is_destructive() {
+                                app.confirm = Some(pending);
+                            } else {
+                                app.dispatch = Some(pending);
+                            }
+                        }
+                    }
                 }
             }
             KeyCode::Char('Q') => {

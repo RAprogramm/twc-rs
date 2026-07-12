@@ -34,7 +34,9 @@ const RULE_WIDTH: usize = 32;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DetailAction {
     /// Trigger a new deployment of the application.
-    Redeploy
+    Redeploy,
+    /// One of the resource's regular API actions (start, backup, delete, ...).
+    Kind(crate::tui::app::ActionKind)
 }
 
 /// One row of the details panel: its rendered line, the raw value the user
@@ -104,14 +106,27 @@ pub fn build(app: &App) -> Vec<DetailLine> {
 
     append_extra_sections(&mut rows, app, palette);
 
+    let mut actions: Vec<(String, DetailAction)> = Vec::new();
     if app.active_tab == ResourceTab::Apps && !app.apps.is_empty() {
+        actions.push((t!("details.redeploy").into_owned(), DetailAction::Redeploy));
+    }
+    if app.selected_resource().is_some() {
+        for kind in app.active_tab.actions() {
+            actions.push((kind.display_label().into_owned(), DetailAction::Kind(*kind)));
+        }
+    }
+    if !actions.is_empty() {
         rows.push(blank());
         rows.push(section(&t!("details.actions"), palette));
-        rows.push(action_row(
-            &t!("details.redeploy"),
-            DetailAction::Redeploy,
-            palette
-        ));
+        for (label, action) in actions {
+            let index = rows.iter().filter(|r| r.is_interactive()).count();
+            rows.push(action_row(
+                &label,
+                action,
+                app.detail_open && app.detail_selected == index,
+                palette
+            ));
+        }
     }
 
     rows
@@ -185,10 +200,14 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) -> 
             if interactive {
                 if interactive_seen == app.detail_selected {
                     selected_abs = Some(abs);
-                    line.spans.insert(
-                        0,
-                        Span::styled("\u{258E}", Style::default().fg(palette.accent))
-                    );
+                    if row.action.is_some() {
+                        line.spans.insert(0, Span::raw(" "));
+                    } else {
+                        line.spans.insert(
+                            0,
+                            Span::styled("\u{258E}", Style::default().fg(palette.accent))
+                        );
+                    }
                 } else {
                     line.spans.insert(0, Span::raw(" "));
                 }
@@ -446,20 +465,17 @@ pub(super) fn status_chip(key: &str, status: &str, palette: Palette) -> DetailLi
     chip(key, &label, color, palette)
 }
 
-/// Builds an action-button row: Enter on it triggers `action`.
-pub(super) fn action_row(label: &str, action: DetailAction, palette: Palette) -> DetailLine {
+/// Builds an action-button row through the shared button chip: Enter on it
+/// triggers `action`, and the chip fills with the accent color while the
+/// details cursor rests on it.
+pub(super) fn action_row(
+    label: &str,
+    action: DetailAction,
+    focused: bool,
+    palette: Palette
+) -> DetailLine {
     DetailLine {
-        line:   Line::from(vec![
-            Span::styled("\u{2590}", Style::default().fg(palette.border)),
-            Span::styled(
-                format!(" \u{25B6} {label} "),
-                Style::default()
-                    .fg(palette.fg)
-                    .bg(palette.border)
-                    .add_modifier(Modifier::BOLD)
-            ),
-            Span::styled("\u{258C}", Style::default().fg(palette.border)),
-        ]),
+        line:   crate::tui::widgets::button::chip(label, focused, &palette),
         copy:   None,
         action: Some(action)
     }
