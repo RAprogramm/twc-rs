@@ -30,7 +30,7 @@ pub(super) fn render_server_details(app: &App, palette: Palette) -> Vec<Line<'st
         chip(&t!("details.status"), &label, color, palette),
         kv(
             &t!("details.location"),
-            server.location.clone(),
+            crate::tui::humanize::location(&server.location),
             warn(palette),
             palette
         ),
@@ -44,7 +44,7 @@ pub(super) fn render_server_details(app: &App, palette: Palette) -> Vec<Line<'st
         ),
         kv(
             &t!("details.ram"),
-            format!("{} MB", server.ram_mb),
+            crate::tui::humanize::megabytes(i64::from(server.ram_mb)),
             accent(palette),
             palette
         ),
@@ -88,14 +88,24 @@ pub(super) fn render_database_details(app: &App, palette: Palette) -> Vec<Line<'
         status_chip(&t!("details.status"), &db.status, palette),
         kv(
             &t!("details.disk"),
-            format!("{} / {} MB", db.disk_used_mb, db.size_mb),
+            format!(
+                "{} / {}",
+                crate::tui::humanize::megabytes(db.disk_used_mb),
+                crate::tui::humanize::megabytes(db.size_mb)
+            ),
             name_style(palette),
             palette
         ),
     ];
     let optional = [
-        (t!("details.location"), db.location.clone()),
-        (t!("details.created"), db.created_at.clone()),
+        (
+            t!("details.location"),
+            crate::tui::humanize::location(&db.location)
+        ),
+        (
+            t!("details.created"),
+            crate::tui::humanize::date(&db.created_at)
+        ),
         (t!("details.public_ip"), db.public_ip.clone()),
         (t!("details.local_ip"), db.local_ip.clone()),
         (
@@ -155,7 +165,7 @@ pub(super) fn render_s3_details(app: &App, palette: Palette) -> Vec<Line<'static
         ),
         kv(
             &t!("details.region"),
-            storage.region.clone(),
+            crate::tui::humanize::location(&storage.region),
             warn(palette),
             palette
         ),
@@ -206,7 +216,7 @@ pub(super) fn render_k8s_details(app: &App, palette: Palette) -> Vec<Line<'stati
         ),
         kv(
             &t!("details.ram"),
-            format!("{} MB", cluster.ram_mb),
+            crate::tui::humanize::megabytes(i64::from(cluster.ram_mb)),
             name_style(palette),
             palette
         ),

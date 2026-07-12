@@ -348,13 +348,22 @@ pub(crate) async fn fetch_database_extra(
             rows.push((t!("details.cpu").into_owned(), format!("{cpu}")));
         }
         if let Some(ram) = preset.ram {
-            rows.push((t!("details.ram").into_owned(), format!("{} MB", ram)));
+            rows.push((
+                t!("details.ram").into_owned(),
+                crate::tui::humanize::megabytes(ram as i64)
+            ));
         }
         if let Some(disk) = preset.disk {
-            rows.push((t!("details.disk").into_owned(), format!("{} MB", disk)));
+            rows.push((
+                t!("details.disk").into_owned(),
+                crate::tui::humanize::megabytes(disk as i64)
+            ));
         }
         if let Some(price) = preset.price {
-            rows.push((t!("details.price").into_owned(), format!("{price}")));
+            rows.push((
+                t!("details.price").into_owned(),
+                t!("details.per_month", price => price).into_owned()
+            ));
         }
         if let Some(desc) = preset
             .description_short

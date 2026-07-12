@@ -250,3 +250,6 @@ details.price:
 details.plan:
   en: "Plan"
   ru: "План"
+details.per_month:
+  en: "%{price} ₽/month"
+  ru: "%{price} ₽/мес"

@@ -61,9 +61,12 @@ pub fn build(app: &App, palette: &Palette) -> Vec<GridCard> {
             .iter()
             .map(|s| {
                 let (_, color, label) = server_status_view(&s.status, palette);
-                card(&s.name)
-                    .status(color, label)
-                    .meta(format!("{}c · {} MB · {}", s.cpu, s.ram_mb, s.location))
+                card(&s.name).status(color, label).meta(format!(
+                    "{}c · {} · {}",
+                    s.cpu,
+                    crate::tui::humanize::megabytes(i64::from(s.ram_mb)),
+                    crate::tui::humanize::location(&s.location)
+                ))
             })
             .collect(),
         ResourceTab::Databases => app
@@ -71,15 +74,23 @@ pub fn build(app: &App, palette: &Palette) -> Vec<GridCard> {
             .iter()
             .map(|d| {
                 let (color, label) = status_view(&d.status, palette);
-                card(&d.name)
-                    .status(color, label)
-                    .meta(format!("{} · {} MB", d.engine, d.size_mb))
+                card(&d.name).status(color, label).meta(format!(
+                    "{} · {}",
+                    d.engine,
+                    crate::tui::humanize::megabytes(d.size_mb)
+                ))
             })
             .collect(),
         ResourceTab::S3 => app
             .s3_storages
             .iter()
-            .map(|s| card(&s.name).meta(format!("{} · {} obj", s.region, s.object_count)))
+            .map(|s| {
+                card(&s.name).meta(format!(
+                    "{} · {} obj",
+                    crate::tui::humanize::location(&s.region),
+                    s.object_count
+                ))
+            })
             .collect(),
         ResourceTab::Kubernetes => app
             .k8s_clusters
@@ -104,9 +115,11 @@ pub fn build(app: &App, palette: &Palette) -> Vec<GridCard> {
             .iter()
             .map(|b| {
                 let (color, label) = status_view(&b.status, palette);
-                card(&b.name)
-                    .status(color, label)
-                    .meta(format!("{} · {}", b.ip, b.location))
+                card(&b.name).status(color, label).meta(format!(
+                    "{} · {}",
+                    b.ip,
+                    crate::tui::humanize::location(&b.location)
+                ))
             })
             .collect(),
         ResourceTab::Registry => app
@@ -167,7 +180,13 @@ pub fn build(app: &App, palette: &Palette) -> Vec<GridCard> {
         ResourceTab::Vpc => app
             .vpcs
             .iter()
-            .map(|v| card(&v.name).meta(format!("{} · {}", v.subnet, v.location)))
+            .map(|v| {
+                card(&v.name).meta(format!(
+                    "{} · {}",
+                    v.subnet,
+                    crate::tui::humanize::location(&v.location)
+                ))
+            })
             .collect(),
         ResourceTab::DedicatedServers => app
             .dedicated_servers
@@ -189,9 +208,11 @@ pub fn build(app: &App, palette: &Palette) -> Vec<GridCard> {
             .iter()
             .map(|a| {
                 let (color, label) = status_view(&a.status, palette);
-                card(&a.name)
-                    .status(color, label)
-                    .meta(format!("{} · {}", a.location, a.framework))
+                card(&a.name).status(color, label).meta(format!(
+                    "{} · {}",
+                    crate::tui::humanize::location(&a.location),
+                    a.framework
+                ))
             })
             .collect(),
         ResourceTab::AiAgents => app

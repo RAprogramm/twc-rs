@@ -6,6 +6,7 @@
 pub mod app;
 pub mod command_palette;
 pub mod event;
+pub mod humanize;
 pub mod themes;
 pub mod ui;
 pub mod widgets;
