@@ -40,6 +40,15 @@ pub enum AppEvent {
         /// The fetched contents.
         view: Box<super::app::DrillView>
     },
+    /// Deep details for a resource finished loading in the background.
+    DetailExtra {
+        /// The resource category.
+        tab:      super::app::ResourceTab,
+        /// The resource id.
+        id:       i32,
+        /// Extra detail sections: `(title, rows)`.
+        sections: super::app::DetailSections
+    },
     /// A background drill fetch failed.
     DrillFailed {
         /// The project name, for the log entry.
@@ -93,6 +102,14 @@ pub fn handle_event(app: &mut App, event: AppEvent) -> bool {
             view
         } => {
             app.apply_drill(id, *view);
+            true
+        }
+        AppEvent::DetailExtra {
+            tab,
+            id,
+            sections
+        } => {
+            app.detail_extra.insert((tab, id), sections);
             true
         }
         AppEvent::DrillFailed {

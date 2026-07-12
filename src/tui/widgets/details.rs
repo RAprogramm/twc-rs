@@ -84,7 +84,31 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border_color: Color) {
         return;
     }
 
+    let mut text = text;
+    append_extra_sections(&mut text, app, palette);
     render_columns(frame, inner, text, app.detail_scroll);
+}
+
+/// Appends the background-fetched deep-detail sections (connection, nested
+/// databases, tariff, ...) for the resource currently shown, when loaded.
+fn append_extra_sections(text: &mut Vec<Line<'static>>, app: &App, palette: Palette) {
+    let Some(id) = app
+        .selected_resource()
+        .and_then(|(id, _)| id.parse::<i32>().ok())
+    else {
+        return;
+    };
+    let Some(sections) = app.detail_extra.get(&(app.active_tab, id)) else {
+        return;
+    };
+    for (title, rows) in sections {
+        text.push(Line::from(""));
+        text.push(heading(title, palette));
+        text.push(rule(palette));
+        for (key, value) in rows {
+            text.push(kv(key, value.clone(), name_style(palette), palette));
+        }
+    }
 }
 
 /// Builds the breadcrumb trail for the panel border: the project the user

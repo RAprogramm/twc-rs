@@ -235,3 +235,18 @@ details.no:
 details.hash_type:
   en: "Password hash"
   ru: "Хеш паролей"
+details.connection:
+  en: "Connection"
+  ru: "Подключение"
+details.databases_in:
+  en: "Databases in cluster"
+  ru: "Базы в кластере"
+details.tariff:
+  en: "Tariff"
+  ru: "Тариф"
+details.price:
+  en: "Price"
+  ru: "Цена"
+details.plan:
+  en: "Plan"
+  ru: "План"

@@ -113,7 +113,17 @@ impl super::App {
         self.selected = index;
         self.detail_scroll = 0;
         self.detail_open = true;
+        if let Ok(id) = item.id.parse::<i32>() {
+            self.detail_fetch = Some((item.tab, id));
+        }
         true
+    }
+
+    /// Takes the pending deep-detail fetch for the loop to run in the
+    /// background.
+    #[must_use]
+    pub const fn take_detail_fetch(&mut self) -> Option<(ResourceTab, i32)> {
+        self.detail_fetch.take()
     }
 
     /// Returns true while a drill-in view is open.

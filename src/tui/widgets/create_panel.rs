@@ -69,32 +69,75 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, border: ratatui::style::
     card_grid::render_grid_in(frame, inner, &cards, app.create_selected, cols, &palette);
 }
 
-/// Renders the hover presentation: intro, the product list with one-line
-/// descriptions, the API-token note and how to proceed.
+/// Renders the hover presentation, redistributing its content to the space
+/// it actually has: with room to spare every product gets its one-line
+/// description; when the panel shrinks (e.g. the events log is on) the
+/// product list reflows into name-only columns so the API-token note and the
+/// hint always stay visible.
 fn render_presentation(frame: &mut Frame, inner: Rect, palette: &crate::tui::themes::Palette) {
     use ratatui::widgets::{Paragraph, Wrap};
 
-    let mut lines: Vec<Line> = vec![
-        Line::from(Span::styled(
-            t!("create.presentation_intro").into_owned(),
-            Style::default().fg(palette.fg)
-        )),
-        Line::from(""),
-    ];
-    for tab in App::create_targets() {
-        let (desc, _) = service_header::texts(tab);
-        lines.push(Line::from(vec![
-            Span::styled(
-                format!(" {} ", sidebar::tab_icon(tab)),
-                Style::default().fg(palette.accent)
-            ),
-            Span::styled(
-                format!("{:<18}", tab.display_name()),
-                Style::default().fg(palette.fg).add_modifier(Modifier::BOLD)
-            ),
-            Span::styled(desc.into_owned(), Style::default().fg(palette.dim)),
-        ]));
+    let targets = App::create_targets();
+    let intro = t!("create.presentation_intro").into_owned();
+    let token_text = t!("create.token_text").into_owned();
+    let wrap_rows = |text: &str| {
+        (text.chars().count() / usize::from(inner.width.saturating_sub(4).max(1)) + 1).min(4)
+    };
+    let intro_rows = wrap_rows(&intro);
+    let token_rows = wrap_rows(&token_text) + 1;
+    let chrome = intro_rows + 1 + token_rows + 2;
+    let product_rows = usize::from(inner.height).saturating_sub(chrome).max(1);
+    let full = targets.len() < product_rows;
+
+    let mut lines: Vec<Line> = vec![Line::from(Span::styled(
+        intro,
+        Style::default().fg(palette.fg)
+    ))];
+    lines.push(Line::from(""));
+
+    if full {
+        for tab in &targets {
+            let (desc, _) = service_header::texts(*tab);
+            lines.push(Line::from(vec![
+                Span::styled(
+                    format!(" {} ", sidebar::tab_icon(*tab)),
+                    Style::default().fg(palette.accent)
+                ),
+                Span::styled(
+                    format!("{:<18}", tab.display_name()),
+                    Style::default().fg(palette.fg).add_modifier(Modifier::BOLD)
+                ),
+                Span::styled(desc.into_owned(), Style::default().fg(palette.dim)),
+            ]));
+        }
+    } else {
+        let rows = product_rows.max(1);
+        let cols = targets.len().div_ceil(rows);
+        let col_w = targets
+            .iter()
+            .map(|t| t.display_name().chars().count())
+            .max()
+            .unwrap_or(12)
+            + 2;
+        for r in 0..rows.min(targets.len()) {
+            let mut spans: Vec<Span> = Vec::new();
+            for c in 0..cols {
+                let Some(tab) = targets.get(c * rows + r) else {
+                    continue;
+                };
+                spans.push(Span::styled(
+                    format!(" {} ", sidebar::tab_icon(*tab)),
+                    Style::default().fg(palette.accent)
+                ));
+                spans.push(Span::styled(
+                    format!("{:<col_w$}", tab.display_name()),
+                    Style::default().fg(palette.fg)
+                ));
+            }
+            lines.push(Line::from(spans));
+        }
     }
+
     lines.push(Line::from(""));
     lines.push(Line::from(Span::styled(
         t!("create.token_title").into_owned(),
@@ -103,7 +146,7 @@ fn render_presentation(frame: &mut Frame, inner: Rect, palette: &crate::tui::the
             .add_modifier(Modifier::BOLD)
     )));
     lines.push(Line::from(Span::styled(
-        t!("create.token_text").into_owned(),
+        token_text,
         Style::default().fg(palette.dim)
     )));
     lines.push(Line::from(""));
@@ -131,6 +174,33 @@ mod tests {
         let cards = cards();
         assert_eq!(cards.len(), App::create_targets().len());
         assert!(cards.iter().all(|c| !c.meta.is_empty()));
+    }
+
+    #[test]
+    fn presentation_reflows_to_keep_token_note_visible() {
+        let app = App::new(5);
+        let palette = app.theme.palette();
+        for h in [16u16, 40] {
+            let w = 120u16;
+            let backend = TestBackend::new(w, h);
+            let mut terminal = Terminal::new(backend).unwrap();
+            terminal
+                .draw(|f| render(f, Rect::new(0, 0, w, h), &app, palette.accent))
+                .unwrap();
+            let buf = terminal.backend().buffer().clone();
+            let mut text = String::new();
+            for y in 0..h {
+                for x in 0..w {
+                    text.push_str(buf[(x, y)].symbol());
+                }
+                text.push(' ');
+            }
+            assert!(
+                text.contains("About API tokens"),
+                "token note must stay visible at height {h}"
+            );
+            assert!(text.contains("Kubernetes"), "products visible at {h}");
+        }
     }
 
     #[test]

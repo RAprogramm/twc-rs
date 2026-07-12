@@ -292,3 +292,81 @@ pub(crate) async fn perform_action(
         }
     }
 }
+
+/// Fetches the deep details of a database cluster that the list endpoint does
+/// not carry: connection admins (host and login), the databases inside the
+/// cluster, and the decoded tariff preset. Passwords are never included.
+pub(crate) async fn fetch_database_extra(
+    config: &timeweb_rs::apis::configuration::Configuration,
+    id: i32,
+    preset_id: i32
+) -> tui::app::DetailSections {
+    use rust_i18n::t;
+    use timeweb_rs::apis::databases_api;
+
+    let (users, instances, presets) = tokio::join!(
+        databases_api::get_database_users(config, id),
+        databases_api::get_database_instances(config, id),
+        databases_api::get_databases_presets(config, None)
+    );
+
+    let mut sections = Vec::new();
+
+    if let Ok(resp) = users {
+        let mut rows: Vec<(String, String)> = Vec::new();
+        for admin in &resp.admins {
+            if let Some(host) = admin.host.as_deref().filter(|h| !h.is_empty() && *h != "%") {
+                rows.push((t!("details.host").into_owned(), host.to_string()));
+            }
+            rows.push((t!("details.login").into_owned(), admin.login.clone()));
+        }
+        if !rows.is_empty() {
+            rows.dedup();
+            sections.push((t!("details.connection").into_owned(), rows));
+        }
+    }
+
+    if let Ok(resp) = instances {
+        let rows: Vec<(String, String)> = resp
+            .instances
+            .iter()
+            .map(|db| (db.name.clone(), db.description.clone()))
+            .collect();
+        if !rows.is_empty() {
+            sections.push((t!("details.databases_in").into_owned(), rows));
+        }
+    }
+
+    if let Ok(resp) = presets
+        && let Some(preset) = resp
+            .databases_presets
+            .iter()
+            .find(|p| p.id == Some(i64::from(preset_id)))
+    {
+        let mut rows: Vec<(String, String)> = Vec::new();
+        if let Some(cpu) = preset.cpu {
+            rows.push((t!("details.cpu").into_owned(), format!("{cpu}")));
+        }
+        if let Some(ram) = preset.ram {
+            rows.push((t!("details.ram").into_owned(), format!("{} MB", ram)));
+        }
+        if let Some(disk) = preset.disk {
+            rows.push((t!("details.disk").into_owned(), format!("{} MB", disk)));
+        }
+        if let Some(price) = preset.price {
+            rows.push((t!("details.price").into_owned(), format!("{price}")));
+        }
+        if let Some(desc) = preset
+            .description_short
+            .as_deref()
+            .filter(|d| !d.is_empty())
+        {
+            rows.push((t!("details.plan").into_owned(), desc.to_string()));
+        }
+        if !rows.is_empty() {
+            sections.push((t!("details.tariff").into_owned(), rows));
+        }
+    }
+
+    sections
+}

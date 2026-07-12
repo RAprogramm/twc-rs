@@ -10,7 +10,7 @@ use rust_i18n::t;
 use super::ActionKind;
 
 /// Resource category in the left panel.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ResourceTab {
     Servers,
     Databases,

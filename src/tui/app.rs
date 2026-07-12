@@ -63,6 +63,9 @@ pub enum FocusDir {
     Down
 }
 
+/// Extra detail sections fetched in the background: `(title, rows)`.
+pub type DetailSections = Vec<(String, Vec<(String, String)>)>;
+
 /// Which pane of the sidebar layout owns the keyboard.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum Pane {
@@ -137,6 +140,8 @@ pub struct App {
     pub create_selected:     usize,
     pub info_popup:          Option<(String, String)>,
     pub detail_open:         bool,
+    pub detail_extra:        std::collections::HashMap<(ResourceTab, i32), DetailSections>,
+    pub detail_fetch:        Option<(ResourceTab, i32)>,
     pub refresh_requested:   bool,
     pub drill:               Option<DrillView>,
     pub drill_request:       Option<(ResourceTab, i32, String)>,
@@ -238,6 +243,8 @@ impl App {
             create_selected: 0,
             info_popup: None,
             detail_open: false,
+            detail_extra: std::collections::HashMap::new(),
+            detail_fetch: None,
             refresh_requested: false,
             drill: None,
             drill_request: None,
