@@ -28,29 +28,19 @@ pub struct DrillView {
 }
 
 impl super::App {
-    /// Returns true when the active tab's selected resource can be entered
-    /// to reveal contained resources (currently only projects).
-    #[must_use]
-    pub fn can_drill(&self) -> bool {
-        matches!(self.active_tab, ResourceTab::Projects) && self.selected_resource().is_some()
-    }
-
-    /// Requests a drill-in into the selected resource. The project panel opens
-    /// immediately (empty, marked loading) so no intermediate screen flashes
-    /// while the event loop fetches the contents.
-    pub fn request_drill(&mut self) {
-        if self.can_drill()
-            && let Some((id, name)) = self.selected_resource()
-            && let Ok(id) = id.parse::<i32>()
-        {
-            self.drill = Some(DrillView {
-                title:    name.clone(),
-                items:    Vec::new(),
-                selected: 0
-            });
-            self.drill_loading = true;
-            self.drill_request = Some((self.active_tab, id, name));
-        }
+    /// Opens the given project's contents panel immediately (empty, marked
+    /// loading, so no intermediate screen flashes) and queues the fetch.
+    pub fn open_project_drill(&mut self, index: usize) {
+        let Some(project) = self.projects.get(index) else {
+            return;
+        };
+        self.drill = Some(DrillView {
+            title:    project.name.clone(),
+            items:    Vec::new(),
+            selected: 0
+        });
+        self.drill_loading = true;
+        self.drill_request = Some((ResourceTab::Projects, project.id, project.name.clone()));
     }
 
     /// Takes the pending drill request for the loop to fetch.
@@ -65,16 +55,11 @@ impl super::App {
         self.drill_loading = false;
     }
 
-    /// Closes the drill-in view, returning to wherever it was opened from:
-    /// the overview landing when entered from a project card, otherwise the
-    /// resource list.
+    /// Closes the drill-in view; the content pane reverts to the selected
+    /// sidebar entry's default view.
     pub fn close_drill(&mut self) {
         self.drill = None;
         self.drill_loading = false;
-        if self.drill_return_overview {
-            self.drill_return_overview = false;
-            self.view = super::DashboardView::Overview;
-        }
     }
 
     /// Returns true while a drill-in view is open.
@@ -87,21 +72,5 @@ impl super::App {
     #[must_use]
     pub const fn drill_view(&self) -> Option<&DrillView> {
         self.drill.as_ref()
-    }
-
-    /// Moves the drill selection down.
-    pub const fn drill_next(&mut self) {
-        if let Some(view) = self.drill.as_mut()
-            && view.selected + 1 < view.items.len()
-        {
-            view.selected += 1;
-        }
-    }
-
-    /// Moves the drill selection up.
-    pub const fn drill_previous(&mut self) {
-        if let Some(view) = self.drill.as_mut() {
-            view.selected = view.selected.saturating_sub(1);
-        }
     }
 }

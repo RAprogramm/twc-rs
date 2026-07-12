@@ -6,7 +6,7 @@
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use tokio::{sync::mpsc, time::Duration};
 
-use super::app::{App, DashboardView, FocusDir};
+use super::app::{App, FocusDir, Pane};
 
 /// Events that the TUI event loop can process.
 #[allow(dead_code)]
@@ -136,20 +136,6 @@ fn handle_overlay_key(app: &mut App, key: KeyEvent) -> Option<bool> {
         return Some(true);
     }
 
-    if app.drill_open() {
-        match key.code {
-            KeyCode::Char('Q') => {
-                app.quit();
-                return Some(false);
-            }
-            KeyCode::Esc | KeyCode::Char('q' | 'h') | KeyCode::Left => app.close_drill(),
-            KeyCode::Char('j') | KeyCode::Down => app.drill_next(),
-            KeyCode::Char('k') | KeyCode::Up => app.drill_previous(),
-            _ => {}
-        }
-        return Some(true);
-    }
-
     if app.filter_editing {
         match key.code {
             KeyCode::Esc => app.filter_clear(),
@@ -164,9 +150,13 @@ fn handle_overlay_key(app: &mut App, key: KeyEvent) -> Option<bool> {
     None
 }
 
-/// Handles a key on the overview landing screen: card grid navigation plus the
-/// shared global shortcuts.
-fn handle_overview_key(app: &mut App, key: KeyEvent) -> bool {
+/// Handles a key outside overlays: sidebar navigation on the left pane,
+/// exact one-step grid movement on the content pane.
+fn handle_key(app: &mut App, key: KeyEvent) -> bool {
+    if let Some(result) = handle_overlay_key(app, key) {
+        return result;
+    }
+
     match key.code {
         KeyCode::Char('Q') => {
             app.quit();
@@ -175,105 +165,76 @@ fn handle_overview_key(app: &mut App, key: KeyEvent) -> bool {
         KeyCode::Char('?') => app.toggle_help(),
         KeyCode::Char('r') => app.force_refresh(),
         KeyCode::Char('p') => app.open_profile_switcher(),
-        KeyCode::Down | KeyCode::Char('j') => app.move_overview(FocusDir::Down),
-        KeyCode::Up | KeyCode::Char('k') => app.move_overview(FocusDir::Up),
-        KeyCode::Right | KeyCode::Char('l') => app.move_overview(FocusDir::Right),
-        KeyCode::Left | KeyCode::Char('h') => app.move_overview(FocusDir::Left),
-        KeyCode::Enter => app.enter_overview(),
+        KeyCode::Char('/') => {
+            if app.pane == Pane::Content && !app.drill_open() {
+                app.start_filter();
+            }
+        }
+        KeyCode::Char('n') => {
+            if app.pane == Pane::Content {
+                app.open_create_form();
+            }
+        }
+        KeyCode::Esc => {
+            if app.pane == Pane::Content {
+                if app.filter_active() {
+                    app.filter_clear();
+                } else {
+                    app.focus_sidebar();
+                }
+            }
+        }
+        KeyCode::Tab => app.nav_down(),
+        KeyCode::BackTab => app.nav_up(),
+        KeyCode::Up | KeyCode::Char('k') => {
+            if app.pane == Pane::Sidebar {
+                app.nav_up();
+            } else {
+                app.content_move(FocusDir::Up);
+            }
+        }
+        KeyCode::Down | KeyCode::Char('j') => {
+            if app.pane == Pane::Sidebar {
+                app.nav_down();
+            } else {
+                app.content_move(FocusDir::Down);
+            }
+        }
+        KeyCode::Right | KeyCode::Char('l') => {
+            if app.pane == Pane::Sidebar {
+                app.nav_open();
+            } else {
+                app.content_move(FocusDir::Right);
+            }
+        }
+        KeyCode::Left | KeyCode::Char('h') => {
+            if app.pane == Pane::Content && !app.content_move(FocusDir::Left) {
+                app.focus_sidebar();
+            }
+        }
+        KeyCode::Char('g') | KeyCode::Home => {
+            if app.pane == Pane::Content {
+                app.set_content_selected(0);
+            }
+        }
+        KeyCode::Char('G' | '$') | KeyCode::End => {
+            if app.pane == Pane::Content {
+                let len = app.content_len();
+                if len > 0 {
+                    app.set_content_selected(len - 1);
+                }
+            }
+        }
+        KeyCode::Enter => {
+            if app.pane == Pane::Sidebar {
+                app.nav_open();
+            } else if !app.drill_open() {
+                app.open_action_menu();
+            }
+        }
         _ => {}
     }
     true
-}
-
-fn handle_key(app: &mut App, key: KeyEvent) -> bool {
-    if let Some(result) = handle_overlay_key(app, key) {
-        return result;
-    }
-
-    if app.view == DashboardView::Overview {
-        return handle_overview_key(app, key);
-    }
-
-    match key.code {
-        KeyCode::Char('Q') => {
-            app.quit();
-            false
-        }
-        KeyCode::Char('/') => {
-            app.start_filter();
-            true
-        }
-        KeyCode::Char('n') => {
-            app.open_create_form();
-            true
-        }
-        KeyCode::Char('p') => {
-            app.open_profile_switcher();
-            true
-        }
-        KeyCode::Esc => {
-            if app.focus_active {
-                app.deactivate_focus();
-            } else if app.filter_active() {
-                app.filter_clear();
-            } else {
-                app.show_overview();
-            }
-            true
-        }
-        KeyCode::Char('?') => {
-            app.toggle_help();
-            true
-        }
-        KeyCode::Char('r') => {
-            app.force_refresh();
-            true
-        }
-        KeyCode::Tab => {
-            app.next_tab();
-            true
-        }
-        KeyCode::BackTab => {
-            app.previous_tab();
-            true
-        }
-        KeyCode::Down | KeyCode::Char('j') => {
-            app.move_resource(FocusDir::Down);
-            true
-        }
-        KeyCode::Up | KeyCode::Char('k') => {
-            app.move_resource(FocusDir::Up);
-            true
-        }
-        KeyCode::Right | KeyCode::Char('l') => {
-            app.move_resource(FocusDir::Right);
-            true
-        }
-        KeyCode::Left | KeyCode::Char('h') => {
-            app.move_resource(FocusDir::Left);
-            true
-        }
-        KeyCode::Char('g') | KeyCode::Home => {
-            app.selected = 0;
-            true
-        }
-        KeyCode::Char('G' | '$') | KeyCode::End => {
-            let len = app.current_list_len();
-            if len > 0 {
-                app.selected = len - 1;
-            }
-            true
-        }
-        KeyCode::Enter => {
-            if app.can_drill() {
-                app.request_drill();
-            } else {
-                app.open_action_menu();
-            }
-            true
-        }
-        _ => true
-    }
 }
 
 /// Runs the async event loop, sending [`AppEvent`]s through the channel.

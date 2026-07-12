@@ -85,12 +85,10 @@ pub(crate) async fn run_dashboard(
         }
 
         if let Ok(size) = terminal.size() {
-            app.overview_cols =
-                tui::widgets::card_grid::columns(size.width, app.overview_longest_label());
-            app.resource_cols = tui::widgets::card_grid::columns(
-                size.width.saturating_sub(2),
-                app.current_longest_label()
-            );
+            let sidebar_w = tui::widgets::sidebar::width_for(size.width, app.nav_longest_label());
+            let content_w = size.width.saturating_sub(sidebar_w).saturating_sub(2);
+            app.resource_cols =
+                tui::widgets::card_grid::columns(content_w, app.content_longest_label());
         }
 
         terminal

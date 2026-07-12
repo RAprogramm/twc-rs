@@ -15,8 +15,8 @@ mod actions;
 mod data;
 mod drill;
 mod forms;
+mod nav;
 mod navigation;
-mod overview;
 mod palette;
 mod stats;
 mod summaries;
@@ -27,7 +27,7 @@ mod tests;
 pub use actions::{ActionKind, ActionMenu, PendingAction};
 pub use drill::{DrillItem, DrillView};
 pub use forms::CreateForm;
-pub use overview::OverviewCard;
+pub use nav::{NavItem, NavKind};
 pub use stats::{ResourceStats, StatsRequest};
 pub use summaries::*;
 pub use tabs::ResourceTab;
@@ -58,90 +58,88 @@ pub enum FocusDir {
     Down
 }
 
-/// The top-level screen shown in the dashboard content area.
+/// Which pane of the sidebar layout owns the keyboard.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub enum DashboardView {
-    /// Landing screen: Projects and Services zones as cards.
+pub enum Pane {
+    /// The sidebar navigation list.
     #[default]
-    Overview,
-    /// The classic per-category resource list with details.
-    Resources
+    Sidebar,
+    /// The content card grid.
+    Content
 }
 
 /// Holds all runtime state for the TUI dashboard.
 #[allow(clippy::struct_excessive_bools)]
 pub struct App {
-    pub account:               AccountInfo,
-    pub servers:               Vec<ServerSummary>,
-    pub databases:             Vec<DatabaseSummary>,
-    pub s3_storages:           Vec<S3Summary>,
-    pub k8s_clusters:          Vec<K8sSummary>,
-    pub projects:              Vec<ProjectSummary>,
-    pub balancers:             Vec<BalancerSummary>,
-    pub registries:            Vec<RegistrySummary>,
-    pub domains:               Vec<DomainSummary>,
-    pub firewalls:             Vec<FirewallSummary>,
-    pub floating_ips:          Vec<FloatingIpSummary>,
-    pub images:                Vec<ImageSummary>,
-    pub network_drives:        Vec<NetworkDriveSummary>,
-    pub vpcs:                  Vec<VpcSummary>,
-    pub dedicated_servers:     Vec<DedicatedServerSummary>,
-    pub mails:                 Vec<MailSummary>,
-    pub apps:                  Vec<AppSummary>,
-    pub ai_agents:             Vec<AiAgentSummary>,
-    pub knowledge_bases:       Vec<KnowledgeBaseSummary>,
-    pub ssh_keys:              Vec<String>,
-    pub finances:              Vec<String>,
-    pub selected:              usize,
-    pub active_tab:            ResourceTab,
-    pub theme:                 super::themes::Theme,
-    pub token:                 Option<String>,
-    pub cpu_history:           VecDeque<f64>,
-    pub ram_history:           VecDeque<f64>,
-    pub net_in_history:        VecDeque<f64>,
-    pub net_out_history:       VecDeque<f64>,
-    pub last_refresh:          Instant,
-    pub refresh_interval:      Duration,
-    pub running:               bool,
-    pub show_help:             bool,
-    pub status_message:        Option<String>,
-    pub error_message:         Option<String>,
-    pub is_loading:            bool,
-    pub widgets:               super::widgets::WidgetRegistry,
-    pub focus:                 Focus,
-    pub action_menu:           Option<ActionMenu>,
-    pub confirm:               Option<PendingAction>,
-    pub dispatch:              Option<PendingAction>,
-    pub palette:               Option<super::command_palette::CommandPalette>,
-    pub list_width_pct:        u16,
-    pub anim_tick:             u64,
-    pub prefs_dirty:           bool,
-    pub logs:                  VecDeque<LogEntry>,
-    pub last_load_errors:      Vec<String>,
-    pub refresh_requested:     bool,
-    pub drill:                 Option<DrillView>,
-    pub drill_request:         Option<(ResourceTab, i32, String)>,
-    pub drill_loading:         bool,
-    pub drill_return_overview: bool,
-    pub filter:                String,
-    pub filter_editing:        bool,
-    pub hide_empty_tabs:       bool,
-    pub initial_tab_set:       bool,
-    pub detail_scroll:         u16,
-    pub focus_active:          bool,
-    pub view:                  DashboardView,
-    pub overview_selected:     usize,
-    pub overview_cols:         usize,
-    pub resource_cols:         usize,
-    pub language:              crate::config::Language,
-    pub stats_subject:         Option<String>,
-    pub stats_loaded_for:      Option<String>,
-    pub stats_requested:       Option<Instant>,
-    pub create_form:           Option<CreateForm>,
-    pub create_request:        Option<CreateForm>,
-    pub profiles:              Vec<String>,
-    pub active_profile:        String,
-    pub switch_profile:        Option<String>
+    pub account:           AccountInfo,
+    pub servers:           Vec<ServerSummary>,
+    pub databases:         Vec<DatabaseSummary>,
+    pub s3_storages:       Vec<S3Summary>,
+    pub k8s_clusters:      Vec<K8sSummary>,
+    pub projects:          Vec<ProjectSummary>,
+    pub balancers:         Vec<BalancerSummary>,
+    pub registries:        Vec<RegistrySummary>,
+    pub domains:           Vec<DomainSummary>,
+    pub firewalls:         Vec<FirewallSummary>,
+    pub floating_ips:      Vec<FloatingIpSummary>,
+    pub images:            Vec<ImageSummary>,
+    pub network_drives:    Vec<NetworkDriveSummary>,
+    pub vpcs:              Vec<VpcSummary>,
+    pub dedicated_servers: Vec<DedicatedServerSummary>,
+    pub mails:             Vec<MailSummary>,
+    pub apps:              Vec<AppSummary>,
+    pub ai_agents:         Vec<AiAgentSummary>,
+    pub knowledge_bases:   Vec<KnowledgeBaseSummary>,
+    pub ssh_keys:          Vec<String>,
+    pub finances:          Vec<String>,
+    pub selected:          usize,
+    pub active_tab:        ResourceTab,
+    pub theme:             super::themes::Theme,
+    pub token:             Option<String>,
+    pub cpu_history:       VecDeque<f64>,
+    pub ram_history:       VecDeque<f64>,
+    pub net_in_history:    VecDeque<f64>,
+    pub net_out_history:   VecDeque<f64>,
+    pub last_refresh:      Instant,
+    pub refresh_interval:  Duration,
+    pub running:           bool,
+    pub show_help:         bool,
+    pub status_message:    Option<String>,
+    pub error_message:     Option<String>,
+    pub is_loading:        bool,
+    pub widgets:           super::widgets::WidgetRegistry,
+    pub focus:             Focus,
+    pub action_menu:       Option<ActionMenu>,
+    pub confirm:           Option<PendingAction>,
+    pub dispatch:          Option<PendingAction>,
+    pub palette:           Option<super::command_palette::CommandPalette>,
+    pub list_width_pct:    u16,
+    pub anim_tick:         u64,
+    pub prefs_dirty:       bool,
+    pub logs:              VecDeque<LogEntry>,
+    pub last_load_errors:  Vec<String>,
+    pub refresh_requested: bool,
+    pub drill:             Option<DrillView>,
+    pub drill_request:     Option<(ResourceTab, i32, String)>,
+    pub drill_loading:     bool,
+    pub filter:            String,
+    pub filter_editing:    bool,
+    pub hide_empty_tabs:   bool,
+    pub initial_tab_set:   bool,
+    pub detail_scroll:     u16,
+    pub focus_active:      bool,
+    pub pane:              Pane,
+    pub nav_selected:      usize,
+    pub resource_cols:     usize,
+    pub language:          crate::config::Language,
+    pub stats_subject:     Option<String>,
+    pub stats_loaded_for:  Option<String>,
+    pub stats_requested:   Option<Instant>,
+    pub create_form:       Option<CreateForm>,
+    pub create_request:    Option<CreateForm>,
+    pub profiles:          Vec<String>,
+    pub active_profile:    String,
+    pub switch_profile:    Option<String>
 }
 
 impl App {
@@ -212,16 +210,14 @@ impl App {
             drill: None,
             drill_request: None,
             drill_loading: false,
-            drill_return_overview: false,
             filter: String::new(),
             filter_editing: false,
             hide_empty_tabs: false,
             initial_tab_set: false,
             detail_scroll: 0,
             focus_active: false,
-            view: DashboardView::default(),
-            overview_selected: 0,
-            overview_cols: 1,
+            pane: Pane::default(),
+            nav_selected: 0,
             resource_cols: 1,
             language: crate::config::Language::default(),
             stats_subject: None,

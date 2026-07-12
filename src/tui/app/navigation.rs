@@ -33,23 +33,6 @@ impl super::App {
         }
     }
 
-    /// Returns the tabs to display: all tabs, or only non-empty ones (plus the
-    /// active tab) when empty tabs are hidden.
-    #[must_use]
-    pub fn visible_tabs(&self) -> Vec<ResourceTab> {
-        if !self.hide_empty_tabs {
-            return ResourceTab::ALL.to_vec();
-        }
-        let mut tabs: Vec<ResourceTab> = ResourceTab::ALL
-            .into_iter()
-            .filter(|t| self.tab_count(*t) > 0 || *t == self.active_tab)
-            .collect();
-        if tabs.is_empty() {
-            tabs.push(self.active_tab);
-        }
-        tabs
-    }
-
     /// On the first data load, moves off an empty active tab onto the first
     /// tab that actually has items, so the dashboard never opens on a blank
     /// list. Runs once; later manual tab changes are left untouched.
@@ -181,24 +164,89 @@ impl super::App {
         self.filtered_indices().len()
     }
 
-    /// Moves the card-grid selection in the given direction, using the column
-    /// count the grid last rendered with so movement matches the layout.
-    pub fn move_resource(&mut self, dir: super::FocusDir) {
+    /// Number of items in the content pane: an opened project's contents when
+    /// a drill is open, otherwise the filtered service list.
+    #[must_use]
+    pub fn content_len(&self) -> usize {
+        self.drill
+            .as_ref()
+            .map_or_else(|| self.current_list_len(), |d| d.items.len())
+    }
+
+    /// The longest item name in the content pane, for sizing grid columns.
+    #[must_use]
+    pub fn content_longest_label(&self) -> usize {
+        self.drill.as_ref().map_or_else(
+            || {
+                self.current_item_names()
+                    .iter()
+                    .map(|n| n.chars().count())
+                    .max()
+                    .unwrap_or(0)
+            },
+            |d| {
+                d.items
+                    .iter()
+                    .map(|i| i.name.chars().count())
+                    .max()
+                    .unwrap_or(0)
+            }
+        )
+    }
+
+    /// Current content-pane selection index.
+    #[must_use]
+    pub fn content_selected(&self) -> usize {
+        self.drill.as_ref().map_or(self.selected, |d| d.selected)
+    }
+
+    /// Sets the content-pane selection index.
+    pub fn set_content_selected(&mut self, index: usize) {
+        if let Some(d) = self.drill.as_mut() {
+            d.selected = index;
+        } else {
+            self.selected = index;
+        }
+    }
+
+    /// Moves the content-grid selection exactly one step in the given
+    /// direction: left/right stay within the row, up/down move by a row.
+    /// Returns `false` only when already at the leftmost column and moving
+    /// left, so the caller can hand focus back to the sidebar.
+    pub fn content_move(&mut self, dir: super::FocusDir) -> bool {
         use super::FocusDir;
 
-        let len = self.current_list_len();
+        let len = self.content_len();
         if len == 0 {
-            self.selected = 0;
-            return;
+            return !matches!(dir, FocusDir::Left);
         }
         let cols = self.resource_cols.max(1);
-        let cur = self.selected.min(len - 1);
-        self.selected = match dir {
-            FocusDir::Left => cur.saturating_sub(1),
-            FocusDir::Right => (cur + 1).min(len - 1),
-            FocusDir::Up => cur.saturating_sub(cols),
-            FocusDir::Down => (cur + cols).min(len - 1)
-        };
+        let cur = self.content_selected().min(len - 1);
+        let col = cur % cols;
+        match dir {
+            FocusDir::Left => {
+                if col == 0 {
+                    return false;
+                }
+                self.set_content_selected(cur - 1);
+            }
+            FocusDir::Right => {
+                if col + 1 < cols && cur + 1 < len {
+                    self.set_content_selected(cur + 1);
+                }
+            }
+            FocusDir::Up => {
+                if cur >= cols {
+                    self.set_content_selected(cur - cols);
+                }
+            }
+            FocusDir::Down => {
+                if cur + cols < len {
+                    self.set_content_selected(cur + cols);
+                }
+            }
+        }
+        true
     }
 
     /// Moves selection up.
@@ -219,22 +267,6 @@ impl super::App {
         if self.selected + 1 < self.current_list_len() {
             self.selected += 1;
         }
-    }
-
-    /// Cycles to the next visible resource tab, resetting any filter.
-    pub fn next_tab(&mut self) {
-        let tabs = self.visible_tabs();
-        let pos = tabs.iter().position(|t| *t == self.active_tab).unwrap_or(0);
-        self.active_tab = tabs[(pos + 1) % tabs.len()];
-        self.reset_after_tab_change();
-    }
-
-    /// Cycles to the previous visible resource tab, resetting any filter.
-    pub fn previous_tab(&mut self) {
-        let tabs = self.visible_tabs();
-        let pos = tabs.iter().position(|t| *t == self.active_tab).unwrap_or(0);
-        self.active_tab = tabs[(pos + tabs.len() - 1) % tabs.len()];
-        self.reset_after_tab_change();
     }
 
     fn reset_after_tab_change(&mut self) {
@@ -307,11 +339,6 @@ impl super::App {
     #[allow(dead_code)]
     pub const fn activate_focus(&mut self) {
         self.focus_active = true;
-    }
-
-    /// Leaves the active widget, returning to widget-to-widget navigation.
-    pub const fn deactivate_focus(&mut self) {
-        self.focus_active = false;
     }
 
     /// Scrolls the details panel down by one line.

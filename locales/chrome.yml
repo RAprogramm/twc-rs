@@ -104,8 +104,8 @@ ui.status_resources_fallback:
   en: Resources
   ru: Ресурсы
 ui.status_tabs:
-  en: tabs
-  ru: вкладки
+  en: sections
+  ru: разделы
 ui.status_move:
   en: move
   ru: навигация

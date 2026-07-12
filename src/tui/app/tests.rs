@@ -120,26 +120,24 @@ fn select_previous_moves_up() {
 }
 
 #[test]
-fn next_tab_cycles() {
+fn nav_walks_service_tabs_in_order() {
     let mut app = App::new(5);
     assert_eq!(app.active_tab, ResourceTab::Servers);
-    app.next_tab();
+    app.nav_down();
     assert_eq!(app.active_tab, ResourceTab::Databases);
-    app.next_tab();
+    app.nav_down();
     assert_eq!(app.active_tab, ResourceTab::S3);
-    app.next_tab();
+    app.nav_down();
     assert_eq!(app.active_tab, ResourceTab::Kubernetes);
-    app.next_tab();
-    assert_eq!(app.active_tab, ResourceTab::Projects);
-    app.next_tab();
+    app.nav_down();
     assert_eq!(app.active_tab, ResourceTab::Balancers);
 
-    for _ in 0..14 {
-        app.next_tab();
+    let last = app.nav_items().len() - 1;
+    for _ in 0..last {
+        app.nav_down();
     }
-    assert_eq!(app.active_tab, ResourceTab::Finances);
-    app.next_tab();
-    assert_eq!(app.active_tab, ResourceTab::Servers);
+    assert_eq!(app.nav_selected, last);
+    assert_eq!(app.active_tab, ResourceTab::KnowledgeBases);
 }
 
 #[test]
@@ -302,7 +300,7 @@ fn handle_key_quit() {
 #[test]
 fn handle_key_tab() {
     let mut app = App::new(5);
-    app.view = DashboardView::Resources;
+    app.pane = Pane::Content;
     let event = AppEvent::Key(crossterm::event::KeyEvent {
         code:      KeyCode::Tab,
         modifiers: crossterm::event::KeyModifiers::NONE,
@@ -317,13 +315,12 @@ fn handle_key_tab() {
 #[test]
 fn handle_key_vim_k() {
     let mut app = App::new(5);
-    app.view = DashboardView::Resources;
+    app.pane = Pane::Content;
     app.servers = vec![
         make_server(1, "s1", "running"),
         make_server(2, "s2", "running"),
     ];
     app.selected = 1;
-    app.activate_focus();
     let event = AppEvent::Key(crossterm::event::KeyEvent {
         code:      KeyCode::Char('k'),
         modifiers: crossterm::event::KeyModifiers::NONE,
@@ -338,12 +335,11 @@ fn handle_key_vim_k() {
 #[test]
 fn handle_key_vim_j() {
     let mut app = App::new(5);
-    app.view = DashboardView::Resources;
+    app.pane = Pane::Content;
     app.servers = vec![
         make_server(1, "s1", "running"),
         make_server(2, "s2", "running"),
     ];
-    app.activate_focus();
     let event = AppEvent::Key(crossterm::event::KeyEvent {
         code:      KeyCode::Char('j'),
         modifiers: crossterm::event::KeyModifiers::NONE,
@@ -365,52 +361,54 @@ fn key_event(code: KeyCode) -> AppEvent {
 }
 
 #[test]
-fn handle_key_tab_switches_next() {
+fn handle_key_tab_moves_nav_down() {
     let mut app = App::new(5);
-    app.view = DashboardView::Resources;
     assert!(crate::tui::event::handle_event(
         &mut app,
         key_event(KeyCode::Tab)
     ));
+    assert_eq!(app.nav_selected, 1);
     assert_eq!(app.active_tab, ResourceTab::Databases);
 }
 
 #[test]
-fn handle_key_backtab_switches_previous() {
+fn handle_key_backtab_moves_nav_up() {
     let mut app = App::new(5);
-    app.view = DashboardView::Resources;
+    app.nav_selected = 1;
+    app.active_tab = ResourceTab::Databases;
     assert!(crate::tui::event::handle_event(
         &mut app,
         key_event(KeyCode::BackTab)
     ));
-    assert_eq!(app.active_tab, ResourceTab::Finances);
+    assert_eq!(app.nav_selected, 0);
+    assert_eq!(app.active_tab, ResourceTab::Servers);
 }
 
 #[test]
-fn handle_key_vim_h_l_no_longer_switch_tabs() {
+fn sidebar_l_opens_content_h_returns() {
     let mut app = App::new(5);
+    app.servers = vec![make_server(1, "s1", "On")];
     assert!(crate::tui::event::handle_event(
         &mut app,
         key_event(KeyCode::Char('l'))
     ));
-    assert_eq!(app.active_tab, ResourceTab::Servers);
+    assert_eq!(app.pane, Pane::Content);
     assert!(crate::tui::event::handle_event(
         &mut app,
         key_event(KeyCode::Char('h'))
     ));
-    assert_eq!(app.active_tab, ResourceTab::Servers);
+    assert_eq!(app.pane, Pane::Sidebar);
 }
 
 #[test]
 fn handle_key_g() {
     let mut app = App::new(5);
-    app.view = DashboardView::Resources;
+    app.pane = Pane::Content;
     app.servers = vec![
         make_server(1, "s1", "running"),
         make_server(2, "s2", "running"),
     ];
     app.selected = 1;
-    app.activate_focus();
     let event = AppEvent::Key(crossterm::event::KeyEvent {
         code:      KeyCode::Char('g'),
         modifiers: crossterm::event::KeyModifiers::NONE,
@@ -425,13 +423,12 @@ fn handle_key_g() {
 #[test]
 fn handle_key_dollar() {
     let mut app = App::new(5);
-    app.view = DashboardView::Resources;
+    app.pane = Pane::Content;
     app.servers = vec![
         make_server(1, "s1", "running"),
         make_server(2, "s2", "running"),
     ];
     app.selected = 0;
-    app.activate_focus();
     let event = AppEvent::Key(crossterm::event::KeyEvent {
         code:      KeyCode::Char('$'),
         modifiers: crossterm::event::KeyModifiers::NONE,
@@ -527,9 +524,8 @@ fn menu_select_destructive_requires_confirm() {
 #[test]
 fn enter_opens_menu_then_runs_action() {
     let mut app = App::new(5);
-    app.view = DashboardView::Resources;
+    app.pane = Pane::Content;
     app.servers = vec![make_server(7, "web", "On")];
-    app.activate_focus();
 
     crate::tui::event::handle_event(&mut app, key(KeyCode::Enter));
     assert!(app.action_menu_open());
@@ -711,28 +707,27 @@ fn filter_narrows_list_and_maps_selection() {
 }
 
 #[test]
-fn filter_resets_on_tab_change() {
+fn filter_resets_on_nav_change() {
     let mut app = App::new(5);
     app.servers = vec![make_server(1, "web", "On")];
     app.start_filter();
     app.filter_push('x');
     assert!(app.filter_active());
-    app.next_tab();
+    app.nav_down();
     assert!(!app.filter_active());
     assert!(app.filter.is_empty());
 }
 
 #[test]
-fn drill_request_only_on_projects() {
+fn open_project_drill_queues_fetch() {
     let mut app = App::new(5);
-    app.servers = vec![make_server(7, "web", "On")];
-    app.request_drill();
+    app.open_project_drill(0);
     assert!(app.take_drill_request().is_none());
 
-    app.active_tab = ResourceTab::Projects;
     app.projects = vec![make_project(3, "ratma")];
-    assert!(app.can_drill());
-    app.request_drill();
+    app.open_project_drill(0);
+    assert!(app.drill_open());
+    assert!(app.drill_loading);
     let req = app.take_drill_request().expect("drill requested");
     assert_eq!(req, (ResourceTab::Projects, 3, "ratma".to_string()));
 }
@@ -758,11 +753,12 @@ fn drill_view_navigation() {
         selected: 0
     });
     assert!(app.drill_open());
-    app.drill_next();
+    app.resource_cols = 1;
+    app.content_move(FocusDir::Down);
     assert_eq!(app.drill_view().unwrap().selected, 1);
-    app.drill_next();
+    app.content_move(FocusDir::Down);
     assert_eq!(app.drill_view().unwrap().selected, 1);
-    app.drill_previous();
+    app.content_move(FocusDir::Up);
     assert_eq!(app.drill_view().unwrap().selected, 0);
     app.close_drill();
     assert!(!app.drill_open());
@@ -888,7 +884,7 @@ fn select_initial_tab_all_empty_stays() {
 #[test]
 fn arrows_move_card_selection_horizontally() {
     let mut app = App::new(5);
-    app.view = DashboardView::Resources;
+    app.pane = Pane::Content;
     app.servers = vec![
         make_server(1, "s1", "on"),
         make_server(2, "s2", "on"),
@@ -904,7 +900,7 @@ fn arrows_move_card_selection_horizontally() {
 #[test]
 fn enter_on_leaf_card_opens_action_menu() {
     let mut app = App::new(5);
-    app.view = DashboardView::Resources;
+    app.pane = Pane::Content;
     app.servers = vec![make_server(7, "web", "On")];
     app.selected = 0;
     crate::tui::event::handle_event(&mut app, key_event(KeyCode::Enter));
@@ -914,7 +910,7 @@ fn enter_on_leaf_card_opens_action_menu() {
 #[test]
 fn down_moves_card_selection_by_a_row() {
     let mut app = App::new(5);
-    app.view = DashboardView::Resources;
+    app.pane = Pane::Content;
     app.servers = vec![
         make_server(1, "s1", "on"),
         make_server(2, "s2", "on"),
@@ -930,78 +926,104 @@ fn down_moves_card_selection_by_a_row() {
 #[test]
 fn down_moves_selection_on_single_column() {
     let mut app = App::new(5);
-    app.view = DashboardView::Resources;
+    app.pane = Pane::Content;
     app.servers = vec![make_server(1, "s1", "on"), make_server(2, "s2", "on")];
     app.resource_cols = 1;
     crate::tui::event::handle_event(&mut app, key_event(KeyCode::Down));
     assert_eq!(app.selected, 1);
-    assert_eq!(app.focus, Focus::ResourceList);
+    assert_eq!(app.pane, Pane::Content);
 }
 
 #[test]
-fn arrows_are_two_dimensional() {
+fn right_does_not_wrap_to_next_row() {
     let mut app = App::new(5);
-    assert_eq!(app.focus, Focus::ResourceList);
-    app.move_focus(FocusDir::Right);
-    assert_eq!(app.focus, Focus::Details);
-    app.move_focus(FocusDir::Down);
-    assert_eq!(app.focus, Focus::Events);
-    app.move_focus(FocusDir::Up);
-    assert_ne!(app.focus, Focus::Events);
+    app.pane = Pane::Content;
+    app.servers = vec![
+        make_server(1, "s1", "on"),
+        make_server(2, "s2", "on"),
+        make_server(3, "s3", "on"),
+        make_server(4, "s4", "on"),
+    ];
+    app.resource_cols = 2;
+    app.selected = 1;
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Right));
+    assert_eq!(app.selected, 1);
 }
 
 #[test]
-fn overview_is_default_view() {
+fn up_on_top_row_stays_put() {
+    let mut app = App::new(5);
+    app.pane = Pane::Content;
+    app.servers = vec![make_server(1, "s1", "on"), make_server(2, "s2", "on")];
+    app.resource_cols = 2;
+    app.selected = 1;
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Up));
+    assert_eq!(app.selected, 1);
+}
+
+#[test]
+fn sidebar_is_default_pane() {
     let app = App::new(5);
-    assert_eq!(app.view, DashboardView::Overview);
+    assert_eq!(app.pane, Pane::Sidebar);
 }
 
 #[test]
-fn overview_cards_projects_then_services() {
+fn nav_items_projects_then_services() {
     let mut app = App::new(5);
     app.projects = vec![make_project(1, "p1")];
-    let cards = app.overview_cards();
-    assert_eq!(cards[0].label, "p1");
-    assert!(cards.len() > 1);
+    let items = app.nav_items();
+    assert_eq!(items[0].label, "p1");
+    assert!(items.len() > 1);
 }
 
 #[test]
-fn enter_overview_project_opens_drill_immediately() {
+fn nav_open_project_opens_drill_immediately() {
     let mut app = App::new(5);
     app.projects = vec![make_project(7, "Caravan")];
-    app.overview_selected = 0;
-    app.enter_overview();
+    app.nav_selected = 0;
+    app.nav_open();
+    assert_eq!(app.pane, Pane::Content);
     assert!(app.drill_open());
     assert!(app.drill_loading);
     assert_eq!(app.drill_view().expect("drill").title, "Caravan");
     let req = app.take_drill_request().expect("fetch requested");
     assert_eq!(req.1, 7);
-    app.close_drill();
-    assert_eq!(app.view, DashboardView::Overview);
 }
 
 #[test]
-fn enter_overview_service_opens_resources() {
+fn nav_open_service_focuses_content() {
     let mut app = App::new(5);
-    app.overview_selected = app.overview_project_cards().len();
-    app.enter_overview();
-    assert_eq!(app.view, DashboardView::Resources);
+    app.nav_open();
+    assert_eq!(app.pane, Pane::Content);
     assert_eq!(app.active_tab, ResourceTab::Servers);
 }
 
 #[test]
-fn esc_from_resources_returns_to_overview() {
+fn esc_from_content_returns_to_sidebar() {
     let mut app = App::new(5);
-    app.view = DashboardView::Resources;
+    app.pane = Pane::Content;
     crate::tui::event::handle_event(&mut app, key_event(KeyCode::Esc));
-    assert_eq!(app.view, DashboardView::Overview);
+    assert_eq!(app.pane, Pane::Sidebar);
 }
 
 #[test]
-fn overview_move_right_changes_selection() {
+fn nav_up_down_move_selection_and_tab() {
     let mut app = App::new(5);
-    app.overview_cols = 4;
-    assert_eq!(app.overview_selected, 0);
-    app.move_overview(FocusDir::Right);
-    assert_eq!(app.overview_selected, 1);
+    assert_eq!(app.nav_selected, 0);
+    app.nav_down();
+    assert_eq!(app.nav_selected, 1);
+    assert_eq!(app.active_tab, ResourceTab::Databases);
+    app.nav_up();
+    assert_eq!(app.nav_selected, 0);
+    assert_eq!(app.active_tab, ResourceTab::Servers);
+}
+
+#[test]
+fn nav_change_closes_open_drill() {
+    let mut app = App::new(5);
+    app.projects = vec![make_project(7, "Caravan")];
+    app.nav_open();
+    assert!(app.drill_open());
+    app.nav_down();
+    assert!(!app.drill_open());
 }

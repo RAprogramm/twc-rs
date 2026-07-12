@@ -6,14 +6,38 @@
 use rust_i18n::t;
 
 use crate::tui::{
-    app::{App, RegistrySummary, ResourceTab},
+    app::{App, ProjectSummary, RegistrySummary, ResourceTab},
     themes::Palette,
     widgets::{
         card_grid::GridCard,
-        overview::tab_icon,
-        resource_list::{server_status_view, status_view}
+        resource_list::{server_status_view, status_view},
+        sidebar::tab_icon
     }
 };
+
+/// Builds the local preview cards for a highlighted project: one card per
+/// resource type it contains, with the loaded count as the badge.
+#[must_use]
+pub fn project_preview(project: &ProjectSummary) -> Vec<GridCard> {
+    let entries: [(ResourceTab, i32); 7] = [
+        (ResourceTab::Servers, project.server_count),
+        (ResourceTab::Databases, project.database_count),
+        (ResourceTab::S3, project.bucket_count),
+        (ResourceTab::Kubernetes, project.cluster_count),
+        (ResourceTab::Balancers, project.balancer_count),
+        (ResourceTab::DedicatedServers, project.dedicated_count),
+        (ResourceTab::Apps, project.app_count)
+    ];
+    entries
+        .into_iter()
+        .filter(|(_, count)| *count > 0)
+        .map(|(tab, count)| {
+            GridCard::new(tab.display_name().into_owned())
+                .icon(tab_icon(tab))
+                .meta(t!("resource_list.count_resources", n => count).to_string())
+        })
+        .collect()
+}
 
 /// Integral used-disk percentage of a registry, treating a zero disk as free.
 fn registry_used_percent(registry: &RegistrySummary) -> i64 {
