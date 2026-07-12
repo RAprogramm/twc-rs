@@ -14,7 +14,7 @@ twc-rs project resources --id 678         # drill into a project
 twc-rs apps logs my-api --today           # app runtime logs by name or ID
 twc-rs apps list-deploys my-api           # deploy history, newest first
 twc-rs doctor                             # detect conflicting installs in PATH
-twc-rs dashboard                          # interactive TUI (k9s-style)
+twc-rs dashboard                          # interactive TUI console
 ```
 
 Per-app commands accept either the app **name** or its numeric **ID**.

@@ -50,7 +50,7 @@ so the same invocation completes in single-digit milliseconds.
 
 | Feature | twc-rs | official |
 |---|---|---|
-| Interactive TUI dashboard (k9s-style) | yes | no |
+| Interactive TUI dashboard (full console) | yes | no |
 | Live per-resource metrics (CPU / RAM / network) | yes | no |
 | Create / delete resources from the dashboard | yes | no |
 | Switch account profile from the dashboard | yes | no |

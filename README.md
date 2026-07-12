@@ -79,30 +79,37 @@ and import startup before any application code runs.
 
 <a id="the-dashboard"></a>
 
-The headline feature the Python CLI does not have: a live, k9s-style TUI
-(`twc-rs dashboard`).
+The headline feature the Python CLI does not have: a full cloud console in
+the terminal (`twc-rs dashboard`) — a full-height sidebar (Create hub,
+projects, services, settings) with an adaptive card-grid content pane.
 
 ![twc-rs dashboard demo](docs/demo/dashboard.gif)
 
 | Key | Action |
 |---|---|
-| `h` / `l` | switch resource tabs |
-| `j` / `k` | move selection |
-| `Enter` | open the action menu / drill into a resource |
+| `↑` `↓` / `k` `j` | move through the sidebar, cards or detail rows |
+| `←` `→` / `h` `l` | move across the card grid |
+| `Enter` | focus the content pane / open details / press a button |
+| `Esc` | step back: details → content → sidebar |
+| `y` / `c` | copy the highlighted detail value (OSC 52 clipboard) |
 | `n` | create a new resource (where supported) |
 | `/` | filter the current list |
 | `Ctrl+K` | command palette — actions, theme, language, profile switch |
+| `p` | switch account profile |
+| `r` | refresh |
 | `?` | help overlay |
 | `Q` | quit |
 
-- Context action menu per resource (reboot / shutdown / clone / delete) with a
-  confirmation step for destructive actions.
-- Create resources and **switch account profile** without leaving the dashboard.
-- Live per-resource metrics (CPU / RAM / network sparklines), fetched off the
-  UI thread so input never blocks on the network.
+- Instant warm start: the last snapshot renders immediately, then every
+  endpoint streams its fresh data in independently — no blank screens.
+- Interactive resource details at web-panel depth: action buttons (backup,
+  redeploy, delete, …) on top, every value copyable, live CPU/RAM sparklines,
+  a confirmation step for destructive actions.
+- Create hub with descriptions of every product; create resources and
+  **switch account profile** without leaving the dashboard.
+- Settings as cards: four true-color themes previewed with their palettes,
+  EN/RU, layout toggles — all persisted to the config file.
 - Drill into a project to see the resources it contains; live event log.
-- Customizable layout, hide-empty-tabs, 4 true-color themes and EN/RU — all
-  persisted to the config file.
 
 <p align="right"><a href="#top">↑ back to top</a></p>
 
@@ -201,7 +208,7 @@ twc-rs apps list-deploys my-api           # deploy history, newest first
 twc-rs apps deploy-logs my-api            # build/deploy logs of the latest deploy
 twc-rs doctor                             # detect conflicting installs in PATH
 twc-rs update                             # self-update via the detected package manager
-twc-rs dashboard                          # interactive TUI (k9s-style)
+twc-rs dashboard                          # interactive TUI console
 ```
 
 Resource groups: `server`, `database`, `s3`, `kubernetes`, `registry`,

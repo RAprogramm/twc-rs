@@ -14,7 +14,7 @@ more — managed from one native binary. No Python, no `pip`, no virtualenv.
 |---|---|
 | Cold start | ~2 ms (the official Python CLI needs ~350 ms) |
 | Footprint | one static 15 MB binary, no runtime dependencies |
-| Dashboard | live k9s-style TUI with per-resource metrics |
+| Dashboard | full TUI console: sidebar, card grids, interactive details, live metrics |
 | Coverage | near-full parity with the official CLI |
 | Completions | bash, zsh, fish, powershell, elvish, nushell — plus dynamic live-value completion |
 | Languages | English and Russian, CLI and TUI |
