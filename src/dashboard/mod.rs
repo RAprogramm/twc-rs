@@ -119,7 +119,7 @@ pub(crate) async fn run_dashboard(
                     Err(e) => {
                         let _ = drill_tx.send(tui::event::AppEvent::DrillFailed {
                             name:  drill_name,
-                            error: e.to_string()
+                            error: e.clone()
                         });
                     }
                 }
