@@ -255,8 +255,8 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
             }
         }
         KeyCode::Left | KeyCode::Char('h') => {
-            if app.pane == Pane::Content && !app.content_move(FocusDir::Left) {
-                app.focus_sidebar();
+            if app.pane == Pane::Content {
+                app.content_move(FocusDir::Left);
             }
         }
         KeyCode::Char('g') | KeyCode::Home => {

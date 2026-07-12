@@ -401,7 +401,7 @@ fn sidebar_left_right_are_noop() {
 }
 
 #[test]
-fn enter_opens_content_h_returns() {
+fn enter_opens_content_esc_returns_left_stays() {
     let mut app = App::new(5);
     app.servers = vec![make_server(1, "s1", "On")];
     assert!(crate::tui::event::handle_event(
@@ -409,9 +409,13 @@ fn enter_opens_content_h_returns() {
         key_event(KeyCode::Enter)
     ));
     assert_eq!(app.pane, Pane::Content);
+    for code in [KeyCode::Left, KeyCode::Char('h')] {
+        assert!(crate::tui::event::handle_event(&mut app, key_event(code)));
+        assert_eq!(app.pane, Pane::Content);
+    }
     assert!(crate::tui::event::handle_event(
         &mut app,
-        key_event(KeyCode::Char('h'))
+        key_event(KeyCode::Esc)
     ));
     assert_eq!(app.pane, Pane::Sidebar);
 }

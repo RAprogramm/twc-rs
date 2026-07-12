@@ -210,25 +210,23 @@ impl super::App {
     }
 
     /// Moves the content-grid selection exactly one step in the given
-    /// direction: left/right stay within the row, up/down move by a row.
-    /// Returns `false` only when already at the leftmost column and moving
-    /// left, so the caller can hand focus back to the sidebar.
-    pub fn content_move(&mut self, dir: super::FocusDir) -> bool {
+    /// direction: left/right stay within the row, up/down move by a row, and
+    /// every edge clamps in place — leaving the pane is Esc only.
+    pub fn content_move(&mut self, dir: super::FocusDir) {
         use super::FocusDir;
 
         let len = self.content_len();
         if len == 0 {
-            return !matches!(dir, FocusDir::Left);
+            return;
         }
         let cols = self.resource_cols.max(1);
         let cur = self.content_selected().min(len - 1);
         let col = cur % cols;
         match dir {
             FocusDir::Left => {
-                if col == 0 {
-                    return false;
+                if col > 0 {
+                    self.set_content_selected(cur - 1);
                 }
-                self.set_content_selected(cur - 1);
             }
             FocusDir::Right => {
                 if col + 1 < cols && cur + 1 < len {
@@ -246,7 +244,6 @@ impl super::App {
                 }
             }
         }
-        true
     }
 
     /// Moves selection up.
