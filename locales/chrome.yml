@@ -18,9 +18,6 @@ app.action_backup:
 app.action_delete:
   en: Delete
   ru: Удалить
-app.no_actions:
-  en: No actions available for this resource
-  ru: Для этого ресурса нет доступных действий
 app.no_other_profiles:
   en: No other profiles configured; add one with `twc config set-token --profile NAME`
   ru: Других профилей нет — добавьте через `twc config set-token --profile ИМЯ`
@@ -73,12 +70,6 @@ app.log_recovered:
   en: "%{name} recovered"
   ru: "%{name} восстановлен"
 
-ui.action_menu_title:
-  en: " Actions: %{kind} '%{name}' (id %{id}) "
-  ru: " Действия: %{kind} «%{name}» (id %{id}) "
-ui.action_menu_kind_fallback:
-  en: resource
-  ru: ресурс
 ui.confirm_prompt:
   en: " %{verb} '%{name}' (id %{id})?"
   ru: " %{verb} «%{name}» (id %{id})?"

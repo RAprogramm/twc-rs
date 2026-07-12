@@ -136,6 +136,22 @@ impl super::App {
         true
     }
 
+    /// Opens the interactive details panel for the resource selected in the
+    /// current service list: the same view a project drill opens, with the
+    /// action buttons on top and the deep sections fetched in the background.
+    pub fn open_selected_detail(&mut self) -> bool {
+        let Some((id, _)) = self.selected_resource() else {
+            return false;
+        };
+        self.detail_scroll = 0;
+        self.detail_selected = 0;
+        self.detail_open = true;
+        if let Ok(id) = id.parse::<i32>() {
+            self.detail_fetch = Some((self.active_tab, id));
+        }
+        true
+    }
+
     /// Takes the pending detail action for the loop to execute.
     #[must_use]
     pub const fn take_detail_action(

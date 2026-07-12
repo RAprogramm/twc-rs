@@ -85,7 +85,7 @@ fn hints(app: &App) -> Vec<(&'static str, String)> {
             hints.push(("\u{23ce}", t!("ui.status_details").into_owned()));
         }
         Some(NavKind::Service(_)) | None => {
-            hints.push(("\u{23ce}", t!("ui.status_actions").into_owned()));
+            hints.push(("\u{23ce}", t!("ui.status_details").into_owned()));
             hints.push(("/", t!("ui.status_filter").into_owned()));
         }
     }

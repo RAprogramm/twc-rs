@@ -194,17 +194,6 @@ fn handle_overlay_key(app: &mut App, key: KeyEvent) -> Option<bool> {
         return Some(true);
     }
 
-    if app.action_menu_open() {
-        match key.code {
-            KeyCode::Char('k') | KeyCode::Up => app.menu_previous(),
-            KeyCode::Char('j') | KeyCode::Down => app.menu_next(),
-            KeyCode::Enter => app.menu_select(),
-            KeyCode::Esc | KeyCode::Char('q') => app.close_action_menu(),
-            _ => {}
-        }
-        return Some(true);
-    }
-
     if app.awaiting_confirm() {
         match key.code {
             KeyCode::Char('y' | 'Y') | KeyCode::Enter => app.confirm_action(),
@@ -419,7 +408,7 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
             } else if app.drill_open() {
                 app.open_drill_item_detail();
             } else if !matches!(app.nav_current(), Some(super::app::NavKind::Project(_))) {
-                app.open_action_menu();
+                app.open_selected_detail();
             }
         }
         _ => {}

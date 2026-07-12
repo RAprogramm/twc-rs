@@ -628,101 +628,91 @@ fn key(code: KeyCode) -> AppEvent {
 }
 
 #[test]
-fn open_action_menu_on_servers_tab() {
+fn details_open_lists_action_buttons_first() {
     let mut app = App::new(5);
     app.servers = vec![make_server(7, "web", "On")];
     app.selected = 0;
-    app.open_action_menu();
-    let menu = app.action_menu().expect("menu should open");
-    assert_eq!(menu.resource_id, "7");
-    assert_eq!(menu.resource_name, "web");
-    assert_eq!(menu.actions, ResourceTab::Servers.actions().to_vec());
-    assert_eq!(menu.selected, 0);
+    assert!(app.open_selected_detail());
+    assert!(app.detail_open);
+    assert_eq!(app.detail_selected, 0);
+    let (copy, action) = crate::tui::widgets::details::interactive_at(&app, 0).expect("first row");
+    assert!(copy.is_none());
+    assert_eq!(
+        action,
+        Some(crate::tui::widgets::details::DetailAction::Kind(
+            ActionKind::Start
+        ))
+    );
 }
 
 #[test]
-fn open_action_menu_noop_on_other_tab() {
+fn open_selected_detail_noop_without_selection() {
     let mut app = App::new(5);
     app.active_tab = ResourceTab::Databases;
     app.servers = vec![make_server(7, "web", "On")];
-    app.open_action_menu();
-    assert!(!app.action_menu_open());
+    assert!(!app.open_selected_detail());
+    assert!(!app.detail_open);
 }
 
 #[test]
-fn menu_navigation_wraps() {
+fn details_cursor_clamps_at_edges() {
     let mut app = App::new(5);
     app.servers = vec![make_server(7, "web", "On")];
-    app.open_action_menu();
-    app.menu_previous();
-    assert_eq!(
-        app.action_menu().unwrap().selected,
-        ResourceTab::Servers.actions().len() - 1
-    );
-    app.menu_next();
-    assert_eq!(app.action_menu().unwrap().selected, 0);
-}
-
-#[test]
-fn menu_select_non_destructive_dispatches_directly() {
-    let mut app = App::new(5);
-    app.servers = vec![make_server(7, "web", "On")];
-    app.open_action_menu();
-    app.menu_select();
-    assert!(!app.action_menu_open());
-    assert!(!app.awaiting_confirm());
-    let dispatched = app.take_dispatch().expect("non-destructive dispatches");
-    assert_eq!(dispatched.kind, ActionKind::Start);
-    assert_eq!(dispatched.resource_id, "7");
-}
-
-#[test]
-fn menu_select_destructive_requires_confirm() {
-    let mut app = App::new(5);
-    app.servers = vec![make_server(7, "web", "On")];
-    app.open_action_menu();
-    for _ in 0..ResourceTab::Servers.actions().len() - 1 {
-        app.menu_next();
+    app.selected = 0;
+    assert!(app.open_selected_detail());
+    crate::tui::event::handle_event(&mut app, key(KeyCode::Up));
+    assert_eq!(app.detail_selected, 0);
+    let len = crate::tui::widgets::details::interactive_len(&app);
+    for _ in 0..len + 3 {
+        crate::tui::event::handle_event(&mut app, key(KeyCode::Down));
     }
-    let current = {
-        let menu = app.action_menu().unwrap();
-        menu.actions[menu.selected]
-    };
-    assert_eq!(current, ActionKind::Delete);
-    app.menu_select();
-    assert!(!app.action_menu_open());
+    assert_eq!(app.detail_selected, len - 1);
+}
+
+#[test]
+fn details_destructive_action_requires_confirm() {
+    let mut app = App::new(5);
+    app.active_tab = ResourceTab::Databases;
+    app.databases = vec![make_database(42, "pg-prod", "postgres")];
+    app.selected = 0;
+    assert!(app.open_selected_detail());
+    crate::tui::event::handle_event(&mut app, key(KeyCode::Char('j')));
+    crate::tui::event::handle_event(&mut app, key(KeyCode::Enter));
     assert!(app.awaiting_confirm());
     assert!(app.take_dispatch().is_none());
 
     app.confirm_action();
     let dispatched = app.take_dispatch().expect("confirm dispatches");
+    assert_eq!(dispatched.tab, ResourceTab::Databases);
     assert_eq!(dispatched.kind, ActionKind::Delete);
+    assert_eq!(dispatched.resource_id, "42");
 }
 
 #[test]
-fn enter_opens_menu_then_runs_action() {
+fn enter_opens_details_then_runs_action() {
     let mut app = App::new(5);
     app.pane = Pane::Content;
     nav_select_service(&mut app, ResourceTab::Servers);
     app.servers = vec![make_server(7, "web", "On")];
 
     crate::tui::event::handle_event(&mut app, key(KeyCode::Enter));
-    assert!(app.action_menu_open());
+    assert!(app.detail_open);
 
     crate::tui::event::handle_event(&mut app, key(KeyCode::Char('j')));
     crate::tui::event::handle_event(&mut app, key(KeyCode::Enter));
-    assert!(!app.action_menu_open());
     let dispatched = app.take_dispatch().expect("action dispatched");
     assert_eq!(dispatched.kind, ActionKind::Shutdown);
+    assert_eq!(dispatched.resource_id, "7");
 }
 
 #[test]
-fn menu_esc_closes_without_dispatch() {
+fn details_esc_closes_without_dispatch() {
     let mut app = App::new(5);
     app.servers = vec![make_server(7, "web", "On")];
-    app.open_action_menu();
+    app.selected = 0;
+    assert!(app.open_selected_detail());
     crate::tui::event::handle_event(&mut app, key(KeyCode::Esc));
-    assert!(!app.action_menu_open());
+    assert!(!app.detail_open);
     assert!(app.take_dispatch().is_none());
 }
 
@@ -744,33 +734,11 @@ fn per_tab_action_sets() {
 }
 
 #[test]
-fn action_menu_works_for_databases() {
-    let mut app = App::new(5);
-    app.active_tab = ResourceTab::Databases;
-    app.databases = vec![make_database(42, "pg-prod", "postgres")];
-    app.open_action_menu();
-    let menu = app.action_menu().expect("menu opens for databases");
-    assert_eq!(menu.tab, ResourceTab::Databases);
-    assert_eq!(menu.resource_id, "42");
-    assert_eq!(menu.resource_name, "pg-prod");
-    assert_eq!(menu.actions, vec![ActionKind::Backup, ActionKind::Delete]);
-
-    app.menu_next();
-    app.menu_select();
-    assert!(app.awaiting_confirm());
-    app.confirm_action();
-    let dispatched = app.take_dispatch().expect("delete dispatched");
-    assert_eq!(dispatched.tab, ResourceTab::Databases);
-    assert_eq!(dispatched.kind, ActionKind::Delete);
-    assert_eq!(dispatched.resource_id, "42");
-}
-
-#[test]
-fn no_menu_on_action_less_tab() {
+fn no_details_on_empty_list() {
     let mut app = App::new(5);
     app.active_tab = ResourceTab::Domains;
-    app.open_action_menu();
-    assert!(!app.action_menu_open());
+    assert!(!app.open_selected_detail());
+    assert!(!app.detail_open);
 }
 
 #[test]
@@ -1141,14 +1109,14 @@ fn arrows_move_card_selection_horizontally() {
 }
 
 #[test]
-fn enter_on_leaf_card_opens_action_menu() {
+fn enter_on_leaf_card_opens_details() {
     let mut app = App::new(5);
     app.pane = Pane::Content;
     nav_select_service(&mut app, ResourceTab::Servers);
     app.servers = vec![make_server(7, "web", "On")];
     app.selected = 0;
     crate::tui::event::handle_event(&mut app, key_event(KeyCode::Enter));
-    assert!(app.action_menu_open());
+    assert!(app.detail_open);
 }
 
 #[test]

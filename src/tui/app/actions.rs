@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 RAprogramm <andrey.rozanov.vl@gmail.com>
 // SPDX-License-Identifier: MIT
 
-//! Resource actions: the action vocabulary, pending state and the context menu.
+//! Resource actions: the action vocabulary and the pending-action state.
 
 use std::borrow::Cow;
 
@@ -79,100 +79,7 @@ pub struct PendingAction {
     pub resource_name: String
 }
 
-/// A context action menu opened over the selected resource.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ActionMenu {
-    /// The resource category the menu targets.
-    pub tab:           ResourceTab,
-    /// Target resource id (numeric or UUID, depending on the resource).
-    pub resource_id:   String,
-    /// Target resource name, for display.
-    pub resource_name: String,
-    /// Available actions, in display order.
-    pub actions:       Vec<ActionKind>,
-    /// Index of the highlighted action.
-    pub selected:      usize
-}
-
 impl super::App {
-    /// Opens the context action menu for the selected resource.
-    ///
-    /// No-op when the active tab declares no actions or nothing is selected.
-    pub fn open_action_menu(&mut self) {
-        let actions = self.active_tab.actions();
-        if actions.is_empty() {
-            self.status_message = Some(t!("app.no_actions").to_string());
-            return;
-        }
-        if let Some((id, name)) = self.selected_resource() {
-            self.action_menu = Some(ActionMenu {
-                tab:           self.active_tab,
-                resource_id:   id,
-                resource_name: name,
-                actions:       actions.to_vec(),
-                selected:      0
-            });
-        }
-    }
-
-    /// Closes the action menu without choosing anything.
-    pub fn close_action_menu(&mut self) {
-        self.action_menu = None;
-    }
-
-    /// Returns true while the action menu is open.
-    #[must_use]
-    pub const fn action_menu_open(&self) -> bool {
-        self.action_menu.is_some()
-    }
-
-    /// Returns the open action menu, for rendering.
-    #[must_use]
-    pub const fn action_menu(&self) -> Option<&ActionMenu> {
-        self.action_menu.as_ref()
-    }
-
-    /// Moves the action-menu highlight to the next item (wraps).
-    pub const fn menu_next(&mut self) {
-        if let Some(menu) = self.action_menu.as_mut()
-            && !menu.actions.is_empty()
-        {
-            menu.selected = (menu.selected + 1) % menu.actions.len();
-        }
-    }
-
-    /// Moves the action-menu highlight to the previous item (wraps).
-    pub const fn menu_previous(&mut self) {
-        if let Some(menu) = self.action_menu.as_mut() {
-            let len = menu.actions.len();
-            if len > 0 {
-                menu.selected = (menu.selected + len - 1) % len;
-            }
-        }
-    }
-
-    /// Chooses the highlighted action: destructive actions open a
-    /// confirmation prompt, others are queued for dispatch immediately.
-    pub fn menu_select(&mut self) {
-        let Some(menu) = self.action_menu.take() else {
-            return;
-        };
-        let Some(&action) = menu.actions.get(menu.selected) else {
-            return;
-        };
-        let pending = PendingAction {
-            tab:           menu.tab,
-            kind:          action,
-            resource_id:   menu.resource_id,
-            resource_name: menu.resource_name
-        };
-        if action.is_destructive() {
-            self.confirm = Some(pending);
-        } else {
-            self.dispatch = Some(pending);
-        }
-    }
-
     /// Confirms the pending destructive action, queueing it for dispatch.
     pub fn confirm_action(&mut self) {
         self.dispatch = self.confirm.take();

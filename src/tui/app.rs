@@ -26,7 +26,7 @@ mod tabs;
 #[cfg(test)]
 mod tests;
 
-pub use actions::{ActionKind, ActionMenu, PendingAction};
+pub use actions::{ActionKind, PendingAction};
 pub use data::DataSlice;
 pub use drill::{DrillItem, DrillView};
 pub use forms::CreateForm;
@@ -117,7 +117,6 @@ pub struct App {
     pub is_loading:          bool,
     pub widgets:             super::widgets::WidgetRegistry,
     pub focus:               Focus,
-    pub action_menu:         Option<ActionMenu>,
     pub confirm:             Option<PendingAction>,
     pub dispatch:            Option<PendingAction>,
     pub palette:             Option<super::command_palette::CommandPalette>,
@@ -223,7 +222,6 @@ impl App {
             is_loading: false,
             widgets: super::widgets::WidgetRegistry::new(),
             focus: Focus::ResourceList,
-            action_menu: None,
             confirm: None,
             dispatch: None,
             palette: None,

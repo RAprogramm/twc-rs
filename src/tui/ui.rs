@@ -6,10 +6,7 @@
 mod overlays;
 mod status_bar;
 
-use overlays::{
-    render_action_menu, render_confirm, render_create_form, render_info_popup,
-    render_settings_picker
-};
+use overlays::{render_confirm, render_create_form, render_info_popup, render_settings_picker};
 use ratatui::{
     Frame,
     layout::{Constraint, Direction, Layout, Rect}
@@ -88,10 +85,6 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
 fn draw_modals(frame: &mut Frame, size: Rect, app: &App, palette: &Palette) {
     if app.show_help {
         HelpWidget::new().render(frame, size, app);
-    }
-
-    if app.action_menu_open() {
-        render_action_menu(frame, size, app, palette);
     }
 
     if app.awaiting_confirm() {
