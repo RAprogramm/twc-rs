@@ -17,7 +17,7 @@ number below is produced live by [`benches/compare.sh`](https://github.com/RApro
 | CPU | AMD Ryzen AI MAX+ 395 (32 threads) |
 | Memory | 62 GiB |
 | OS / kernel | Linux 7.1.2 (x86_64) |
-| Rust toolchain | rustc 1.96.0 (release build, `--features tui`, stripped) |
+| Rust toolchain | stable Rust (release build, `--features tui`, stripped) |
 | Official CLI | `twc-cli` v2.15.2, in a clean virtualenv on Python 3.14.6 |
 | Sampling | 50 runs per measurement, mean reported, one warm-up discarded |
 | Startup metric | `--version` / `--help` (no network — pure process start) |

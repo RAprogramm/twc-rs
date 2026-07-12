@@ -21,7 +21,7 @@ SPDX-License-Identifier: MIT
 [![release-plz](https://github.com/RAprogramm/twc-rs/actions/workflows/release-plz.yml/badge.svg)](https://github.com/RAprogramm/twc-rs/actions/workflows/release-plz.yml)
 [![docs](https://img.shields.io/badge/docs-raprogramm.github.io%2Ftwc--rs-blue)](https://raprogramm.github.io/twc-rs/)
 [![license](https://img.shields.io/crates/l/twc-rs.svg?color=blue)](LICENSE)
-[![MSRV](https://img.shields.io/badge/MSRV-1.96-blue.svg?logo=rust)](Cargo.toml)
+[![MSRV](https://img.shields.io/crates/msrv/twc-rs?logo=rust&label=MSRV&color=blue)](Cargo.toml)
 [![platforms](https://img.shields.io/badge/platforms-linux%20%7C%20macos%20%7C%20windows-informational?logo=linux)](#supported-platforms)
 
 [English](README.md) · **Русский**
@@ -68,7 +68,7 @@ SPDX-License-Identifier: MIT
 | Профили (мультиаккаунт) | да (`--profile`, переключение в TUI) | да |
 | Языки | **английский + русский** (TUI и CLI) | только английский |
 
-Замеры на AMD Ryzen AI MAX+ 395 (Linux 7.1, rustc 1.96) против `twc-cli` v2.15.2,
+Замеры на AMD Ryzen AI MAX+ 395 (Linux 7.1, stable Rust) против `twc-cli` v2.15.2,
 по 50 запусков. Python-инструмент тратит ~350 мс на старт интерпретатора и импорты
 ещё до выполнения кода приложения.
 
@@ -292,7 +292,8 @@ cargo install --path .                  # установить из чекаут
 cargo build --release --no-default-features --features auth
 ```
 
-Требуется Rust **1.96+**. Крейт линтуется под `clippy` pedantic + nursery, а SDK
+Требуется версия Rust, объявленная как `rust-version` в
+[`Cargo.toml`](Cargo.toml) (см. бейдж MSRV выше). Крейт линтуется под `clippy` pedantic + nursery, а SDK
 генерируется из официальной OpenAPI-спеки через
 [`timeweb-rs`](https://crates.io/crates/timeweb-rs).
 

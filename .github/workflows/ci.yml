@@ -56,12 +56,25 @@ jobs:
       - run: cargo test --all-features
 
   msrv:
-    name: MSRV (1.97)
+    name: MSRV
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7 # checkout repository
-      - name: Install Rust 1.97.0
-        uses: dtolnay/rust-toolchain@1.97.0 # declared MSRV
+      # Cargo.toml rust-version is the single source of truth for the MSRV;
+      # this job installs exactly that toolchain instead of pinning a copy.
+      - name: Read MSRV from Cargo.toml
+        id: msrv
+        run: |
+          version="$(sed -n 's/^rust-version *= *"\(.*\)"/\1/p' Cargo.toml | head -n1)"
+          if [ -z "${version}" ]; then
+            echo "::error::rust-version not found in Cargo.toml"
+            exit 1
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+      - name: Install MSRV toolchain
+        uses: dtolnay/rust-toolchain@master # toolchain taken from Cargo.toml
+        with:
+          toolchain: ${{ steps.msrv.outputs.version }}
       - uses: Swatinem/rust-cache@v2 # shared cargo cache
       - run: cargo check --all-features

@@ -21,7 +21,7 @@ managed from one native binary. No Python, no `pip`, no virtualenv.
 [![release-plz](https://github.com/RAprogramm/twc-rs/actions/workflows/release-plz.yml/badge.svg)](https://github.com/RAprogramm/twc-rs/actions/workflows/release-plz.yml)
 [![docs](https://img.shields.io/badge/docs-raprogramm.github.io%2Ftwc--rs-blue)](https://raprogramm.github.io/twc-rs/)
 [![license](https://img.shields.io/crates/l/twc-rs.svg?color=blue)](LICENSE)
-[![MSRV](https://img.shields.io/badge/MSRV-1.96-blue.svg?logo=rust)](Cargo.toml)
+[![MSRV](https://img.shields.io/crates/msrv/twc-rs?logo=rust&label=MSRV&color=blue)](Cargo.toml)
 [![platforms](https://img.shields.io/badge/platforms-linux%20%7C%20macos%20%7C%20windows-informational?logo=linux)](#supported-platforms)
 
 **English** · [Русский](README.ru.md)
@@ -69,7 +69,7 @@ and the reproducible benchmark).
 | Profiles (multi-account) | yes (`--profile`, switchable in the TUI) | yes |
 | Languages | **English + Russian** (TUI & CLI) | English only |
 
-Measured on an AMD Ryzen AI MAX+ 395 (Linux 7.1, rustc 1.96) against
+Measured on an AMD Ryzen AI MAX+ 395 (Linux 7.1, stable Rust) against
 `twc-cli` v2.15.2, 50 runs each. The Python tool pays ~350 ms of interpreter
 and import startup before any application code runs.
 
@@ -290,7 +290,9 @@ cargo install --path .                  # install from the checkout
 cargo build --release --no-default-features --features auth
 ```
 
-Requires Rust **1.96+**. The crate is linted under `clippy` pedantic + nursery
+Requires the Rust version declared as `rust-version` in
+[`Cargo.toml`](Cargo.toml) (see the MSRV badge above). The crate is linted
+under `clippy` pedantic + nursery
 and the SDK is generated from the official OpenAPI spec via
 [`timeweb-rs`](https://crates.io/crates/timeweb-rs).
 
