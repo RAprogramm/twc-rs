@@ -136,3 +136,36 @@ app.hint_account:
 app.hint_general:
   en: "general"
   ru: "общее"
+ui.status_nav:
+  en: navigate
+  ru: навигация
+ui.status_back:
+  en: back
+  ru: назад
+ui.status_details:
+  en: details
+  ru: детали
+ui.status_actions:
+  en: actions
+  ru: действия
+ui.status_change:
+  en: change
+  ru: изменить
+ui.status_create_hint:
+  en: create
+  ru: создать
+ui.status_scroll:
+  en: scroll
+  ru: прокрутка
+ui.status_apply:
+  en: apply
+  ru: применить
+ui.status_clear:
+  en: clear
+  ru: очистить
+ui.status_updated:
+  en: "updated %{s}s ago"
+  ru: "обновлено %{s}с назад"
+ui.status_pick:
+  en: pick
+  ru: выбрать
