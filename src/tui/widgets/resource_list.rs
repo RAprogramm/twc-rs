@@ -395,7 +395,12 @@ fn render_grid(frame: &mut Frame, inner: Rect, cards: &[&Card], app: &App, palet
         return;
     }
     let icon = overview::tab_icon(app.active_tab);
-    let cols = overview::columns_for(inner.width);
+    let longest = cards
+        .iter()
+        .map(|c| c.title.chars().count())
+        .max()
+        .unwrap_or(0);
+    let cols = overview::grid_columns(inner.width, longest);
     let rows_total = cards.len().div_ceil(cols);
     let rows_fit = usize::from((inner.height + VGAP) / (CARD_H + VGAP)).max(1);
 
@@ -442,7 +447,7 @@ fn render_card(
     } else {
         palette.border
     };
-    let inner_w = usize::from(rect.width.saturating_sub(4));
+    let inner_w = usize::from(rect.width.saturating_sub(2));
 
     let title_line = Line::from(vec![
         Span::styled(format!("{icon}  "), Style::default().fg(palette.accent)),

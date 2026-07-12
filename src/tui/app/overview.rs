@@ -97,6 +97,35 @@ impl App {
         cards
     }
 
+    /// The longest label shown on the overview, in characters, used to size the
+    /// card grid columns so no name is truncated when width allows.
+    #[must_use]
+    pub fn overview_longest_label(&self) -> usize {
+        let projects = self
+            .projects
+            .iter()
+            .map(|p| p.name.chars().count())
+            .max()
+            .unwrap_or(0);
+        let services = Self::service_tabs()
+            .into_iter()
+            .map(|t| t.display_name().chars().count())
+            .max()
+            .unwrap_or(0);
+        projects.max(services)
+    }
+
+    /// The longest item name on the active resource tab, in characters, used to
+    /// size the resource card grid columns.
+    #[must_use]
+    pub fn current_longest_label(&self) -> usize {
+        self.current_item_names()
+            .iter()
+            .map(|n| n.chars().count())
+            .max()
+            .unwrap_or(0)
+    }
+
     /// Moves the overview selection on the card grid in the given direction.
     pub fn move_overview(&mut self, dir: FocusDir) {
         let len = self.overview_cards().len();
