@@ -5,6 +5,18 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1](https://github.com/RAprogramm/twc-rs/compare/v2.0.0...v2.0.1) - 2026-07-12
+
+### Fixed
+
+- Safe details cursor start, uniform card cells, pluralized resource counts ([a430bc0](https://github.com/RAprogramm/twc-rs/commit/a430bc0279e54a706a6e6eafa8da13160fdc0c95))
+
+
+### Documentation
+
+- Replace the README title with the project banner ([8b8ec9e](https://github.com/RAprogramm/twc-rs/commit/8b8ec9e0d0e5ace002160e2251e5cb67ee670e45))
+
+
 ## [2.0.0](https://github.com/RAprogramm/twc-rs/compare/v1.1.2...v2.0.0) - 2026-07-12
 
 ### Added
