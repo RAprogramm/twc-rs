@@ -14,6 +14,38 @@ use super::{
     RegistrySummary, S3Summary, ServerSummary, VpcSummary
 };
 
+/// One independently loaded piece of dashboard data, streamed to the UI as
+/// soon as its endpoint responds so fast resources paint before slow ones.
+#[derive(Debug, Clone)]
+pub enum DataSlice {
+    Account(AccountInfo),
+    Servers(Vec<ServerSummary>),
+    Databases(Vec<DatabaseSummary>),
+    S3(Vec<S3Summary>),
+    K8s(Vec<K8sSummary>),
+    Projects(Vec<ProjectSummary>),
+    Balancers(Vec<BalancerSummary>),
+    Registries(Vec<RegistrySummary>),
+    Domains(Vec<DomainSummary>),
+    Firewalls(Vec<FirewallSummary>),
+    FloatingIps(Vec<FloatingIpSummary>),
+    Images(Vec<ImageSummary>),
+    NetworkDrives(Vec<NetworkDriveSummary>),
+    Vpcs(Vec<VpcSummary>),
+    DedicatedServers(Vec<DedicatedServerSummary>),
+    Mails(Vec<MailSummary>),
+    Apps(Vec<AppSummary>),
+    AiAgents(Vec<AiAgentSummary>),
+    KnowledgeBases(Vec<KnowledgeBaseSummary>),
+    SshKeys(Vec<String>),
+    Finances {
+        balance: String,
+        lines:   Vec<String>
+    },
+    /// A named endpoint failed: `"servers: <message>"`.
+    Error(String)
+}
+
 impl super::App {
     /// Marks that a refresh is needed immediately.
     pub fn force_refresh(&mut self) {
@@ -28,160 +60,86 @@ impl super::App {
         self.last_refresh.elapsed() >= self.refresh_interval
     }
 
-    /// Updates account info.
-    pub fn update_account(&mut self, info: AccountInfo) {
-        self.account = info;
+    /// Begins a streamed load cycle: forgets the previous cycle's errors.
+    pub fn load_started(&mut self) {
+        self.cycle_load_errors.clear();
     }
 
-    /// Updates server data.
-    pub fn update_servers(&mut self, servers: Vec<ServerSummary>) {
-        self.servers = servers;
-        self.clamp_selection();
-        self.last_refresh = Instant::now();
-    }
-
-    /// Updates database data.
-    pub fn update_databases(&mut self, databases: Vec<DatabaseSummary>) {
-        self.databases = databases;
-        self.clamp_selection();
-    }
-
-    /// Updates S3 data.
-    pub fn update_s3(&mut self, storages: Vec<S3Summary>) {
-        self.s3_storages = storages;
-        self.clamp_selection();
-    }
-
-    /// Updates Kubernetes data.
-    pub fn update_k8s(&mut self, clusters: Vec<K8sSummary>) {
-        self.k8s_clusters = clusters;
-        self.clamp_selection();
-    }
-
-    /// Updates project data.
-    pub fn update_projects(&mut self, projects: Vec<ProjectSummary>) {
-        self.projects = projects;
-        self.clamp_selection();
-    }
-
-    /// Updates balancer data.
-    // JUSTIFY: Public API method for future API integration.
-    #[allow(dead_code)]
-    pub fn update_balancers(&mut self, balancers: Vec<BalancerSummary>) {
-        self.balancers = balancers;
-        self.clamp_selection();
-    }
-
-    /// Updates registry data.
-    // JUSTIFY: Public API method for future API integration.
-    #[allow(dead_code)]
-    pub fn update_registries(&mut self, registries: Vec<RegistrySummary>) {
-        self.registries = registries;
-        self.clamp_selection();
-    }
-
-    /// Updates domain data.
-    // JUSTIFY: Public API method for future API integration.
-    #[allow(dead_code)]
-    pub fn update_domains(&mut self, domains: Vec<DomainSummary>) {
-        self.domains = domains;
+    /// Applies one streamed slice the moment it arrives, so the UI shows
+    /// each resource as soon as its endpoint responds.
+    pub fn apply_slice(&mut self, slice: DataSlice) {
+        match slice {
+            DataSlice::Account(info) => self.account = info,
+            DataSlice::Servers(v) => {
+                self.servers = v;
+                self.last_refresh = Instant::now();
+            }
+            DataSlice::Databases(v) => self.databases = v,
+            DataSlice::S3(v) => self.s3_storages = v,
+            DataSlice::K8s(v) => self.k8s_clusters = v,
+            DataSlice::Projects(v) => self.projects = v,
+            DataSlice::Balancers(v) => self.balancers = v,
+            DataSlice::Registries(v) => self.registries = v,
+            DataSlice::Domains(v) => self.domains = v,
+            DataSlice::Firewalls(v) => self.firewalls = v,
+            DataSlice::FloatingIps(v) => self.floating_ips = v,
+            DataSlice::Images(v) => self.images = v,
+            DataSlice::NetworkDrives(v) => self.network_drives = v,
+            DataSlice::Vpcs(v) => self.vpcs = v,
+            DataSlice::DedicatedServers(v) => self.dedicated_servers = v,
+            DataSlice::Mails(v) => self.mails = v,
+            DataSlice::Apps(v) => self.apps = v,
+            DataSlice::AiAgents(v) => self.ai_agents = v,
+            DataSlice::KnowledgeBases(v) => self.knowledge_bases = v,
+            DataSlice::SshKeys(v) => self.ssh_keys = v,
+            DataSlice::Finances {
+                balance,
+                lines
+            } => {
+                self.account.balance = balance;
+                self.finances = lines;
+            }
+            DataSlice::Error(entry) => {
+                if !self.last_load_errors.contains(&entry) {
+                    self.log(
+                        LogLevel::Error,
+                        t!("app.log_load_failed", entry => entry).to_string()
+                    );
+                }
+                self.cycle_load_errors.push(entry);
+                return;
+            }
+        }
+        self.is_loading = false;
+        self.select_initial_tab();
         self.clamp_selection();
     }
 
-    /// Updates firewall data.
-    // JUSTIFY: Public API method for future API integration.
-    #[allow(dead_code)]
-    pub fn update_firewalls(&mut self, firewalls: Vec<FirewallSummary>) {
-        self.firewalls = firewalls;
-        self.clamp_selection();
-    }
-
-    /// Updates floating IP data.
-    // JUSTIFY: Public API method for future API integration.
-    #[allow(dead_code)]
-    pub fn update_floating_ips(&mut self, ips: Vec<FloatingIpSummary>) {
-        self.floating_ips = ips;
-        self.clamp_selection();
-    }
-
-    /// Updates image data.
-    // JUSTIFY: Public API method for future API integration.
-    #[allow(dead_code)]
-    pub fn update_images(&mut self, images: Vec<ImageSummary>) {
-        self.images = images;
-        self.clamp_selection();
-    }
-
-    /// Updates network drive data.
-    // JUSTIFY: Public API method for future API integration.
-    #[allow(dead_code)]
-    pub fn update_network_drives(&mut self, drives: Vec<NetworkDriveSummary>) {
-        self.network_drives = drives;
-        self.clamp_selection();
-    }
-
-    /// Updates VPC data.
-    // JUSTIFY: Public API method for future API integration.
-    #[allow(dead_code)]
-    pub fn update_vpcs(&mut self, vpcs: Vec<VpcSummary>) {
-        self.vpcs = vpcs;
-        self.clamp_selection();
-    }
-
-    /// Updates dedicated server data.
-    // JUSTIFY: Public API method for future API integration.
-    #[allow(dead_code)]
-    pub fn update_dedicated_servers(&mut self, servers: Vec<DedicatedServerSummary>) {
-        self.dedicated_servers = servers;
-        self.clamp_selection();
-    }
-
-    /// Updates mail data.
-    // JUSTIFY: Public API method for future API integration.
-    #[allow(dead_code)]
-    pub fn update_mails(&mut self, mails: Vec<MailSummary>) {
-        self.mails = mails;
-        self.clamp_selection();
-    }
-
-    /// Updates application data.
-    // JUSTIFY: Public API method for future API integration.
-    #[allow(dead_code)]
-    pub fn update_apps(&mut self, apps: Vec<AppSummary>) {
-        self.apps = apps;
-        self.clamp_selection();
-    }
-
-    /// Updates AI agent data.
-    // JUSTIFY: Public API method for future API integration.
-    #[allow(dead_code)]
-    pub fn update_ai_agents(&mut self, agents: Vec<AiAgentSummary>) {
-        self.ai_agents = agents;
-        self.clamp_selection();
-    }
-
-    /// Updates knowledge base data.
-    // JUSTIFY: Public API method for future API integration.
-    #[allow(dead_code)]
-    pub fn update_knowledge_bases(&mut self, bases: Vec<KnowledgeBaseSummary>) {
-        self.knowledge_bases = bases;
-        self.clamp_selection();
-    }
-
-    /// Updates SSH key data.
-    // JUSTIFY: Public API method for future API integration.
-    #[allow(dead_code)]
-    pub fn update_ssh_keys(&mut self, keys: Vec<String>) {
-        self.ssh_keys = keys;
-        self.clamp_selection();
-    }
-
-    /// Updates finances data.
-    // JUSTIFY: Public API method for future API integration.
-    #[allow(dead_code)]
-    pub fn update_finances(&mut self, data: Vec<String>) {
-        self.finances = data;
-        self.clamp_selection();
+    /// Finishes a streamed load cycle: logs recoveries, rolls the error set
+    /// over, and sets the summary status message.
+    pub fn load_finished(&mut self) {
+        let recovered: Vec<String> = self
+            .last_load_errors
+            .iter()
+            .filter(|e| !self.cycle_load_errors.contains(e))
+            .cloned()
+            .collect();
+        for entry in recovered {
+            let name = entry.split(':').next().unwrap_or(&entry).to_string();
+            self.log(
+                LogLevel::Success,
+                t!("app.log_recovered", name => name).to_string()
+            );
+        }
+        self.last_load_errors = self.cycle_load_errors.clone();
+        self.is_loading = false;
+        if self.last_load_errors.is_empty() {
+            self.error_message = None;
+            self.status_message = Some(t!("app.load_ok").to_string());
+        } else {
+            self.error_message =
+                Some(t!("app.load_failures", n => self.last_load_errors.len()).to_string());
+        }
     }
 
     /// Applies a freshly fetched data snapshot, replacing all resource

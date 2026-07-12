@@ -3,8 +3,6 @@
 
 //! Per-resource summary view-models and the full dashboard data snapshot.
 
-use super::App;
-
 /// Severity of an event-log entry.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(dead_code)]
@@ -266,9 +264,8 @@ pub struct KnowledgeBaseSummary {
     pub status:         String
 }
 
-/// An owned snapshot of all dashboard data, fetched off the UI thread and
-/// applied via [`App::apply_data`]. Cloned out of a throwaway [`App`] by the
-/// background refresh task.
+/// An owned snapshot of all dashboard data, applied in one shot via
+/// [`App::apply_data`].
 #[derive(Debug, Clone)]
 pub struct DashboardData {
     pub account:           AccountInfo,
@@ -295,37 +292,4 @@ pub struct DashboardData {
     pub error_message:     Option<String>,
     pub status_message:    Option<String>,
     pub load_errors:       Vec<String>
-}
-
-impl DashboardData {
-    /// Clones the resource data out of an [`App`] populated by `refresh_all`.
-    #[must_use]
-    pub fn from_app(app: &App) -> Self {
-        Self {
-            account:           app.account.clone(),
-            servers:           app.servers.clone(),
-            databases:         app.databases.clone(),
-            s3_storages:       app.s3_storages.clone(),
-            k8s_clusters:      app.k8s_clusters.clone(),
-            projects:          app.projects.clone(),
-            balancers:         app.balancers.clone(),
-            registries:        app.registries.clone(),
-            domains:           app.domains.clone(),
-            firewalls:         app.firewalls.clone(),
-            floating_ips:      app.floating_ips.clone(),
-            images:            app.images.clone(),
-            network_drives:    app.network_drives.clone(),
-            vpcs:              app.vpcs.clone(),
-            dedicated_servers: app.dedicated_servers.clone(),
-            mails:             app.mails.clone(),
-            apps:              app.apps.clone(),
-            ai_agents:         app.ai_agents.clone(),
-            knowledge_bases:   app.knowledge_bases.clone(),
-            ssh_keys:          app.ssh_keys.clone(),
-            finances:          app.finances.clone(),
-            error_message:     app.error_message.clone(),
-            status_message:    app.status_message.clone(),
-            load_errors:       app.last_load_errors.clone()
-        }
-    }
 }

@@ -203,7 +203,7 @@ fn update_servers_clamps_selection() {
         make_server(2, "s2", "running"),
     ];
     app.selected = 5;
-    app.update_servers(vec![make_server(3, "s3", "running")]);
+    app.apply_slice(DataSlice::Servers(vec![make_server(3, "s3", "running")]));
     assert_eq!(app.selected, 0);
     assert_eq!(app.servers.len(), 1);
 }
@@ -216,7 +216,7 @@ fn update_databases_clamps_selection() {
         make_database(2, "db2", "mysql"),
     ];
     app.selected = 5;
-    app.update_databases(vec![make_database(3, "db3", "redis")]);
+    app.apply_slice(DataSlice::Databases(vec![make_database(3, "db3", "redis")]));
     assert_eq!(app.selected, 0);
     assert_eq!(app.databases.len(), 1);
 }
@@ -226,7 +226,7 @@ fn update_s3_clamps_selection() {
     let mut app = App::new(5);
     app.s3_storages = vec![make_s3(1, "bucket1")];
     app.selected = 5;
-    app.update_s3(vec![make_s3(2, "bucket2")]);
+    app.apply_slice(DataSlice::S3(vec![make_s3(2, "bucket2")]));
     assert_eq!(app.selected, 0);
     assert_eq!(app.s3_storages.len(), 1);
 }
@@ -236,7 +236,7 @@ fn update_k8s_clamps_selection() {
     let mut app = App::new(5);
     app.k8s_clusters = vec![make_k8s(1, "cluster1")];
     app.selected = 5;
-    app.update_k8s(vec![make_k8s(2, "cluster2")]);
+    app.apply_slice(DataSlice::K8s(vec![make_k8s(2, "cluster2")]));
     assert_eq!(app.selected, 0);
     assert_eq!(app.k8s_clusters.len(), 1);
 }
@@ -246,7 +246,7 @@ fn update_projects_clamps_selection() {
     let mut app = App::new(5);
     app.projects = vec![make_project(1, "proj1")];
     app.selected = 5;
-    app.update_projects(vec![make_project(2, "proj2")]);
+    app.apply_slice(DataSlice::Projects(vec![make_project(2, "proj2")]));
     assert_eq!(app.selected, 0);
     assert_eq!(app.projects.len(), 1);
 }
@@ -780,6 +780,39 @@ fn force_refresh_sets_request_flag() {
     assert!(!app.refresh_requested);
     app.force_refresh();
     assert!(app.refresh_requested);
+}
+
+#[test]
+fn slices_stream_in_progressively() {
+    let mut app = App::new(5);
+    app.is_loading = true;
+    app.load_started();
+    app.apply_slice(DataSlice::Projects(vec![make_project(1, "p1")]));
+    assert!(!app.is_loading);
+    assert_eq!(app.projects.len(), 1);
+    assert!(app.servers.is_empty());
+    app.apply_slice(DataSlice::Servers(vec![make_server(1, "s1", "On")]));
+    assert_eq!(app.servers.len(), 1);
+    app.load_finished();
+    assert!(app.last_load_errors.is_empty());
+    assert!(app.status_message.is_some());
+}
+
+#[test]
+fn slice_errors_roll_over_and_recover() {
+    let mut app = App::new(5);
+    app.load_started();
+    app.apply_slice(DataSlice::Error("servers: boom".into()));
+    app.load_finished();
+    assert_eq!(app.last_load_errors, vec!["servers: boom".to_string()]);
+    assert!(app.error_message.is_some());
+
+    app.load_started();
+    app.apply_slice(DataSlice::Servers(vec![make_server(1, "s1", "On")]));
+    app.load_finished();
+    assert!(app.last_load_errors.is_empty());
+    assert!(app.error_message.is_none());
+    assert!(app.status_message.is_some());
 }
 
 #[test]

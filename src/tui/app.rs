@@ -25,6 +25,7 @@ mod tabs;
 mod tests;
 
 pub use actions::{ActionKind, ActionMenu, PendingAction};
+pub use data::DataSlice;
 pub use drill::{DrillItem, DrillView};
 pub use forms::CreateForm;
 pub use nav::{NavItem, NavKind};
@@ -118,6 +119,7 @@ pub struct App {
     pub prefs_dirty:       bool,
     pub logs:              VecDeque<LogEntry>,
     pub last_load_errors:  Vec<String>,
+    pub cycle_load_errors: Vec<String>,
     pub refresh_requested: bool,
     pub drill:             Option<DrillView>,
     pub drill_request:     Option<(ResourceTab, i32, String)>,
@@ -206,6 +208,7 @@ impl App {
             prefs_dirty: false,
             logs: VecDeque::with_capacity(200),
             last_load_errors: Vec::new(),
+            cycle_load_errors: Vec::new(),
             refresh_requested: false,
             drill: None,
             drill_request: None,

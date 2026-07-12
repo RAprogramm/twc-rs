@@ -27,6 +27,12 @@ pub enum AppEvent {
     Status(String),
     /// A freshly fetched data snapshot from the background refresh task.
     Data(Box<super::app::DashboardData>),
+    /// A streamed load cycle began.
+    LoadStarted,
+    /// One resource finished loading and can be shown immediately.
+    Slice(Box<super::app::DataSlice>),
+    /// All endpoints of a streamed load cycle finished.
+    LoadFinished,
     /// Live statistics for the selected resource.
     Stats(Box<super::app::ResourceStats>),
     /// A statistics fetch failed; logged without blocking the dashboard.
@@ -54,6 +60,18 @@ pub fn handle_event(app: &mut App, event: AppEvent) -> bool {
         }
         AppEvent::Data(data) => {
             app.apply_data(*data);
+            true
+        }
+        AppEvent::LoadStarted => {
+            app.load_started();
+            true
+        }
+        AppEvent::Slice(slice) => {
+            app.apply_slice(*slice);
+            true
+        }
+        AppEvent::LoadFinished => {
+            app.load_finished();
             true
         }
         AppEvent::Stats(stats) => {

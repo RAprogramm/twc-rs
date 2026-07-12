@@ -77,7 +77,7 @@ pub(crate) async fn run_dashboard(
         tui::event::run_event_loop(event_tx).await;
     });
 
-    let mut refresh_handle = spawn_refresh_loop(tx.clone(), token.clone(), theme, interval);
+    let mut refresh_handle = spawn_refresh_loop(tx.clone(), token.clone(), interval);
 
     while let Some(event) = rx.recv().await {
         if !tui::event::handle_event(&mut app, event) {
@@ -102,7 +102,7 @@ pub(crate) async fn run_dashboard(
 
         if app.refresh_requested {
             app.refresh_requested = false;
-            spawn_one_shot_refresh(tx.clone(), token.clone(), theme, interval);
+            spawn_one_shot_refresh(tx.clone(), token.clone());
         }
 
         if let Some((drill_tab, drill_id, drill_name)) = app.take_drill_request() {
@@ -128,13 +128,13 @@ pub(crate) async fn run_dashboard(
             );
             let config = authenticated(token.clone());
             perform_action(&config, &mut app, action).await;
-            spawn_one_shot_refresh(tx.clone(), token.clone(), theme, interval);
+            spawn_one_shot_refresh(tx.clone(), token.clone());
         }
 
         if let Some(form) = app.take_create_request() {
             let config = authenticated(token.clone());
             perform_create(&config, &mut app, form).await;
-            spawn_one_shot_refresh(tx.clone(), token.clone(), theme, interval);
+            spawn_one_shot_refresh(tx.clone(), token.clone());
         }
 
         if let Some(profile) = app.take_switch_profile() {
@@ -144,8 +144,7 @@ pub(crate) async fn run_dashboard(
                 Ok(Some(new_token)) => {
                     token = new_token;
                     refresh_handle.abort();
-                    refresh_handle =
-                        spawn_refresh_loop(tx.clone(), token.clone(), theme, interval);
+                    refresh_handle = spawn_refresh_loop(tx.clone(), token.clone(), interval);
                     app.token = Some(token.clone());
                     app.active_profile.clone_from(&profile);
                     app.is_loading = true;

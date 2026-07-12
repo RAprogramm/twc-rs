@@ -9,3 +9,9 @@ app.token_saved:
 app.language_saved:
   en: Language updated.
   ru: Язык изменён.
+app.load_ok:
+  en: "Resources loaded successfully"
+  ru: "Ресурсы загружены"
+app.load_failures:
+  en: "%{n} resource loads failed — see events log"
+  ru: "%{n} загрузок не удалось — см. журнал событий"
