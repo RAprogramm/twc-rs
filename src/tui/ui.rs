@@ -37,14 +37,11 @@ pub fn draw(frame: &mut Frame, app: &App) {
     let show_account = app.is_widget_enabled("account") && size.height >= 16;
     let show_events = app.is_widget_enabled("events") && size.height >= 24;
 
-    let mut constraints = Vec::with_capacity(4);
+    let mut constraints = Vec::with_capacity(3);
     if show_account {
         constraints.push(Constraint::Length(3));
     }
     constraints.push(Constraint::Min(8));
-    if show_events {
-        constraints.push(Constraint::Length(7));
-    }
     constraints.push(Constraint::Length(3));
 
     let rows = Layout::default()
@@ -66,11 +63,16 @@ pub fn draw(frame: &mut Frame, app: &App) {
     idx += 1;
 
     crate::tui::widgets::sidebar::render(frame, body[0], app, &palette);
-    render_content(frame, body[1], app, &palette);
 
     if show_events {
-        crate::tui::widgets::events::render(frame, rows[idx], app);
-        idx += 1;
+        let right = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Min(8), Constraint::Length(7)])
+            .split(body[1]);
+        render_content(frame, right[0], app, &palette);
+        crate::tui::widgets::events::render(frame, right[1], app);
+    } else {
+        render_content(frame, body[1], app, &palette);
     }
 
     render_status_bar(frame, rows[idx], app, &palette);
