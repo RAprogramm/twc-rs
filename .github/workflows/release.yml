@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag to (re)build assets for (e.g. v1.0.0)"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -39,6 +45,15 @@ jobs:
             build-tool: cargo
     steps:
       - uses: actions/checkout@v7 # checkout repository
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+      # The runner images can lag behind the latest stable Rust, which breaks
+      # the build once the manifest rust-version passes the preinstalled
+      # toolchain — install the current stable explicitly.
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable # stable toolchain
+        with:
+          targets: ${{ matrix.target }}
       # taiki-e/upload-rust-binary-action builds with --release, strips the
       # binary, archives (.tar.gz on unix / .zip on windows), generates the
       # checksum and uploads everything to the existing release for this tag.
@@ -54,12 +69,15 @@ jobs:
           archive: $bin-$tag-$target
           checksum: sha256
           token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || github.ref }}
 
   deb:
     name: Build .deb package
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7 # checkout repository
+        with:
+          ref: ${{ inputs.tag || github.ref }}
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable # stable toolchain
       - name: Install cargo-deb
@@ -72,4 +90,5 @@ jobs:
       - name: Upload .deb to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${GITHUB_REF_NAME}" target/debian/*.deb --clobber
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+        run: gh release upload "${RELEASE_TAG}" target/debian/*.deb --clobber
