@@ -135,11 +135,18 @@ fn render_content(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
         return;
     }
 
-    if let Some(NavKind::Project(index)) = app.nav_current()
-        && let Some(project) = app.projects.get(index)
-    {
-        render_project_preview(frame, area, app, project, border, palette);
-        return;
+    match app.nav_current() {
+        Some(NavKind::Settings) => {
+            crate::tui::widgets::settings_panel::render(frame, area, app, border);
+            return;
+        }
+        Some(NavKind::Project(index)) => {
+            if let Some(project) = app.projects.get(index) {
+                render_project_preview(frame, area, app, project, border, palette);
+                return;
+            }
+        }
+        _ => {}
     }
 
     crate::tui::widgets::resource_list::render(frame, area, app, border);

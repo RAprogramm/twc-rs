@@ -1194,6 +1194,69 @@ fn sidebar_selection_stays_on_service_when_projects_arrive() {
 }
 
 #[test]
+fn settings_entry_is_last_nav_item() {
+    let app = App::new(5);
+    let items = app.nav_items();
+    assert!(matches!(
+        items.last().expect("items").kind,
+        crate::tui::app::NavKind::Settings
+    ));
+    assert!(items.last().expect("items").count.is_none());
+}
+
+#[test]
+fn settings_adjust_cycles_language_and_theme() {
+    use crate::config::Language;
+    let mut app = App::new(5);
+    let start_theme = app.theme;
+    app.settings_selected = 0;
+    app.settings_adjust(true);
+    assert_ne!(app.theme, start_theme);
+    assert!(app.prefs_dirty);
+    app.settings_adjust(false);
+    assert_eq!(app.theme, start_theme);
+
+    app.settings_selected = 1;
+    assert_eq!(app.language, Language::En);
+    app.settings_adjust(true);
+    assert_eq!(app.language, Language::Ru);
+    app.settings_adjust(true);
+    assert_eq!(app.language, Language::En);
+}
+
+#[test]
+fn hide_empty_sections_filters_sidebar() {
+    let mut app = App::new(5);
+    app.servers = vec![make_server(1, "s1", "On")];
+    let all = app.nav_items().len();
+    app.settings_selected = 4;
+    app.settings_adjust(true);
+    let filtered = app.nav_items().len();
+    assert!(filtered < all);
+    assert!(app.nav_items().iter().all(|i| {
+        !matches!(i.kind, crate::tui::app::NavKind::Service(_)) || i.count.unwrap_or(0) > 0
+    }));
+}
+
+#[test]
+fn settings_keys_navigate_and_change() {
+    let mut app = App::new(5);
+    let start_theme = app.theme;
+    let last = app.nav_items().len() - 1;
+    app.nav_selected = last;
+    app.nav_open();
+    assert_eq!(app.pane, Pane::Content);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Down));
+    assert_eq!(app.settings_selected, 1);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Up));
+    assert_eq!(app.settings_selected, 0);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Enter));
+    assert_ne!(app.theme, start_theme);
+    crate::tui::event::handle_event(&mut app, key_event(KeyCode::Esc));
+    assert_eq!(app.pane, Pane::Sidebar);
+}
+
+#[test]
 fn sidebar_is_default_pane() {
     let app = App::new(5);
     assert_eq!(app.pane, Pane::Sidebar);

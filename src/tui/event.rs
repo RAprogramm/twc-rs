@@ -201,9 +201,29 @@ fn handle_overlay_key(app: &mut App, key: KeyEvent) -> Option<bool> {
 
 /// Handles a key outside overlays: sidebar navigation on the left pane,
 /// exact one-step grid movement on the content pane.
+/// Handles a key while the settings panel owns the content pane.
+fn handle_settings_key(app: &mut App, key: KeyEvent) -> bool {
+    match key.code {
+        KeyCode::Up | KeyCode::Char('k') => app.settings_up(),
+        KeyCode::Down | KeyCode::Char('j') => app.settings_down(),
+        KeyCode::Right | KeyCode::Char('l') | KeyCode::Enter => app.settings_adjust(true),
+        KeyCode::Left | KeyCode::Char('h') => app.settings_adjust(false),
+        KeyCode::Esc => app.focus_sidebar(),
+        _ => return false
+    }
+    true
+}
+
 fn handle_key(app: &mut App, key: KeyEvent) -> bool {
     if let Some(result) = handle_overlay_key(app, key) {
         return result;
+    }
+
+    if app.pane == Pane::Content
+        && matches!(app.nav_current(), Some(super::app::NavKind::Settings))
+        && handle_settings_key(app, key)
+    {
+        return true;
     }
 
     match key.code {

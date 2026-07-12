@@ -95,35 +95,38 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
     }
 
     let items = app.nav_items();
-    let mut lines: Vec<Line> = Vec::with_capacity(items.len() + 4);
+    let mut lines: Vec<Line> = Vec::with_capacity(items.len() + 6);
     let mut selected_line = 0usize;
-    let mut last_group_project: Option<bool> = None;
+    let mut last_group: Option<u8> = None;
 
     for (i, item) in items.iter().enumerate() {
-        let is_project = matches!(item.kind, NavKind::Project(_));
-        if last_group_project != Some(is_project) {
-            if last_group_project.is_some() {
+        let group = match item.kind {
+            NavKind::Project(_) => 0u8,
+            NavKind::Service(_) => 1,
+            NavKind::Settings => 2
+        };
+        if last_group != Some(group) {
+            if last_group.is_some() {
                 lines.push(Line::from(""));
             }
-            let header = if is_project {
-                t!("overview.projects")
-            } else {
-                t!("overview.services")
+            let header = match group {
+                0 => t!("overview.projects"),
+                1 => t!("overview.services"),
+                _ => t!("sidebar.settings")
+            };
+            let loading = match group {
+                0 => app.projects_pending > 0,
+                1 => app.services_pending > 0,
+                _ => false
             };
             let refreshing = !app.initial_cycle_done || app.manual_refresh_spin;
-            let loading = refreshing
-                && if is_project {
-                    app.projects_pending > 0
-                } else {
-                    app.services_pending > 0
-                };
             let mut spans = vec![Span::styled(
                 format!(" {}", header.to_uppercase()),
                 Style::default()
                     .fg(palette.header)
                     .add_modifier(Modifier::BOLD)
             )];
-            if loading {
+            if loading && refreshing {
                 let frame_idx = usize::try_from(app.anim_tick % SPINNER.len() as u64).unwrap_or(0);
                 spans.push(Span::styled(
                     format!(" {}", SPINNER[frame_idx]),
@@ -131,7 +134,7 @@ pub fn render(frame: &mut Frame, area: Rect, app: &App, palette: &Palette) {
                 ));
             }
             lines.push(Line::from(spans));
-            last_group_project = Some(is_project);
+            last_group = Some(group);
         }
 
         let selected = i == app.nav_selected;
@@ -161,8 +164,7 @@ fn nav_line<'a>(
     width: u16,
     palette: &Palette
 ) -> Line<'a> {
-    let icon = tab_icon(item.icon);
-    let count = item.count.to_string();
+    let count = item.count.map(|c| c.to_string()).unwrap_or_default();
     let label_room = usize::from(width)
         .saturating_sub(6)
         .saturating_sub(count.len());
@@ -192,7 +194,10 @@ fn nav_line<'a>(
 
     Line::from(vec![
         Span::styled(bar.to_string(), Style::default().fg(bar_color)),
-        Span::styled(format!("{icon} "), Style::default().fg(palette.accent)),
+        Span::styled(
+            format!("{} ", item.glyph),
+            Style::default().fg(palette.accent)
+        ),
         Span::styled(label, label_style),
         Span::raw(" ".repeat(pad)),
         Span::styled(count, Style::default().fg(count_color)),

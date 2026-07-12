@@ -12,7 +12,9 @@ pub enum NavKind {
     /// A project entry, carrying the project's list index.
     Project(usize),
     /// A service-category entry, carrying its resource tab.
-    Service(ResourceTab)
+    Service(ResourceTab),
+    /// The settings panel.
+    Settings
 }
 
 /// A single entry in the sidebar.
@@ -20,12 +22,12 @@ pub enum NavKind {
 pub struct NavItem {
     /// The target this entry opens.
     pub kind:  NavKind,
-    /// The tab whose icon represents this entry.
-    pub icon:  ResourceTab,
+    /// The Nerd Font glyph shown before the label.
+    pub glyph: &'static str,
     /// The entry's display label.
     pub label: String,
-    /// The count badge shown right-aligned.
-    pub count: usize
+    /// The count badge shown right-aligned, when the entry has one.
+    pub count: Option<usize>
 }
 
 impl App {
@@ -52,26 +54,40 @@ impl App {
         ]
     }
 
-    /// All sidebar entries: projects first, then services.
+    /// All sidebar entries: projects, then services (optionally hiding empty
+    /// ones), then the settings entry.
     #[must_use]
     pub fn nav_items(&self) -> Vec<NavItem> {
+        use crate::tui::widgets::sidebar::tab_icon;
+
         let mut items: Vec<NavItem> = self
             .projects
             .iter()
             .enumerate()
             .map(|(i, p)| NavItem {
                 kind:  NavKind::Project(i),
-                icon:  ResourceTab::Projects,
+                glyph: tab_icon(ResourceTab::Projects),
                 label: p.name.clone(),
-                count: usize::try_from(p.resource_count()).unwrap_or(0)
+                count: Some(usize::try_from(p.resource_count()).unwrap_or(0))
             })
             .collect();
-        items.extend(Self::service_tabs().into_iter().map(|tab| NavItem {
-            kind:  NavKind::Service(tab),
-            icon:  tab,
-            label: tab.display_name().into_owned(),
-            count: self.tab_count(tab)
-        }));
+        items.extend(
+            Self::service_tabs()
+                .into_iter()
+                .filter(|tab| !self.hide_empty_tabs || self.tab_count(*tab) > 0)
+                .map(|tab| NavItem {
+                    kind:  NavKind::Service(tab),
+                    glyph: tab_icon(tab),
+                    label: tab.display_name().into_owned(),
+                    count: Some(self.tab_count(tab))
+                })
+        );
+        items.push(NavItem {
+            kind:  NavKind::Settings,
+            glyph: "\u{f013}",
+            label: rust_i18n::t!("sidebar.settings").into_owned(),
+            count: None
+        });
         items
     }
 
@@ -123,7 +139,7 @@ impl App {
                 self.active_tab = ResourceTab::Projects;
                 self.select_project_drill(index);
             }
-            None => {}
+            Some(NavKind::Settings) | None => {}
         }
     }
 
@@ -144,6 +160,7 @@ impl App {
                 }
                 self.pane = Pane::Content;
             }
+            Some(NavKind::Settings) => self.pane = Pane::Content,
             None => {}
         }
     }

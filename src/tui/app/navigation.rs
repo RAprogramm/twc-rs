@@ -44,7 +44,7 @@ impl super::App {
             return;
         }
         let items = self.nav_items();
-        let Some(index) = items.iter().position(|i| i.count > 0) else {
+        let Some(index) = items.iter().position(|i| i.count.unwrap_or(0) > 0) else {
             return;
         };
         self.initial_tab_set = true;
@@ -59,6 +59,7 @@ impl super::App {
                 self.reset_after_tab_change();
                 self.select_project_drill(project_index);
             }
+            NavKind::Settings => {}
         }
     }
 
