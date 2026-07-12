@@ -77,7 +77,8 @@ pub(super) fn blank() -> DetailLine {
 pub fn build(app: &App) -> Vec<DetailLine> {
     let palette = app.theme.palette();
 
-    let mut rows = match app.active_tab {
+    let mut rows = action_rows(app, palette);
+    rows.extend(match app.active_tab {
         ResourceTab::Servers => render_server_details(app, palette),
         ResourceTab::Databases => render_database_details(app, palette),
         ResourceTab::S3 => render_s3_details(app, palette),
@@ -102,10 +103,17 @@ pub fn build(app: &App) -> Vec<DetailLine> {
         ResourceTab::Finances => {
             render_string_details(&app.finances, app, &t!("details.finance"), palette)
         }
-    };
+    });
 
     append_extra_sections(&mut rows, app, palette);
 
+    rows
+}
+
+/// Builds the action-button block shown at the very top of the details panel,
+/// so the API actions are reachable without scrolling past the fields. The
+/// buttons take the first interactive indices, so the cursor opens on them.
+fn action_rows(app: &App, palette: Palette) -> Vec<DetailLine> {
     let mut actions: Vec<(String, DetailAction)> = Vec::new();
     if app.active_tab == ResourceTab::Apps && !app.apps.is_empty() {
         actions.push((t!("details.redeploy").into_owned(), DetailAction::Redeploy));
@@ -115,20 +123,20 @@ pub fn build(app: &App) -> Vec<DetailLine> {
             actions.push((kind.display_label().into_owned(), DetailAction::Kind(*kind)));
         }
     }
-    if !actions.is_empty() {
-        rows.push(blank());
-        rows.push(section(&t!("details.actions"), palette));
-        for (label, action) in actions {
-            let index = rows.iter().filter(|r| r.is_interactive()).count();
-            rows.push(action_row(
-                &label,
-                action,
-                app.detail_open && app.detail_selected == index,
-                palette
-            ));
-        }
+    if actions.is_empty() {
+        return Vec::new();
     }
 
+    let mut rows = vec![section(&t!("details.actions"), palette)];
+    for (index, (label, action)) in actions.into_iter().enumerate() {
+        rows.push(action_row(
+            &label,
+            action,
+            app.detail_open && app.detail_selected == index,
+            palette
+        ));
+    }
+    rows.push(blank());
     rows
 }
 
