@@ -28,19 +28,19 @@ tabs.firewall:
   en: "Firewall"
   ru: "Файрвол"
 tabs.floating_ips:
-  en: "FloatingIps"
+  en: "Floating IPs"
   ru: "Плавающие IP"
 tabs.images:
   en: "Images"
   ru: "Образы"
 tabs.network_drives:
-  en: "NetworkDrives"
+  en: "Network drives"
   ru: "Сетевые диски"
 tabs.vpc:
-  en: "Vpc"
+  en: "VPC"
   ru: "VPC"
 tabs.dedicated_servers:
-  en: "DedicatedServers"
+  en: "Dedicated servers"
   ru: "Выделенные серверы"
 tabs.mail:
   en: "Mail"
@@ -49,13 +49,13 @@ tabs.apps:
   en: "Apps"
   ru: "Приложения"
 tabs.ai_agents:
-  en: "AiAgents"
+  en: "AI agents"
   ru: "ИИ-агенты"
 tabs.knowledge_bases:
-  en: "KnowledgeBases"
+  en: "Knowledge bases"
   ru: "Базы знаний"
 tabs.ssh_keys:
-  en: "SshKeys"
+  en: "SSH keys"
   ru: "SSH-ключи"
 tabs.finances:
   en: "Finances"

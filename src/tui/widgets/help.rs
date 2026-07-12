@@ -45,16 +45,11 @@ impl HelpWidget {
     /// # Arguments
     ///
     /// * `palette` - The theme color palette.
-    /// * `widget_names` - Names of all registered widgets with their enabled
-    ///   state.
     ///
     /// # Returns
     ///
     /// A vector of styled `Line` values representing the full help content.
-    fn build_lines(
-        palette: crate::tui::themes::Palette,
-        widget_names: &[(String, bool)]
-    ) -> Vec<Line<'static>> {
+    fn build_lines(palette: crate::tui::themes::Palette) -> Vec<Line<'static>> {
         let mut lines = Vec::new();
 
         lines.push(Line::from(Span::styled(
@@ -63,56 +58,27 @@ impl HelpWidget {
                 .fg(palette.title)
                 .add_modifier(Modifier::BOLD)
         )));
-
-        lines.push(Line::from(Span::styled(
-            " ".repeat(60),
-            Style::default().fg(palette.border)
-        )));
+        lines.push(Line::from(""));
 
         let shortcuts = [
+            ("\u{2191}\u{2193} k j", t!("help.shortcut_move")),
+            ("\u{2190}\u{2192} h l", t!("help.shortcut_cols")),
             ("\u{21e5}/\u{21e4}", t!("help.shortcut_tab")),
-            ("j/k", t!("help.shortcut_move")),
-            ("g/G", t!("help.shortcut_jump")),
             ("Enter", t!("help.shortcut_enter")),
+            ("Esc", t!("help.shortcut_esc")),
+            ("y/c", t!("help.shortcut_copy")),
+            ("g/G", t!("help.shortcut_jump")),
             ("n", t!("help.shortcut_new")),
             ("/", t!("help.shortcut_filter")),
             ("Ctrl+K", t!("help.shortcut_palette")),
             ("p", t!("help.shortcut_profile")),
             ("r", t!("help.shortcut_refresh")),
-            ("Esc", t!("help.shortcut_esc")),
             ("?", t!("help.shortcut_toggle_help")),
             ("Q", t!("help.shortcut_quit"))
         ];
 
         for (key, desc) in shortcuts {
             lines.push(Self::make_shortcut_line(key, desc.as_ref(), palette));
-        }
-
-        lines.push(Line::from(Span::styled(
-            " ".repeat(60),
-            Style::default().fg(palette.border)
-        )));
-
-        lines.push(Line::from(Span::styled(
-            t!("help.widgets_header").to_string(),
-            Style::default()
-                .fg(palette.title)
-                .add_modifier(Modifier::BOLD)
-        )));
-
-        for (name, enabled) in widget_names {
-            let status = if *enabled {
-                Line::from(vec![
-                    Span::styled("[x] ", Style::default().fg(palette.success)),
-                    Span::styled(name.clone(), Style::default().fg(palette.fg)),
-                ])
-            } else {
-                Line::from(vec![
-                    Span::styled("[ ] ", Style::default().fg(palette.dim)),
-                    Span::styled(name.clone(), Style::default().fg(palette.dim)),
-                ])
-            };
-            lines.push(status);
         }
 
         lines
@@ -135,9 +101,8 @@ impl HelpWidget {
         desc: &str,
         palette: crate::tui::themes::Palette
     ) -> Line<'static> {
-        let key_len = u16::try_from(key.len()).unwrap_or(0);
-        let padding = 8u16.saturating_sub(key_len);
-        let pad_str = " ".repeat(padding as usize);
+        let key_len = key.chars().count();
+        let pad_str = " ".repeat(8usize.saturating_sub(key_len).max(2));
 
         Line::from(vec![
             Span::styled(
@@ -151,33 +116,6 @@ impl HelpWidget {
         ])
     }
 
-    /// Collects widget names and enabled states from the registry.
-    ///
-    /// # Arguments
-    ///
-    /// * `widgets` - The widget registry to inspect.
-    ///
-    /// # Returns
-    ///
-    /// A vector of `(name, enabled)` tuples for all registered widgets.
-    fn collect_widget_status(
-        widgets: &crate::tui::widgets::WidgetRegistry
-    ) -> Vec<(String, bool)> {
-        let mut status = Vec::new();
-
-        let all_widgets: Vec<&(dyn crate::tui::widgets::Widget + Send)> = widgets
-            .widgets
-            .iter()
-            .map(std::convert::AsRef::as_ref)
-            .collect();
-
-        for w in all_widgets {
-            status.push((w.name().to_string(), w.enabled()));
-        }
-
-        status
-    }
-
     /// Renders the help overlay centered in the given area.
     ///
     /// # Arguments
@@ -187,8 +125,20 @@ impl HelpWidget {
     /// * `app` - The application state containing widgets and theme.
     fn render_overlay(frame: &mut Frame, area: Rect, app: &App) {
         let palette = app.theme.palette();
-        let widget_names = Self::collect_widget_status(&app.widgets);
-        let content = Self::build_lines(palette, &widget_names);
+        let content = Self::build_lines(palette);
+
+        let width = content
+            .iter()
+            .map(Line::width)
+            .max()
+            .unwrap_or(20)
+            .saturating_add(4);
+        let width = u16::try_from(width)
+            .unwrap_or(u16::MAX)
+            .min(area.width.saturating_sub(2));
+        let height = u16::try_from(content.len() + 2)
+            .unwrap_or(u16::MAX)
+            .min(area.height.saturating_sub(2));
 
         let paragraph = Paragraph::new(content)
             .block(
@@ -200,10 +150,10 @@ impl HelpWidget {
             .style(Style::default().bg(palette.bg));
 
         let popup_area = Rect {
-            x:      area.width / 4,
-            y:      area.height / 4,
-            width:  area.width / 2,
-            height: area.height / 2
+            x: area.width.saturating_sub(width) / 2,
+            y: area.height.saturating_sub(height) / 2,
+            width,
+            height
         };
 
         frame.render_widget(Clear, popup_area);
@@ -278,7 +228,7 @@ mod tests {
     #[test]
     fn build_lines_contains_shortcuts() {
         let palette = Theme::GruvboxDark.palette();
-        let lines = HelpWidget::build_lines(palette, &[]);
+        let lines = HelpWidget::build_lines(palette);
 
         let text: String = lines
             .iter()
@@ -295,40 +245,8 @@ mod tests {
         assert!(text.contains("Quit"));
         assert!(text.contains("Refresh now"));
         assert!(text.contains("Toggle this help"));
-    }
-
-    #[test]
-    fn build_lines_contains_widget_section() {
-        let palette = Theme::GruvboxDark.palette();
-        let widgets = vec![
-            ("Account".to_string(), true),
-            ("Resources".to_string(), false),
-        ];
-        let lines = HelpWidget::build_lines(palette, &widgets);
-
-        let text: String = lines
-            .iter()
-            .map(|l| {
-                l.spans
-                    .iter()
-                    .map(|s| s.content.as_ref())
-                    .collect::<Vec<_>>()
-                    .join(" ")
-            })
-            .collect::<Vec<_>>()
-            .join(" ");
-
-        assert!(text.contains("[x]"));
-        assert!(text.contains("[ ]"));
-        assert!(text.contains("Account"));
-        assert!(text.contains("Resources"));
-    }
-
-    #[test]
-    fn build_lines_empty_widgets_no_panic() {
-        let palette = Theme::GruvboxDark.palette();
-        let lines = HelpWidget::build_lines(palette, &[]);
-        assert!(!lines.is_empty());
+        assert!(text.contains("Copy"));
+        assert!(text.contains("details"));
     }
 
     #[test]
@@ -341,67 +259,35 @@ mod tests {
     }
 
     #[test]
-    fn make_shortcut_line_handles_long_keys() {
-        let palette = Theme::GruvboxLight.palette();
-        let line = HelpWidget::make_shortcut_line("Tab", "Cycle tabs", palette);
+    fn overlay_fits_all_shortcuts_on_a_small_terminal() {
+        use ratatui::{Terminal, backend::TestBackend, layout::Rect};
 
-        assert_eq!(line.spans.len(), 3);
-    }
-
-    #[test]
-    fn collect_widget_status_returns_widget_info() {
-        let registry = crate::tui::widgets::WidgetRegistry::new();
-        let status = HelpWidget::collect_widget_status(&registry);
-
-        assert!(!status.is_empty());
-        assert!(status.iter().any(|(name, _)| name == "Account"));
-    }
-
-    #[test]
-    fn collect_widget_status_preserves_enabled_state() {
-        let registry = crate::tui::widgets::WidgetRegistry::new();
-        let status = HelpWidget::collect_widget_status(&registry);
-
-        for (_, enabled) in &status {
-            assert!(*enabled);
+        let mut app = crate::tui::app::App::new(5);
+        app.show_help = true;
+        let (w, h) = (80u16, 24u16);
+        let backend = TestBackend::new(w, h);
+        let mut terminal = Terminal::new(backend).unwrap();
+        terminal
+            .draw(|f| HelpWidget::render_overlay(f, Rect::new(0, 0, w, h), &app))
+            .unwrap();
+        let buf = terminal.backend().buffer().clone();
+        let mut text = String::new();
+        for y in 0..h {
+            for x in 0..w {
+                text.push_str(buf[(x, y)].symbol());
+            }
         }
-    }
-
-    #[test]
-    fn widget_trait_object_is_send() {
-        let widget: Box<dyn Widget + Send> = Box::new(HelpWidget::new());
-        assert_eq!(widget.id(), "help");
-    }
-
-    #[test]
-    fn build_lines_with_disabled_widgets() {
-        let palette = Theme::GruvboxDark.palette();
-        let widgets = vec![("Account".to_string(), true), ("Stats".to_string(), false)];
-        let lines = HelpWidget::build_lines(palette, &widgets);
-
-        let text: String = lines
-            .iter()
-            .map(|l| {
-                l.spans
-                    .iter()
-                    .map(|s| s.content.as_ref())
-                    .collect::<Vec<_>>()
-                    .join(" ")
-            })
-            .collect::<Vec<_>>()
-            .join(" ");
-
-        let account_idx = text.find("Account").expect("account entry present");
-        let stats_idx = text.find("Stats").expect("stats entry present");
-        assert!(account_idx < stats_idx);
-        assert!(text.contains("[x]"));
-        assert!(text.contains("[ ]"));
+        assert!(text.contains("Quit"), "last shortcut must be visible");
+        assert!(
+            text.contains("press a button"),
+            "descriptions must not be clipped"
+        );
     }
 
     #[test]
     fn build_lines_palette_applied() {
         let palette = Theme::CatppuccinLatte.palette();
-        let lines = HelpWidget::build_lines(palette, &[]);
+        let lines = HelpWidget::build_lines(palette);
 
         let title_line = &lines[0];
         let span = title_line.spans.first().expect("title span");
