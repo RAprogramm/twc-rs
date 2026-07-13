@@ -26,6 +26,16 @@ pub enum ActionKind {
     Clone,
     /// Create a backup of the resource.
     Backup,
+    /// Stop the resource (application state action).
+    Stop,
+    /// Detach a floating IP from the resource it is bound to.
+    Unbind,
+    /// Detach a network drive from the resource it is mounted on.
+    Unmount,
+    /// Add one node to the cluster's first node group.
+    ScaleUp,
+    /// Remove one node from the cluster's first node group.
+    ScaleDown,
     /// Permanently delete the resource.
     Delete
 }
@@ -40,6 +50,11 @@ impl ActionKind {
             Self::Reboot => "Reboot",
             Self::Clone => "Clone",
             Self::Backup => "Backup",
+            Self::Stop => "Stop",
+            Self::Unbind => "Unbind",
+            Self::Unmount => "Unmount",
+            Self::ScaleUp => "Scale up",
+            Self::ScaleDown => "Scale down",
             Self::Delete => "Delete"
         }
     }
@@ -53,16 +68,23 @@ impl ActionKind {
             Self::Reboot => t!("app.action_reboot"),
             Self::Clone => t!("app.action_clone"),
             Self::Backup => t!("app.action_backup"),
+            Self::Stop => t!("app.action_stop"),
+            Self::Unbind => t!("app.action_unbind"),
+            Self::Unmount => t!("app.action_unmount"),
+            Self::ScaleUp => t!("app.action_scale_up"),
+            Self::ScaleDown => t!("app.action_scale_down"),
             Self::Delete => t!("app.action_delete")
         }
     }
 
     /// Returns true when the action is destructive and irreversible.
     ///
-    /// Destructive actions require an extra confirmation step.
+    /// Destructive actions require an extra confirmation step. Scaling a
+    /// cluster down removes a node (and whatever runs on it), so it
+    /// confirms like a deletion.
     #[must_use]
     pub const fn is_destructive(self) -> bool {
-        matches!(self, Self::Delete)
+        matches!(self, Self::Delete | Self::ScaleDown)
     }
 }
 

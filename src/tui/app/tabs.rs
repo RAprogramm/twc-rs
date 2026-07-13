@@ -123,26 +123,34 @@ impl ResourceTab {
     ///
     /// Tabs without wired actions return an empty slice, so the action
     /// menu does not open for them.
+    ///
+    /// State-dependent actions (Unbind for an unbound floating IP,
+    /// Unmount for a detached network drive, Stop for a stopped app)
+    /// are listed unconditionally: the API rejects them when they do not
+    /// apply and the failure surfaces in the events log.
     #[must_use]
     pub const fn actions(self) -> &'static [ActionKind] {
-        use ActionKind::{Backup, Clone, Delete, Reboot, Shutdown, Start};
+        use ActionKind::{
+            Backup, Clone, Delete, Reboot, ScaleDown, ScaleUp, Shutdown, Start, Stop, Unbind,
+            Unmount
+        };
         match self {
             Self::Servers => &[Start, Shutdown, Reboot, Clone, Delete],
             Self::Databases => &[Backup, Delete],
+            Self::Kubernetes => &[ScaleUp, ScaleDown, Delete],
+            Self::Apps => &[Start, Stop, Delete],
+            Self::FloatingIps => &[Unbind, Delete],
+            Self::NetworkDrives => &[Unmount, Delete],
             Self::S3
-            | Self::Kubernetes
             | Self::Balancers
             | Self::Registry
             | Self::Projects
             | Self::DedicatedServers
             | Self::AiAgents
             | Self::KnowledgeBases
-            | Self::Apps
             | Self::Domains
             | Self::Firewall
-            | Self::FloatingIps
             | Self::Images
-            | Self::NetworkDrives
             | Self::Vpc
             | Self::SshKeys => &[Delete],
             Self::Mail | Self::Finances => &[]

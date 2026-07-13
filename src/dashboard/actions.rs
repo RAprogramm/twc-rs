@@ -198,6 +198,12 @@ async fn dispatch_action(
                 .map(|_| ())
                 .map_err(|e| e.to_string())
         }
+        (ResourceTab::Kubernetes, ActionKind::ScaleUp) => {
+            scale_first_node_group(config, num()?, 1).await
+        }
+        (ResourceTab::Kubernetes, ActionKind::ScaleDown) => {
+            scale_first_node_group(config, num()?, -1).await
+        }
         (ResourceTab::Kubernetes, ActionKind::Delete) => {
             kubernetes_api::delete_cluster(config, num()?, None, None)
                 .await
@@ -233,6 +239,12 @@ async fn dispatch_action(
                 .await
                 .map_err(|e| e.to_string())
         }
+        (ResourceTab::Apps, ActionKind::Start) => apps_api::update_app_state(config, id, "start")
+            .await
+            .map_err(|e| e.to_string()),
+        (ResourceTab::Apps, ActionKind::Stop) => apps_api::update_app_state(config, id, "stop")
+            .await
+            .map_err(|e| e.to_string()),
         (ResourceTab::Apps, ActionKind::Delete) => apps_api::delete_app(config, id)
             .await
             .map_err(|e| e.to_string()),
@@ -244,6 +256,11 @@ async fn dispatch_action(
         (ResourceTab::Firewall, ActionKind::Delete) => firewall_api::delete_group(config, id)
             .await
             .map_err(|e| e.to_string()),
+        (ResourceTab::FloatingIps, ActionKind::Unbind) => {
+            floating_ip_api::unbind_floating_ip(config, id)
+                .await
+                .map_err(|e| e.to_string())
+        }
         (ResourceTab::FloatingIps, ActionKind::Delete) => {
             floating_ip_api::delete_floating_ip(config, id)
                 .await
@@ -252,6 +269,11 @@ async fn dispatch_action(
         (ResourceTab::Images, ActionKind::Delete) => images_api::delete_image(config, id)
             .await
             .map_err(|e| e.to_string()),
+        (ResourceTab::NetworkDrives, ActionKind::Unmount) => {
+            network_drives_api::unmount_network_drive(config, id)
+                .await
+                .map_err(|e| e.to_string())
+        }
         (ResourceTab::NetworkDrives, ActionKind::Delete) => {
             network_drives_api::delete_network_drive(config, id)
                 .await
@@ -264,6 +286,53 @@ async fn dispatch_action(
             .await
             .map_err(|e| e.to_string()),
         _ => Err("action not supported for this resource".to_string())
+    }
+}
+
+/// Scales the first node group of the cluster by `delta` nodes (positive
+/// adds, negative removes).
+///
+/// The dashboard action targets the whole cluster while the API scales a
+/// specific node group, so the first group is used as a pragmatic default
+/// until a node-group picker exists. Clusters without node groups yield an
+/// error that surfaces in the events log.
+async fn scale_first_node_group(
+    config: &timeweb_rs::apis::configuration::Configuration,
+    cluster_id: i32,
+    delta: i32
+) -> Result<(), String> {
+    use timeweb_rs::{
+        apis::kubernetes_api,
+        models::{IncreaseNodes, ReduceNodes}
+    };
+
+    let groups = kubernetes_api::get_cluster_node_groups(config, cluster_id)
+        .await
+        .map_err(|e| e.to_string())?;
+    let group_id = groups
+        .node_groups
+        .first()
+        .map(|group| group.id)
+        .ok_or_else(|| "cluster has no node groups".to_string())?;
+    if delta.is_negative() {
+        kubernetes_api::reduce_count_of_nodes_in_group(
+            config,
+            cluster_id,
+            group_id,
+            ReduceNodes::new(delta.abs())
+        )
+        .await
+        .map_err(|e| e.to_string())
+    } else {
+        kubernetes_api::increase_count_of_nodes_in_group(
+            config,
+            cluster_id,
+            group_id,
+            IncreaseNodes::new(delta)
+        )
+        .await
+        .map(|_| ())
+        .map_err(|e| e.to_string())
     }
 }
 
