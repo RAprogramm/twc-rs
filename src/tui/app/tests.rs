@@ -1545,3 +1545,27 @@ fn nav_change_closes_open_drill() {
     app.nav_down();
     assert!(!app.drill_open());
 }
+
+#[test]
+fn language_picker_applies_via_keys() {
+    let mut app = App::new(5);
+    let settings_idx = app
+        .nav_items()
+        .iter()
+        .position(|i| matches!(i.kind, crate::tui::app::NavKind::Settings))
+        .unwrap();
+    while app.nav_selected < settings_idx {
+        app.nav_down();
+    }
+    crate::tui::event::handle_event(&mut app, key(KeyCode::Enter));
+    assert_eq!(app.pane, Pane::Content);
+    app.resource_cols = 3;
+    crate::tui::event::handle_event(&mut app, key(KeyCode::Right));
+    assert_eq!(app.settings_selected, 1, "Right must land on Language");
+    crate::tui::event::handle_event(&mut app, key(KeyCode::Enter));
+    assert!(app.picker_open(), "Enter must open the language picker");
+    crate::tui::event::handle_event(&mut app, key(KeyCode::Down));
+    crate::tui::event::handle_event(&mut app, key(KeyCode::Enter));
+    assert_eq!(app.language, crate::config::Language::Ru);
+    app.set_language(crate::config::Language::En);
+}
