@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.0](https://github.com/RAprogramm/twc-rs/compare/v3.0.0...v4.0.0) - 2026-07-13
+
+### Added
+
+- Floating IP unbind, drive unmount, app start/stop, k8s node scaling (#143) ([#135](https://github.com/RAprogramm/twc-rs/issues/135)) ([0dad908](https://github.com/RAprogramm/twc-rs/commit/0dad9080d0b68e9dd386eb182bb41a811fc30789))
+
+
 ## [3.0.0](https://github.com/RAprogramm/twc-rs/compare/v2.0.5...v3.0.0) - 2026-07-13
 
 ### Added
