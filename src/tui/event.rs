@@ -45,7 +45,7 @@ pub enum AppEvent {
         /// The resource category.
         tab:      super::app::ResourceTab,
         /// The resource id.
-        id:       i32,
+        id:       String,
         /// Extra detail sections: `(title, rows)`.
         sections: super::app::DetailSections
     },

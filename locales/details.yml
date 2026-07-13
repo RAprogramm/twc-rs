@@ -304,3 +304,45 @@ details.redeploy:
 details.copied:
   en: "Copied: %{value}"
   ru: "Скопировано: %{value}"
+details.ips:
+  en: "IP addresses"
+  ru: "IP-адреса"
+details.disks:
+  en: "Disks"
+  ru: "Диски"
+details.node_groups:
+  en: "Node groups"
+  ru: "Группы узлов"
+details.nodes:
+  en: "Nodes"
+  ru: "Узлы"
+details.pods:
+  en: "Pods"
+  ru: "Поды"
+details.nodes_preset:
+  en: "%{count} nodes · preset %{preset}"
+  ru: "%{count} узлов · тариф %{preset}"
+details.rules:
+  en: "Rules"
+  ru: "Правила"
+details.repositories:
+  en: "Repositories"
+  ru: "Репозитории"
+details.dns_records:
+  en: "DNS records"
+  ru: "DNS-записи"
+details.nameservers:
+  en: "Nameservers"
+  ru: "NS-серверы"
+details.attached:
+  en: "Attached resources"
+  ru: "Привязанные ресурсы"
+details.ports:
+  en: "Ports"
+  ru: "Порты"
+details.subdomains:
+  en: "Subdomains"
+  ru: "Поддомены"
+details.more:
+  en: "… (+%{count} more)"
+  ru: "… (ещё %{count})"
