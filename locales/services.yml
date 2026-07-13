@@ -111,3 +111,12 @@ service.create.projects:
 service.your_resources:
   en: "Nothing here yet — press Enter on the button above to create one."
   ru: "Пока пусто — нажмите Enter на кнопке выше, чтобы создать."
+service.desc.ssh_keys:
+  en: "SSH keys stored in your account: attach one to a server to log in without a password."
+  ru: "SSH-ключи аккаунта: подключите ключ к серверу, чтобы входить без пароля."
+service.create.ssh_keys:
+  en: "Add SSH key"
+  ru: "Добавить SSH-ключ"
+service.desc.finances:
+  en: "Account billing: balance, hourly and monthly service costs and total payments."
+  ru: "Финансы аккаунта: баланс, почасовая и месячная стоимость услуг и сумма платежей."

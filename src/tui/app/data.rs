@@ -9,9 +9,9 @@ use rust_i18n::t;
 
 use super::{
     AccountInfo, AiAgentSummary, AppSummary, BalancerSummary, DashboardData, DatabaseSummary,
-    DedicatedServerSummary, DomainSummary, FirewallSummary, FloatingIpSummary, ImageSummary,
-    K8sSummary, KnowledgeBaseSummary, LogLevel, MailSummary, NetworkDriveSummary, ProjectSummary,
-    RegistrySummary, S3Summary, ServerSummary, VpcSummary
+    DedicatedServerSummary, DomainSummary, FinancesSummary, FirewallSummary, FloatingIpSummary,
+    ImageSummary, K8sSummary, KnowledgeBaseSummary, LogLevel, MailSummary, NetworkDriveSummary,
+    ProjectSummary, RegistrySummary, S3Summary, ServerSummary, SshKeySummary, VpcSummary
 };
 
 /// One independently loaded piece of dashboard data, streamed to the UI as
@@ -40,11 +40,8 @@ pub enum DataSlice {
     Apps(Vec<AppSummary>),
     AiAgents(Vec<AiAgentSummary>),
     KnowledgeBases(Vec<KnowledgeBaseSummary>),
-    SshKeys(Vec<String>),
-    Finances {
-        balance: String,
-        lines:   Vec<String>
-    },
+    SshKeys(Vec<SshKeySummary>),
+    Finances(FinancesSummary),
     /// A named endpoint failed: `"servers: <message>"`.
     Error(String)
 }
@@ -70,7 +67,7 @@ impl super::App {
     pub fn load_started(&mut self) {
         self.cycle_load_errors.clear();
         self.projects_pending = 2;
-        self.services_pending = 17;
+        self.services_pending = 18;
     }
 
     /// Applies one streamed slice the moment it arrives, so the UI shows
@@ -82,12 +79,7 @@ impl super::App {
             DataSlice::Projects(_) | DataSlice::ProjectsList(_) => {
                 self.projects_pending = self.projects_pending.saturating_sub(1);
             }
-            DataSlice::Account(_)
-            | DataSlice::SshKeys(_)
-            | DataSlice::Finances {
-                ..
-            }
-            | DataSlice::Error(_) => {}
+            DataSlice::Account(_) | DataSlice::Finances(_) | DataSlice::Error(_) => {}
             _ => self.services_pending = self.services_pending.saturating_sub(1)
         }
         match slice {
@@ -159,12 +151,9 @@ impl super::App {
             DataSlice::AiAgents(v) => self.ai_agents = v,
             DataSlice::KnowledgeBases(v) => self.knowledge_bases = v,
             DataSlice::SshKeys(v) => self.ssh_keys = v,
-            DataSlice::Finances {
-                balance,
-                lines
-            } => {
-                self.account.balance = balance;
-                self.finances = lines;
+            DataSlice::Finances(f) => {
+                self.account.balance = f.money(f.balance);
+                self.finances = Some(f);
             }
             DataSlice::Error(entry) => {
                 if !self.last_load_errors.contains(&entry) {

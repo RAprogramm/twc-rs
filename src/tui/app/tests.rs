@@ -139,7 +139,7 @@ fn nav_walks_service_tabs_in_order() {
         app.nav_down();
     }
     assert_eq!(app.nav_selected, last);
-    assert_eq!(app.active_tab, ResourceTab::KnowledgeBases);
+    assert_eq!(app.active_tab, ResourceTab::Finances);
 }
 
 #[test]
@@ -967,12 +967,14 @@ fn group_spinners_clear_as_slices_arrive() {
     let mut app = App::new(5);
     app.load_started();
     assert_eq!(app.projects_pending, 2);
-    assert_eq!(app.services_pending, 17);
+    assert_eq!(app.services_pending, 18);
     app.apply_slice(DataSlice::Projects(vec![]));
     assert_eq!(app.projects_pending, 1);
     app.apply_slice(DataSlice::Projects(vec![]));
     assert_eq!(app.projects_pending, 0);
     app.apply_slice(DataSlice::Servers(vec![]));
+    assert_eq!(app.services_pending, 17);
+    app.apply_slice(DataSlice::SshKeys(vec![]));
     assert_eq!(app.services_pending, 16);
     app.load_finished();
     assert_eq!(app.services_pending, 0);
@@ -1019,7 +1021,7 @@ fn apply_data_logs_load_errors_once() {
         ai_agents:         Vec::new(),
         knowledge_bases:   Vec::new(),
         ssh_keys:          Vec::new(),
-        finances:          Vec::new(),
+        finances:          None,
         error_message:     None,
         status_message:    None,
         load_errors:       vec!["databases".to_string()]
@@ -1439,8 +1441,53 @@ fn hide_empty_sections_filters_sidebar() {
     let filtered = app.nav_items().len();
     assert!(filtered < all);
     assert!(app.nav_items().iter().all(|i| {
-        !matches!(i.kind, crate::tui::app::NavKind::Service(_)) || i.count.unwrap_or(0) > 0
+        !matches!(i.kind, crate::tui::app::NavKind::Service(_))
+            || i.count.is_none_or(|count| count > 0)
     }));
+}
+
+#[test]
+fn sidebar_lists_ssh_keys_when_a_key_exists() {
+    let mut app = App::new(5);
+    app.hide_empty_tabs = true;
+    app.ssh_keys = vec![crate::tui::app::SshKeySummary {
+        id: 1,
+        name: "laptop".to_string(),
+        ..Default::default()
+    }];
+    let items = app.nav_items();
+    let ssh = items
+        .iter()
+        .find(|i| i.kind == crate::tui::app::NavKind::Service(ResourceTab::SshKeys))
+        .expect("SSH keys entry present");
+    assert_eq!(ssh.count, Some(1));
+
+    app.ssh_keys.clear();
+    assert!(
+        !app.nav_items()
+            .iter()
+            .any(|i| i.kind == crate::tui::app::NavKind::Service(ResourceTab::SshKeys)),
+        "empty SSH keys tab must hide when hide_empty_tabs is on"
+    );
+}
+
+#[test]
+fn sidebar_always_lists_finances_without_a_count() {
+    let mut app = App::new(5);
+    app.hide_empty_tabs = true;
+    let items = app.nav_items();
+    let finances = items
+        .iter()
+        .find(|i| i.kind == crate::tui::app::NavKind::Service(ResourceTab::Finances))
+        .expect("Finances entry present");
+    assert_eq!(finances.count, None);
+}
+
+#[test]
+fn create_hub_offers_neither_ssh_keys_nor_finances() {
+    let targets = App::create_targets();
+    assert!(!targets.contains(&ResourceTab::SshKeys));
+    assert!(!targets.contains(&ResourceTab::Finances));
 }
 
 #[test]

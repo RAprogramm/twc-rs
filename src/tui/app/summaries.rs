@@ -324,6 +324,78 @@ pub struct KnowledgeBaseSummary {
     pub status:         String
 }
 
+/// Summary of a single SSH key, carrying every field the list endpoint
+/// exposes (the key body is public material, so persisting it in the
+/// on-disk snapshot is safe).
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+pub struct SshKeySummary {
+    pub id:         i64,
+    pub name:       String,
+    pub body:       String,
+    pub created_at: String,
+    pub used_by:    Vec<String>,
+    pub is_default: bool
+}
+
+/// Account-level billing summary from the finances endpoint.
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+pub struct FinancesSummary {
+    pub balance:           f64,
+    pub currency:          String,
+    pub discount_percent:  f64,
+    pub discount_end_date: String,
+    pub hourly_cost:       f64,
+    pub hourly_fee:        f64,
+    pub monthly_cost:      f64,
+    pub monthly_fee:       f64,
+    pub total_paid:        f64,
+    pub hours_left:        Option<f64>,
+    pub autopay_card:      String
+}
+
+impl FinancesSummary {
+    /// Number of metric cards [`Self::card_entries`] yields.
+    pub const CARD_COUNT: usize = 6;
+
+    /// Formats an amount with the account currency, e.g. `123.45 RUB`.
+    #[must_use]
+    pub fn money(&self, amount: f64) -> String {
+        format!("{amount:.2} {}", self.currency)
+    }
+
+    /// The metric cards shown on the Finances tab: a localized label and the
+    /// humanized amount, balance first.
+    #[must_use]
+    pub fn card_entries(&self) -> Vec<(String, String)> {
+        vec![
+            (
+                rust_i18n::t!("finances.balance").into_owned(),
+                self.money(self.balance)
+            ),
+            (
+                rust_i18n::t!("finances.monthly_cost").into_owned(),
+                self.money(self.monthly_cost)
+            ),
+            (
+                rust_i18n::t!("finances.hourly_cost").into_owned(),
+                self.money(self.hourly_cost)
+            ),
+            (
+                rust_i18n::t!("finances.monthly_fee").into_owned(),
+                self.money(self.monthly_fee)
+            ),
+            (
+                rust_i18n::t!("finances.hourly_fee").into_owned(),
+                self.money(self.hourly_fee)
+            ),
+            (
+                rust_i18n::t!("finances.total_paid").into_owned(),
+                self.money(self.total_paid)
+            ),
+        ]
+    }
+}
+
 /// An owned snapshot of all dashboard data, applied in one shot via
 /// `App::apply_data` and persisted between runs for instant startup.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -347,8 +419,8 @@ pub struct DashboardData {
     pub apps:              Vec<AppSummary>,
     pub ai_agents:         Vec<AiAgentSummary>,
     pub knowledge_bases:   Vec<KnowledgeBaseSummary>,
-    pub ssh_keys:          Vec<String>,
-    pub finances:          Vec<String>,
+    pub ssh_keys:          Vec<SshKeySummary>,
+    pub finances:          Option<FinancesSummary>,
     pub error_message:     Option<String>,
     pub status_message:    Option<String>,
     pub load_errors:       Vec<String>

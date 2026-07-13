@@ -10,7 +10,7 @@ use std::path::PathBuf;
 use crate::tui::app::DashboardData;
 
 /// Bump when the snapshot layout changes; older files are silently ignored.
-const VERSION: u32 = 1;
+const VERSION: u32 = 2;
 
 #[derive(serde::Serialize, serde::Deserialize)]
 struct Snapshot {

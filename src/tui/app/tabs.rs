@@ -30,11 +30,7 @@ pub enum ResourceTab {
     Apps,
     AiAgents,
     KnowledgeBases,
-    // JUSTIFY: Not yet reachable from the sidebar; data still loads and the
-    // variants stay for the upcoming account section.
-    #[allow(dead_code)]
     SshKeys,
-    #[allow(dead_code)]
     Finances
 }
 
@@ -147,8 +143,9 @@ impl ResourceTab {
             | Self::FloatingIps
             | Self::Images
             | Self::NetworkDrives
-            | Self::Vpc => &[Delete],
-            _ => &[]
+            | Self::Vpc
+            | Self::SshKeys => &[Delete],
+            Self::Mail | Self::Finances => &[]
         }
     }
 

@@ -29,7 +29,13 @@ impl super::App {
             ResourceTab::AiAgents => self.ai_agents.len(),
             ResourceTab::KnowledgeBases => self.knowledge_bases.len(),
             ResourceTab::SshKeys => self.ssh_keys.len(),
-            ResourceTab::Finances => self.finances.len()
+            ResourceTab::Finances => {
+                if self.finances.is_some() {
+                    super::FinancesSummary::CARD_COUNT
+                } else {
+                    0
+                }
+            }
         }
     }
 
@@ -101,8 +107,13 @@ impl super::App {
                 .iter()
                 .map(|k| k.name.clone())
                 .collect(),
-            ResourceTab::SshKeys => self.ssh_keys.clone(),
-            ResourceTab::Finances => self.finances.clone()
+            ResourceTab::SshKeys => self.ssh_keys.iter().map(|k| k.name.clone()).collect(),
+            ResourceTab::Finances => self.finances.as_ref().map_or_else(Vec::new, |f| {
+                f.card_entries()
+                    .into_iter()
+                    .map(|(label, _)| label)
+                    .collect()
+            })
         }
     }
 
@@ -244,10 +255,11 @@ impl super::App {
     pub fn content_move(&mut self, dir: super::FocusDir) {
         use super::FocusDir;
 
-        let has_create = matches!(
-            self.nav_current(),
-            Some(super::NavKind::Service(_) | super::NavKind::Project(_))
-        );
+        let has_create = match self.nav_current() {
+            Some(super::NavKind::Project(_)) => true,
+            Some(super::NavKind::Service(tab)) => Self::tab_has_create(tab),
+            _ => false
+        };
         let len = self.content_len();
 
         if self.content_on_create {
@@ -464,6 +476,10 @@ impl super::App {
                 .get(real)
                 .map(|n| (n.id.clone(), n.name.clone())),
             ResourceTab::Vpc => self.vpcs.get(real).map(|v| (v.id.clone(), v.name.clone())),
+            ResourceTab::SshKeys => self
+                .ssh_keys
+                .get(real)
+                .map(|k| (k.id.to_string(), k.name.clone())),
             _ => None
         }
     }

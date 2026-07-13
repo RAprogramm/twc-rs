@@ -149,7 +149,7 @@ async fn dispatch_action(
         ai_agents_api, apps_api, balancers_api, container_registry_api, databases_api,
         dedicated_servers_api, domains_api, firewall_api, floating_ip_api, images_api,
         knowledge_bases_api, kubernetes_api, network_drives_api, projects_api, s3_api,
-        servers_api, vpc_api
+        servers_api, ssh_api, vpc_api
     };
     use tui::app::{ActionKind, ResourceTab};
 
@@ -258,6 +258,9 @@ async fn dispatch_action(
                 .map_err(|e| e.to_string())
         }
         (ResourceTab::Vpc, ActionKind::Delete) => vpc_api::delete_vpc(config, id)
+            .await
+            .map_err(|e| e.to_string()),
+        (ResourceTab::SshKeys, ActionKind::Delete) => ssh_api::delete_key(config, num()?)
             .await
             .map_err(|e| e.to_string()),
         _ => Err("action not supported for this resource".to_string())

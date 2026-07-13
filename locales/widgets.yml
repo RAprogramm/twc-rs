@@ -136,3 +136,6 @@ account.status_failed:
 stats.subject_hint:
   en: "Select a server or app to see live CPU, RAM and network."
   ru: "Выберите сервер или приложение, чтобы увидеть CPU, RAM и сеть."
+resource_list.used_by_servers:
+  en: "servers: %{n}"
+  ru: "серверов: %{n}"

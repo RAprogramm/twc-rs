@@ -34,7 +34,7 @@ pub struct NavItem {
 
 impl App {
     /// The resource categories shown as service entries, in display order.
-    pub(crate) const fn service_tabs() -> [ResourceTab; 17] {
+    pub(crate) const fn service_tabs() -> [ResourceTab; 18] {
         [
             ResourceTab::Servers,
             ResourceTab::Databases,
@@ -52,12 +52,20 @@ impl App {
             ResourceTab::Mail,
             ResourceTab::Apps,
             ResourceTab::AiAgents,
-            ResourceTab::KnowledgeBases
+            ResourceTab::KnowledgeBases,
+            ResourceTab::SshKeys
         ]
     }
 
+    /// True when the tab's service header offers a Create button, so the
+    /// content pane may land on it; header-less tabs (e.g. Finances) never
+    /// park the cursor on an invisible chip.
+    pub(crate) fn tab_has_create(tab: ResourceTab) -> bool {
+        !crate::tui::widgets::service_header::texts(tab).1.is_empty()
+    }
+
     /// All sidebar entries: projects, then services (optionally hiding empty
-    /// ones), then the settings entry.
+    /// ones), the account finances entry, then the settings entry.
     #[must_use]
     pub fn nav_items(&self) -> Vec<NavItem> {
         use crate::tui::widgets::sidebar::tab_icon;
@@ -85,6 +93,12 @@ impl App {
                     count: Some(self.tab_count(tab))
                 })
         );
+        items.push(NavItem {
+            kind:  NavKind::Service(ResourceTab::Finances),
+            glyph: tab_icon(ResourceTab::Finances),
+            label: ResourceTab::Finances.display_name().into_owned(),
+            count: None
+        });
         items.push(NavItem {
             kind:  NavKind::Settings,
             glyph: "\u{f013}",
@@ -153,7 +167,7 @@ impl App {
         match self.nav_current() {
             Some(NavKind::Service(tab)) => {
                 self.active_tab = tab;
-                self.content_on_create = self.tab_count(tab) == 0;
+                self.content_on_create = Self::tab_has_create(tab) && self.tab_count(tab) == 0;
                 self.pane = Pane::Content;
             }
             Some(NavKind::Project(index)) => {

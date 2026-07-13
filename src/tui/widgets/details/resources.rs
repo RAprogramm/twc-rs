@@ -273,26 +273,139 @@ pub(super) fn render_project_details(app: &App, palette: Palette) -> Vec<super::
     lines
 }
 
-pub(super) fn render_string_details(
-    items: &[String],
-    app: &App,
-    label: &str,
-    palette: Palette
-) -> Vec<super::DetailLine> {
-    if items.is_empty() {
-        return empty(&t!("details.no_entries", name => label), palette);
+pub(super) fn render_ssh_key_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
+    if app.ssh_keys.is_empty() {
+        return empty(&t!("details.no_ssh_keys"), palette);
     }
-    let item = &items[app.selected_real_index().min(items.len() - 1)];
-    vec![
-        heading(label, palette),
+    let key = &app.ssh_keys[app.selected_real_index().min(app.ssh_keys.len() - 1)];
+    let mut lines = vec![
+        heading(&key.name, palette),
         rule(palette),
         kv(
-            &t!("details.value"),
-            item.clone(),
+            &t!("details.id"),
+            format!("#{}", key.id),
+            accent(palette),
+            palette
+        ),
+        kv(
+            &t!("details.created"),
+            crate::tui::humanize::date(&key.created_at),
             name_style(palette),
             palette
         ),
-    ]
+        kv(
+            &t!("details.default_key"),
+            if key.is_default {
+                t!("details.yes")
+            } else {
+                t!("details.no")
+            }
+            .to_string(),
+            name_style(palette),
+            palette
+        ),
+        kv(
+            &t!("details.key_body"),
+            key.body.clone(),
+            name_style(palette),
+            palette
+        ),
+    ];
+    if !key.used_by.is_empty() {
+        lines.push(super::blank());
+        lines.push(section(&t!("details.used_by"), palette));
+        for server in &key.used_by {
+            lines.push(kv("", server.clone(), accent(palette), palette));
+        }
+    }
+    lines
+}
+
+pub(super) fn render_finances_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {
+    let Some(f) = app.finances.as_ref() else {
+        return empty(&t!("details.no_finances"), palette);
+    };
+    let mut lines = vec![
+        heading(&t!("tabs.finances"), palette),
+        rule(palette),
+        kv(
+            &t!("finances.balance"),
+            f.money(f.balance),
+            accent(palette),
+            palette
+        ),
+        kv(
+            &t!("details.currency"),
+            f.currency.clone(),
+            name_style(palette),
+            palette
+        ),
+        super::blank(),
+        section(&t!("details.costs"), palette),
+        kv(
+            &t!("finances.monthly_cost"),
+            f.money(f.monthly_cost),
+            warn(palette),
+            palette
+        ),
+        kv(
+            &t!("finances.hourly_cost"),
+            f.money(f.hourly_cost),
+            warn(palette),
+            palette
+        ),
+        kv(
+            &t!("finances.monthly_fee"),
+            f.money(f.monthly_fee),
+            name_style(palette),
+            palette
+        ),
+        kv(
+            &t!("finances.hourly_fee"),
+            f.money(f.hourly_fee),
+            name_style(palette),
+            palette
+        ),
+        kv(
+            &t!("finances.total_paid"),
+            f.money(f.total_paid),
+            name_style(palette),
+            palette
+        ),
+    ];
+    if let Some(hours) = f.hours_left {
+        lines.push(kv(
+            &t!("details.hours_left"),
+            t!("details.hours_value", n => format!("{hours:.0}")).into_owned(),
+            name_style(palette),
+            palette
+        ));
+    }
+    if f.discount_percent > 0.0 {
+        lines.push(kv(
+            &t!("details.discount"),
+            format!("{}%", f.discount_percent),
+            accent(palette),
+            palette
+        ));
+        if !f.discount_end_date.is_empty() {
+            lines.push(kv(
+                &t!("details.discount_until"),
+                crate::tui::humanize::date(&f.discount_end_date),
+                name_style(palette),
+                palette
+            ));
+        }
+    }
+    if !f.autopay_card.is_empty() {
+        lines.push(kv(
+            &t!("details.autopay_card"),
+            f.autopay_card.clone(),
+            name_style(palette),
+            palette
+        ));
+    }
+    lines
 }
 
 pub(super) fn render_balancer_details(app: &App, palette: Palette) -> Vec<super::DetailLine> {

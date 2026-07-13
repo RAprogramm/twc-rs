@@ -79,9 +79,6 @@ details.apps:
 details.total:
   en: "Total"
   ru: "Всего"
-details.value:
-  en: "Value"
-  ru: "Значение"
 details.ip:
   en: "IP"
   ru: "IP"
@@ -132,15 +129,42 @@ details.no:
   en: "no"
   ru: "нет"
 
-details.ssh_key:
-  en: "SSH key"
-  ru: "SSH-ключ"
-details.finance:
-  en: "Finance"
-  ru: "Финансы"
-details.no_entries:
-  en: "No %{name} entries"
-  ru: "Нет записей: %{name}"
+details.no_ssh_keys:
+  en: "No SSH keys available"
+  ru: "SSH-ключей нет"
+details.no_finances:
+  en: "Billing information not loaded yet"
+  ru: "Платёжная информация ещё не загружена"
+details.default_key:
+  en: "Default"
+  ru: "По умолчанию"
+details.key_body:
+  en: "Key body"
+  ru: "Тело ключа"
+details.used_by:
+  en: "Used by servers"
+  ru: "Используется серверами"
+details.currency:
+  en: "Currency"
+  ru: "Валюта"
+details.costs:
+  en: "Costs"
+  ru: "Расходы"
+details.hours_left:
+  en: "Hours paid"
+  ru: "Оплачено часов"
+details.hours_value:
+  en: "%{n} h"
+  ru: "%{n} ч"
+details.discount:
+  en: "Discount"
+  ru: "Скидка"
+details.discount_until:
+  en: "Discount until"
+  ru: "Скидка до"
+details.autopay_card:
+  en: "Autopay card"
+  ru: "Карта автоплатежа"
 
 details.no_servers:
   en: "No servers available"

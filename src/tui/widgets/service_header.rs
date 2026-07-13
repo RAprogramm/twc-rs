@@ -53,7 +53,8 @@ pub fn texts(tab: ResourceTab) -> (Cow<'static, str>, Cow<'static, str>) {
             t!("service.create.knowledge_bases")
         ),
         ResourceTab::Projects => (t!("service.desc.projects"), t!("service.create.projects")),
-        ResourceTab::SshKeys | ResourceTab::Finances => (Cow::Borrowed(""), Cow::Borrowed(""))
+        ResourceTab::SshKeys => (t!("service.desc.ssh_keys"), t!("service.create.ssh_keys")),
+        ResourceTab::Finances => (t!("service.desc.finances"), Cow::Borrowed(""))
     }
 }
 
@@ -66,15 +67,16 @@ fn desc_rows(desc: &str, width: u16) -> u16 {
     u16::try_from(rows.clamp(1, 3)).unwrap_or(1)
 }
 
-/// Total height of the header block (description, button, separator) at the
-/// given inner width; 0 when the tab has no product description.
+/// Total height of the header block (description, optional button and the
+/// separator) at the given inner width; 0 when the tab has no product
+/// description. Tabs without a create label skip the button row.
 #[must_use]
 fn height(tab: ResourceTab, width: u16) -> u16 {
-    let (desc, _) = texts(tab);
+    let (desc, create) = texts(tab);
     if desc.is_empty() {
         return 0;
     }
-    desc_rows(&desc, width) + 2
+    desc_rows(&desc, width) + 1 + u16::from(!create.is_empty())
 }
 
 /// Splits a panel's inner area into the header block and the space below it.
@@ -110,11 +112,12 @@ pub fn render(
     palette: &Palette
 ) {
     let (desc, create) = texts(tab);
-    if desc.is_empty() || area.height < 3 {
+    let chrome_rows = 1 + u16::from(!create.is_empty());
+    if desc.is_empty() || area.height < chrome_rows + 1 {
         return;
     }
 
-    let text_rows = area.height.saturating_sub(2);
+    let text_rows = area.height.saturating_sub(chrome_rows);
     frame.render_widget(
         Paragraph::new(Line::from(Span::styled(
             desc.into_owned(),
@@ -126,12 +129,16 @@ pub fn render(
         Rect::new(area.x, area.y, area.width, text_rows)
     );
 
-    let button =
-        crate::tui::widgets::button::chip(&format!("+ {create}"), button_focused, palette);
-    frame.render_widget(
-        Paragraph::new(button),
-        Rect::new(area.x, area.y + text_rows, area.width, 1)
-    );
+    let mut next_row = area.y + text_rows;
+    if !create.is_empty() {
+        let button =
+            crate::tui::widgets::button::chip(&format!("+ {create}"), button_focused, palette);
+        frame.render_widget(
+            Paragraph::new(button),
+            Rect::new(area.x, next_row, area.width, 1)
+        );
+        next_row += 1;
+    }
 
     let separator = Line::from(Span::styled(
         "\u{2500}".repeat(usize::from(area.width)),
@@ -139,7 +146,7 @@ pub fn render(
     ));
     frame.render_widget(
         Paragraph::new(separator),
-        Rect::new(area.x, area.y + text_rows + 1, area.width, 1)
+        Rect::new(area.x, next_row, area.width, 1)
     );
 }
 
@@ -200,6 +207,16 @@ mod tests {
     fn height_scales_with_width() {
         assert!(height(ResourceTab::Servers, 30) >= height(ResourceTab::Servers, 200));
         assert!(height(ResourceTab::Projects, 80) > 0);
-        assert_eq!(height(ResourceTab::Finances, 80), 0);
+    }
+
+    #[test]
+    fn finances_header_has_description_but_no_button_row() {
+        let (desc, create) = texts(ResourceTab::Finances);
+        assert!(!desc.is_empty());
+        assert!(create.is_empty());
+        assert_eq!(
+            height(ResourceTab::Finances, 200),
+            height(ResourceTab::Servers, 200) - 1
+        );
     }
 }
