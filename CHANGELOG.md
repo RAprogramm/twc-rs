@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0](https://github.com/RAprogramm/twc-rs/compare/v2.0.5...v3.0.0) - 2026-07-13
+
+### Added
+
+- First-class SSH keys and Finances sections (#141) ([#134](https://github.com/RAprogramm/twc-rs/issues/134)) ([63f9450](https://github.com/RAprogramm/twc-rs/commit/63f94504fe5072fd97b20d9f78d48e7cd423bf31))
+
+
 ## [2.0.5](https://github.com/RAprogramm/twc-rs/compare/v2.0.4...v2.0.5) - 2026-07-13
 
 ### Added
