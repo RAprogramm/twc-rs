@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.2](https://github.com/RAprogramm/twc-rs/compare/v2.0.1...v2.0.2) - 2026-07-13
+
+### Fixed
+
+- Rewrite the help overlay for the sidebar UI and humanize English tab names ([d9dd601](https://github.com/RAprogramm/twc-rs/commit/d9dd6015238a54d3510a9622518aa7400d7eaf44))
+
+
 ## [2.0.1](https://github.com/RAprogramm/twc-rs/compare/v2.0.0...v2.0.1) - 2026-07-12
 
 ### Fixed
