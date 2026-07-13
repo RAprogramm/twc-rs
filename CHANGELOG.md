@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.2](https://github.com/RAprogramm/twc-rs/compare/v4.0.1...v4.0.2) - 2026-07-13
+
+### Changed
+
+- Hide internal modules from the public API and stop semver-checking the app crate (#148) ([#147](https://github.com/RAprogramm/twc-rs/issues/147)) ([3e98665](https://github.com/RAprogramm/twc-rs/commit/3e98665ae44e869d5d1cb0accfd415efd58a661c))
+
+
 ## [4.0.1](https://github.com/RAprogramm/twc-rs/compare/v4.0.0...v4.0.1) - 2026-07-13
 
 ### Added
