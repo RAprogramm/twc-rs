@@ -3676,11 +3676,12 @@ dependencies = [
 
 [[package]]
 name = "timeweb-rs"
-version = "0.5.1"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4f5a827ca99a6130a44d8cb1c0a6508b571aca1f747f8027a1297844208deaf7"
+checksum = "069abad07d28bcb056402f6fbd7349dd1482250ee122f883a6f7a3281ddb42b2"
 dependencies = [
  "chrono",
+ "futures-core",
  "reqwest",
  "serde",
  "serde_json",
