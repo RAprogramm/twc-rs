@@ -1092,6 +1092,85 @@ fn create_form_not_for_actionless_tab() {
 }
 
 #[test]
+fn create_form_opens_for_ssh_keys_with_empty_required_fields() {
+    let mut app = App::new(5);
+    app.active_tab = ResourceTab::SshKeys;
+    app.open_create_form();
+    let form = app.create_form.as_ref().expect("ssh key form");
+    assert_eq!(form.tab, ResourceTab::SshKeys);
+    assert_eq!(form.fields.len(), 2);
+    assert!(form.fields.iter().all(|f| f.required && f.value.is_empty()));
+
+    // name filled but public key empty -> submit rejected
+    for c in "laptop".chars() {
+        app.form_input(c);
+    }
+    assert!(!app.form_submit());
+    app.form_next_field();
+    for c in "ssh-ed25519 AAAA".chars() {
+        app.form_input(c);
+    }
+    assert!(app.form_submit());
+    let req = app.take_create_request().expect("submitted form queued");
+    assert_eq!(req.fields[1].value, "ssh-ed25519 AAAA");
+}
+
+#[test]
+fn create_form_opens_for_vpc_with_prefills() {
+    let mut app = App::new(5);
+    app.active_tab = ResourceTab::Vpc;
+    app.open_create_form();
+    let form = app.create_form.as_ref().expect("vpc form");
+    assert_eq!(form.fields.len(), 3);
+    assert_eq!(form.fields[1].value, "192.168.0.0/24");
+    assert_eq!(form.fields[2].value, "ru-1");
+
+    // prefilled required fields pass validation once the name is typed
+    assert!(!app.form_submit());
+    for c in "net".chars() {
+        app.form_input(c);
+    }
+    assert!(app.form_submit());
+}
+
+#[test]
+fn create_form_opens_for_network_drives_with_prefills() {
+    let mut app = App::new(5);
+    app.active_tab = ResourceTab::NetworkDrives;
+    app.open_create_form();
+    let form = app.create_form.as_ref().expect("network drive form");
+    assert_eq!(form.fields.len(), 3);
+    assert_eq!(form.fields[1].value, "10");
+    assert_eq!(form.fields[2].value, "nvme");
+}
+
+#[test]
+fn create_hub_opens_forms_for_simple_resources() {
+    for tab in [ResourceTab::Vpc, ResourceTab::NetworkDrives] {
+        let mut app = App::new(5);
+        app.create_selected = App::create_targets()
+            .iter()
+            .position(|t| *t == tab)
+            .expect("tab offered by the hub");
+        app.create_activate();
+        assert!(app.create_form_open(), "{tab:?} must open a form");
+        assert!(!app.info_popup_open());
+        assert_eq!(app.create_form.as_ref().expect("form").tab, tab);
+    }
+}
+
+#[test]
+fn parse_size_gb_accepts_numbers_and_rejects_garbage() {
+    assert_eq!(parse_size_gb("10"), Ok(10.0));
+    assert_eq!(parse_size_gb(" 2.5 "), Ok(2.5));
+    assert!(parse_size_gb("ten").is_err());
+    assert!(parse_size_gb("").is_err());
+    assert!(parse_size_gb("0").is_err());
+    assert!(parse_size_gb("-5").is_err());
+    assert!(parse_size_gb("inf").is_err());
+}
+
+#[test]
 fn select_initial_tab_moves_sidebar_and_tab_together() {
     let mut app = App::new(5);
     app.databases = vec![make_database(1, "db", "postgres")];

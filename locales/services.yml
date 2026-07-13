@@ -120,3 +120,30 @@ service.create.ssh_keys:
 service.desc.finances:
   en: "Account billing: balance, hourly and monthly service costs and total payments."
   ru: "Финансы аккаунта: баланс, почасовая и месячная стоимость услуг и сумма платежей."
+form.field.name:
+  en: "Name"
+  ru: "Название"
+form.field.description:
+  en: "Description"
+  ru: "Описание"
+form.field.public_key:
+  en: "Public key"
+  ru: "Публичный ключ"
+form.field.subnet:
+  en: "Subnet CIDR"
+  ru: "Подсеть CIDR"
+form.field.location:
+  en: "Location"
+  ru: "Локация"
+form.field.size_gb:
+  en: "Size (GB)"
+  ru: "Размер (ГБ)"
+form.field.drive_type:
+  en: "Type (nvme/hdd)"
+  ru: "Тип (nvme/hdd)"
+form.invalid_size:
+  en: "invalid size '%{value}': enter gigabytes as a number"
+  ru: "неверный размер '%{value}': укажите число гигабайт"
+form.invalid_drive_type:
+  en: "unknown drive type '%{value}': use nvme or hdd"
+  ru: "неизвестный тип диска '%{value}': используйте nvme или hdd"
