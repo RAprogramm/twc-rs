@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.5](https://github.com/RAprogramm/twc-rs/compare/v2.0.4...v2.0.5) - 2026-07-13
+
+### Added
+
+- Render network in/out sparklines beside CPU and RAM (#139) ([#133](https://github.com/RAprogramm/twc-rs/issues/133)) ([ae1f7c9](https://github.com/RAprogramm/twc-rs/commit/ae1f7c9d71d28ae5faeecdc7294198f8510e46b2))
+
+
 ## [2.0.4](https://github.com/RAprogramm/twc-rs/compare/v2.0.3...v2.0.4) - 2026-07-13
 
 ### Added
