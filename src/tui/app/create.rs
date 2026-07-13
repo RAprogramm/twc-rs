@@ -36,7 +36,7 @@ impl super::App {
             return;
         };
         self.active_tab = *tab;
-        if matches!(tab, ResourceTab::Projects) {
+        if Self::tab_has_create_form(*tab) {
             self.open_create_form();
             return;
         }

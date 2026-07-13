@@ -3,9 +3,23 @@
 
 //! In-dashboard resource creation forms.
 
+use std::borrow::Cow;
+
 use rust_i18n::t;
 
 use super::ResourceTab;
+
+/// Prefilled subnet for a new private network.
+const DEFAULT_SUBNET_V4: &str = "192.168.0.0/24";
+
+/// Prefilled location code for new resources.
+const DEFAULT_LOCATION: &str = "ru-1";
+
+/// Prefilled size, in gigabytes, for a new network drive.
+const DEFAULT_DRIVE_SIZE_GB: &str = "10";
+
+/// Prefilled drive type for a new network drive.
+const DEFAULT_DRIVE_TYPE: &str = "nvme";
 
 /// A single editable field in a create form.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -16,6 +30,49 @@ pub struct InputField {
     pub value:    String,
     /// Whether the field must be non-empty to submit.
     pub required: bool
+}
+
+impl InputField {
+    /// An empty field that must be filled before submit.
+    fn required(label: Cow<'_, str>) -> Self {
+        Self {
+            label:    label.into_owned(),
+            value:    String::new(),
+            required: true
+        }
+    }
+
+    /// An empty field that may stay blank.
+    fn optional(label: Cow<'_, str>) -> Self {
+        Self {
+            label:    label.into_owned(),
+            value:    String::new(),
+            required: false
+        }
+    }
+
+    /// A required field prefilled with an editable default.
+    fn prefilled(label: Cow<'_, str>, value: &str) -> Self {
+        Self {
+            label:    label.into_owned(),
+            value:    value.to_string(),
+            required: true
+        }
+    }
+}
+
+/// Parses a create-form size field as a positive number of gigabytes.
+///
+/// # Errors
+///
+/// Returns a localized message when the value is not a positive finite
+/// number.
+pub fn parse_size_gb(value: &str) -> Result<f64, String> {
+    let trimmed = value.trim();
+    match trimmed.parse::<f64>() {
+        Ok(size) if size > 0.0 && size.is_finite() => Ok(size),
+        _ => Err(t!("form.invalid_size", value => trimmed).into_owned())
+    }
 }
 
 /// An in-dashboard form for creating a new resource.
@@ -38,31 +95,51 @@ impl super::App {
         self.create_form.is_some()
     }
 
-    /// Opens a create form for the active tab, when that resource supports
-    /// in-dashboard creation. Resources whose creation needs many or
-    /// structured fields stay CLI-only.
-    pub fn open_create_form(&mut self) {
-        let form = match self.active_tab {
-            ResourceTab::Projects => Some(CreateForm {
-                tab:    ResourceTab::Projects,
-                title:  "Create project".to_string(),
-                fields: vec![
-                    InputField {
-                        label:    "Name".to_string(),
-                        value:    String::new(),
-                        required: true
-                    },
-                    InputField {
-                        label:    "Description".to_string(),
-                        value:    String::new(),
-                        required: false
-                    },
-                ],
-                active: 0
-            }),
-            _ => None
+    /// Builds the create form for `tab`, or `None` when that resource has no
+    /// in-dashboard form. Resources whose creation needs many or structured
+    /// fields stay CLI-only.
+    fn build_create_form(tab: ResourceTab) -> Option<CreateForm> {
+        let fields = match tab {
+            ResourceTab::Projects => vec![
+                InputField::required(t!("form.field.name")),
+                InputField::optional(t!("form.field.description")),
+            ],
+            ResourceTab::SshKeys => vec![
+                InputField::required(t!("form.field.name")),
+                InputField::required(t!("form.field.public_key")),
+            ],
+            ResourceTab::Vpc => vec![
+                InputField::required(t!("form.field.name")),
+                InputField::prefilled(t!("form.field.subnet"), DEFAULT_SUBNET_V4),
+                InputField::prefilled(t!("form.field.location"), DEFAULT_LOCATION),
+            ],
+            ResourceTab::NetworkDrives => vec![
+                InputField::required(t!("form.field.name")),
+                InputField::prefilled(t!("form.field.size_gb"), DEFAULT_DRIVE_SIZE_GB),
+                InputField::prefilled(t!("form.field.drive_type"), DEFAULT_DRIVE_TYPE),
+            ],
+            _ => return None
         };
-        if let Some(form) = form {
+        Some(CreateForm {
+            tab,
+            title: crate::tui::widgets::service_header::texts(tab)
+                .1
+                .into_owned(),
+            fields,
+            active: 0
+        })
+    }
+
+    /// Returns true when `tab` supports in-dashboard creation.
+    #[must_use]
+    pub fn tab_has_create_form(tab: ResourceTab) -> bool {
+        Self::build_create_form(tab).is_some()
+    }
+
+    /// Opens a create form for the active tab, when that resource supports
+    /// in-dashboard creation.
+    pub fn open_create_form(&mut self) {
+        if let Some(form) = Self::build_create_form(self.active_tab) {
             self.create_form = Some(form);
         } else {
             self.status_message = Some(t!("app.create_not_supported").to_string());

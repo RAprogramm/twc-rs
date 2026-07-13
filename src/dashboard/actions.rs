@@ -99,7 +99,10 @@ pub async fn perform_create(
     app: &mut tui::app::App,
     form: tui::app::CreateForm
 ) {
-    use timeweb_rs::{apis::projects_api, models::CreateProject};
+    use timeweb_rs::{
+        apis::{projects_api, ssh_api, vpc_api},
+        models::{CreateKeyRequest, CreateProject, CreateVpc}
+    };
     use tui::app::{LogLevel, ResourceTab};
 
     let field = |i: usize| form.fields.get(i).map(|f| f.value.trim().to_owned());
@@ -115,6 +118,34 @@ pub async fn perform_create(
                 .await
                 .map(|r| r.project.name)
                 .map_err(|e| e.to_string())
+        }
+        ResourceTab::SshKeys => {
+            let name = field(0).unwrap_or_default();
+            let body = field(1).unwrap_or_default();
+            ssh_api::create_key(config, CreateKeyRequest::new(body, false, name))
+                .await
+                .map(|r| r.ssh_key.name)
+                .map_err(|e| e.to_string())
+        }
+        ResourceTab::Vpc => {
+            let req = CreateVpc::new(
+                field(0).unwrap_or_default(),
+                field(1).unwrap_or_default(),
+                field(2).unwrap_or_default()
+            );
+            vpc_api::create_vpc(config, req)
+                .await
+                .map(|r| r.vpc.name)
+                .map_err(|e| e.to_string())
+        }
+        ResourceTab::NetworkDrives => {
+            create_network_drive(
+                config,
+                field(0).unwrap_or_default(),
+                &field(1).unwrap_or_default(),
+                &field(2).unwrap_or_default()
+            )
+            .await
         }
         _ => Err("creation not supported for this resource".to_string())
     };
@@ -132,6 +163,49 @@ pub async fn perform_create(
             app.error_message = Some(msg);
         }
     }
+}
+
+/// Human label for a network drive preset type.
+const fn drive_type_label(kind: timeweb_rs::models::network_drive_preset::Type) -> &'static str {
+    use timeweb_rs::models::network_drive_preset::Type;
+
+    match kind {
+        Type::Nvme => "nvme",
+        Type::Hdd => "hdd"
+    }
+}
+
+/// Creates a network drive from create-form input: `size_text` is parsed as
+/// gigabytes and the required tariff preset is resolved by drive type
+/// (`nvme` or `hdd`) from the presets endpoint, taking the first match.
+async fn create_network_drive(
+    config: &timeweb_rs::apis::configuration::Configuration,
+    name: String,
+    size_text: &str,
+    type_text: &str
+) -> Result<String, String> {
+    use timeweb_rs::{apis::network_drives_api, models::CreateNetworkDrive};
+
+    let size = tui::app::parse_size_gb(size_text)?;
+    let wanted = type_text.trim().to_lowercase();
+    let presets = network_drives_api::get_network_drives_presets(config)
+        .await
+        .map_err(|e| e.to_string())?;
+    let preset = presets
+        .network_drive_presets
+        .iter()
+        .find(|p| drive_type_label(p.r#type) == wanted)
+        .ok_or_else(|| {
+            rust_i18n::t!("form.invalid_drive_type", value => type_text).into_owned()
+        })?;
+    let preset_id = i32::try_from(preset.id).map_err(|e| e.to_string())?;
+    network_drives_api::create_network_drive(
+        config,
+        CreateNetworkDrive::new(name, size, preset_id)
+    )
+    .await
+    .map(|r| r.network_drive.name)
+    .map_err(|e| e.to_string())
 }
 
 /// Maps a `(tab, action)` pair to the matching Timeweb API call.

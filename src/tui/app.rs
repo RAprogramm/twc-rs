@@ -29,7 +29,7 @@ mod tests;
 pub use actions::{ActionKind, PendingAction};
 pub use data::DataSlice;
 pub use drill::{DrillItem, DrillView};
-pub use forms::CreateForm;
+pub use forms::{CreateForm, parse_size_gb};
 pub use nav::{NavItem, NavKind};
 pub use navigation::grid_step;
 pub use settings::{SETTING_ROWS, SettingRow, SettingsPicker};
