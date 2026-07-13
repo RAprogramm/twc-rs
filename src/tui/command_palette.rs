@@ -80,20 +80,18 @@ impl CommandPalette {
             self.selected = 0;
             return;
         }
-        self.selected = (self.selected + 1) % self.filtered.len();
+        if self.selected + 1 < self.filtered.len() {
+            self.selected += 1;
+        }
     }
 
-    /// Moves the selection up within the filtered list, wrapping.
+    /// Moves the selection up within the filtered list, clamping at the top.
     pub const fn previous(&mut self) {
         if self.filtered.is_empty() {
             self.selected = 0;
             return;
         }
-        self.selected = if self.selected == 0 {
-            self.filtered.len() - 1
-        } else {
-            self.selected - 1
-        };
+        self.selected = self.selected.saturating_sub(1);
     }
 
     /// Returns the currently highlighted command, if any.
@@ -365,23 +363,24 @@ mod tests {
     }
 
     #[test]
-    fn next_wraps() {
+    fn next_clamps_at_the_end() {
         let mut cp = CommandPalette::new(sample());
         cp.next();
         assert_eq!(cp.selected, 1);
         cp.next();
         assert_eq!(cp.selected, 2);
         cp.next();
-        assert_eq!(cp.selected, 0);
+        assert_eq!(cp.selected, 2);
     }
 
     #[test]
-    fn previous_wraps() {
+    fn previous_clamps_at_the_top() {
         let mut cp = CommandPalette::new(sample());
         cp.previous();
-        assert_eq!(cp.selected, 2);
+        assert_eq!(cp.selected, 0);
+        cp.next();
         cp.previous();
-        assert_eq!(cp.selected, 1);
+        assert_eq!(cp.selected, 0);
     }
 
     #[test]
