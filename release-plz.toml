@@ -1,9 +1,16 @@
 # release-plz configuration — https://release-plz.dev/docs/config
 #
 # The crate now uses Conventional Commits (`feat:`/`fix:`/`chore:`/`ci:`/
-# `docs:`/`refactor:`/`test:`, with `!` for breaking changes). release-plz still
-# verifies the actual public-API surface with `cargo-semver-checks`, but the
-# commit type drives both the changelog grouping below and the version bump.
+# `docs:`/`refactor:`/`test:`, with `!` for breaking changes). The commit type
+# drives both the changelog grouping below and the version bump.
+#
+# cargo-semver-checks is disabled: the crate is an application — its stable
+# interface is the CLI, not the library target, and the library modules are
+# `#[doc(hidden)]` implementation details (see src/lib.rs). Letting the check
+# run forced a major release for every internal refactor.
+
+[workspace]
+semver_check = false
 
 [changelog]
 # Keep the existing Keep a Changelog + SemVer preamble verbatim so a regenerated
