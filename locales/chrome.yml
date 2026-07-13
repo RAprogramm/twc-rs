@@ -15,6 +15,21 @@ app.action_clone:
 app.action_backup:
   en: Backup
   ru: Создать бэкап
+app.action_stop:
+  en: Stop
+  ru: Остановить
+app.action_unbind:
+  en: Unbind
+  ru: Отвязать
+app.action_unmount:
+  en: Unmount
+  ru: Отмонтировать
+app.action_scale_up:
+  en: Scale +1 node
+  ru: Добавить узел (+1)
+app.action_scale_down:
+  en: Scale -1 node
+  ru: Убрать узел (-1)
 app.action_delete:
   en: Delete
   ru: Удалить

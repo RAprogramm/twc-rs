@@ -738,7 +738,22 @@ fn per_tab_action_sets() {
         ResourceTab::Databases.actions(),
         &[ActionKind::Backup, ActionKind::Delete]
     );
-    assert_eq!(ResourceTab::Kubernetes.actions(), &[ActionKind::Delete]);
+    assert_eq!(
+        ResourceTab::Kubernetes.actions(),
+        &[
+            ActionKind::ScaleUp,
+            ActionKind::ScaleDown,
+            ActionKind::Delete
+        ]
+    );
+    assert_eq!(
+        ResourceTab::FloatingIps.actions(),
+        &[ActionKind::Unbind, ActionKind::Delete]
+    );
+    assert_eq!(
+        ResourceTab::NetworkDrives.actions(),
+        &[ActionKind::Unmount, ActionKind::Delete]
+    );
     assert_eq!(ResourceTab::Projects.actions(), &[ActionKind::Delete]);
     assert_eq!(ResourceTab::AiAgents.actions(), &[ActionKind::Delete]);
     assert_eq!(ResourceTab::Domains.actions(), &[ActionKind::Delete]);
@@ -746,6 +761,21 @@ fn per_tab_action_sets() {
     assert_eq!(ResourceTab::Vpc.actions(), &[ActionKind::Delete]);
     assert!(ResourceTab::Finances.actions().is_empty());
     assert!(ResourceTab::Mail.actions().is_empty());
+}
+
+#[test]
+fn apps_action_set_and_destructive_flags() {
+    assert_eq!(
+        ResourceTab::Apps.actions(),
+        &[ActionKind::Start, ActionKind::Stop, ActionKind::Delete]
+    );
+    assert!(ActionKind::ScaleDown.is_destructive());
+    assert!(ActionKind::Delete.is_destructive());
+    assert!(!ActionKind::Start.is_destructive());
+    assert!(!ActionKind::Stop.is_destructive());
+    assert!(!ActionKind::Unbind.is_destructive());
+    assert!(!ActionKind::Unmount.is_destructive());
+    assert!(!ActionKind::ScaleUp.is_destructive());
 }
 
 #[test]
