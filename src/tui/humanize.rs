@@ -51,6 +51,19 @@ pub fn megabytes(mb: i64) -> String {
     }
 }
 
+/// A byte throughput as a compact human-readable rate.
+#[must_use]
+pub fn bytes_rate(bytes_per_sec: f64) -> String {
+    let value = bytes_per_sec.max(0.0);
+    if value >= 1_048_576.0 {
+        format!("{:.1} MB/s", value / 1_048_576.0)
+    } else if value >= 1024.0 {
+        format!("{:.1} KB/s", value / 1024.0)
+    } else {
+        format!("{value:.0} B/s")
+    }
+}
+
 /// A resource count with the grammatically correct noun form for the
 /// active language ("1 resource", "2 ресурса", "5 ресурсов").
 #[must_use]
