@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.3](https://github.com/RAprogramm/twc-rs/compare/v2.0.2...v2.0.3) - 2026-07-13
+
+### Fixed
+
+- Clamp picker and command palette selection at edges (#129) ([#128](https://github.com/RAprogramm/twc-rs/issues/128)) ([6313377](https://github.com/RAprogramm/twc-rs/commit/6313377bc6bbe036d4e014dbe78fad52a21907aa))
+
+
 ## [2.0.2](https://github.com/RAprogramm/twc-rs/compare/v2.0.1...v2.0.2) - 2026-07-13
 
 ### Fixed
