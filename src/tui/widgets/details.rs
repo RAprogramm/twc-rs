@@ -14,11 +14,11 @@ use ratatui::{
 };
 use resources::{
     render_ai_agent_details, render_app_details, render_balancer_details, render_database_details,
-    render_dedicated_details, render_domain_details, render_firewall_details,
-    render_floating_ip_details, render_image_details, render_k8s_details,
+    render_dedicated_details, render_domain_details, render_finances_details,
+    render_firewall_details, render_floating_ip_details, render_image_details, render_k8s_details,
     render_knowledge_details, render_mail_details, render_network_drive_details,
     render_project_details, render_registry_details, render_s3_details, render_server_details,
-    render_string_details, render_vpc_details
+    render_ssh_key_details, render_vpc_details
 };
 use rust_i18n::t;
 
@@ -97,12 +97,8 @@ pub fn build(app: &App) -> Vec<DetailLine> {
         ResourceTab::Apps => render_app_details(app, palette),
         ResourceTab::AiAgents => render_ai_agent_details(app, palette),
         ResourceTab::KnowledgeBases => render_knowledge_details(app, palette),
-        ResourceTab::SshKeys => {
-            render_string_details(&app.ssh_keys, app, &t!("details.ssh_key"), palette)
-        }
-        ResourceTab::Finances => {
-            render_string_details(&app.finances, app, &t!("details.finance"), palette)
-        }
+        ResourceTab::SshKeys => render_ssh_key_details(app, palette),
+        ResourceTab::Finances => render_finances_details(app, palette)
     });
 
     append_extra_sections(&mut rows, app, palette);
@@ -647,6 +643,42 @@ mod tests {
             app.detail_scroll, 0,
             "short content must clamp runaway scroll back to zero"
         );
+    }
+
+    #[test]
+    fn finances_details_show_the_balance() {
+        let mut app = App::new(5);
+        app.active_tab = crate::tui::app::ResourceTab::Finances;
+        app.finances = Some(crate::tui::app::FinancesSummary {
+            balance: 987.65,
+            currency: "RUB".to_string(),
+            monthly_cost: 300.0,
+            hourly_cost: 0.42,
+            ..Default::default()
+        });
+        let rows = build(&app);
+        let copies: Vec<&str> = rows.iter().filter_map(|r| r.copy.as_deref()).collect();
+        assert!(copies.contains(&"987.65 RUB"), "copies: {copies:?}");
+        assert!(copies.contains(&"300.00 RUB"), "copies: {copies:?}");
+        assert!(copies.contains(&"0.42 RUB"), "copies: {copies:?}");
+    }
+
+    #[test]
+    fn ssh_key_details_expose_the_copyable_body_and_used_by() {
+        let mut app = App::new(5);
+        app.active_tab = crate::tui::app::ResourceTab::SshKeys;
+        app.ssh_keys = vec![crate::tui::app::SshKeySummary {
+            id:         7,
+            name:       "laptop".to_string(),
+            body:       "ssh-ed25519 AAAA laptop".to_string(),
+            created_at: "2026-06-08T02:33:05+00:00".to_string(),
+            used_by:    vec!["web-1".to_string()],
+            is_default: true
+        }];
+        let rows = build(&app);
+        let copies: Vec<&str> = rows.iter().filter_map(|r| r.copy.as_deref()).collect();
+        assert!(copies.contains(&"ssh-ed25519 AAAA laptop"), "{copies:?}");
+        assert!(copies.contains(&"web-1"), "{copies:?}");
     }
 
     #[test]

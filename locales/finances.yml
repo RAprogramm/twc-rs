@@ -1,0 +1,20 @@
+_version: 2
+
+finances.balance:
+  en: "Balance"
+  ru: "Баланс"
+finances.monthly_cost:
+  en: "Monthly cost"
+  ru: "Расход в месяц"
+finances.hourly_cost:
+  en: "Hourly cost"
+  ru: "Расход в час"
+finances.monthly_fee:
+  en: "Monthly fee"
+  ru: "Плата в месяц"
+finances.hourly_fee:
+  en: "Hourly fee"
+  ru: "Плата в час"
+finances.total_paid:
+  en: "Total paid"
+  ru: "Всего оплачено"

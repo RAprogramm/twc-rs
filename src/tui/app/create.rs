@@ -7,10 +7,16 @@ use super::ResourceTab;
 
 impl super::App {
     /// The resource types offered by the create hub, projects first.
+    /// Account-level sections (SSH keys) are managed from their own tab,
+    /// not created from the hub.
     #[must_use]
     pub fn create_targets() -> Vec<ResourceTab> {
         let mut targets = vec![ResourceTab::Projects];
-        targets.extend(Self::service_tabs());
+        targets.extend(
+            Self::service_tabs()
+                .into_iter()
+                .filter(|tab| !matches!(tab, ResourceTab::SshKeys))
+        );
         targets
     }
 

@@ -797,26 +797,52 @@ async fn load_knowledge_bases(c: &Configuration, tx: &Tx) {
 }
 
 async fn load_ssh_keys(c: &Configuration, tx: &Tx) {
+    use tui::app::SshKeySummary;
+
     send_result(
         tx,
         "SSH keys",
         timeweb_rs::apis::ssh_api::get_keys(c).await,
-        |resp| DataSlice::SshKeys(resp.ssh_keys.iter().map(|k| k.name.clone()).collect())
+        |resp| {
+            DataSlice::SshKeys(
+                resp.ssh_keys
+                    .iter()
+                    .map(|k| SshKeySummary {
+                        id:         k.id,
+                        name:       k.name.clone(),
+                        body:       k.body.clone(),
+                        created_at: k.created_at.to_rfc3339(),
+                        used_by:    k.used_by.iter().map(|s| s.name.clone()).collect(),
+                        is_default: k.is_default.unwrap_or(false)
+                    })
+                    .collect()
+            )
+        }
     );
 }
 
 async fn load_finances(c: &Configuration, tx: &Tx) {
+    use tui::app::FinancesSummary;
+
     send_result(
         tx,
         "finances",
         timeweb_rs::apis::payments_api::get_finances(c).await,
         |resp| {
             let f = resp.finances;
-            let balance = format!("{:.2} {}", f.balance, f.currency);
-            DataSlice::Finances {
-                lines: vec![format!("Balance: {balance}")],
-                balance
-            }
+            DataSlice::Finances(FinancesSummary {
+                balance:           f.balance,
+                currency:          f.currency.clone(),
+                discount_percent:  f.discount_percent,
+                discount_end_date: f.discount_end_date_at.clone().unwrap_or_default(),
+                hourly_cost:       f.hourly_cost,
+                hourly_fee:        f.hourly_fee,
+                monthly_cost:      f.monthly_cost,
+                monthly_fee:       f.monthly_fee,
+                total_paid:        f.total_paid,
+                hours_left:        f.hours_left,
+                autopay_card:      f.autopay_card_info.clone().unwrap_or_default()
+            })
         }
     );
 }

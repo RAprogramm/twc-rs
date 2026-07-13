@@ -235,7 +235,80 @@ pub fn build(app: &App, palette: &Palette) -> Vec<GridCard> {
                     .meta(t!("resource_list.count_docs", n => k.document_count).to_string())
             })
             .collect(),
-        ResourceTab::SshKeys => app.ssh_keys.iter().map(|k| card(k)).collect(),
-        ResourceTab::Finances => app.finances.iter().map(|f| card(f)).collect()
+        ResourceTab::SshKeys => app
+            .ssh_keys
+            .iter()
+            .map(|k| {
+                let meta = if k.used_by.is_empty() {
+                    crate::tui::humanize::date(&k.created_at)
+                } else {
+                    t!("resource_list.used_by_servers", n => k.used_by.len()).to_string()
+                };
+                card(&k.name).meta(meta)
+            })
+            .collect(),
+        ResourceTab::Finances => app.finances.as_ref().map_or_else(Vec::new, |f| {
+            f.card_entries()
+                .into_iter()
+                .map(|(label, value)| card(&label).meta(value))
+                .collect()
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::tui::app::{FinancesSummary, SshKeySummary};
+
+    #[test]
+    fn ssh_key_summary_maps_into_a_card_with_its_name() {
+        let mut app = App::new(5);
+        app.active_tab = ResourceTab::SshKeys;
+        app.ssh_keys = vec![SshKeySummary {
+            id:         42,
+            name:       "laptop".to_string(),
+            body:       "ssh-ed25519 AAAA laptop".to_string(),
+            created_at: "2026-06-08T02:33:05+00:00".to_string(),
+            used_by:    Vec::new(),
+            is_default: false
+        }];
+        let cards = build(&app, &app.theme.palette());
+        assert_eq!(cards.len(), 1);
+        assert_eq!(cards[0].title, "laptop");
+        assert_eq!(cards[0].meta, "2026-06-08 02:33");
+    }
+
+    #[test]
+    fn ssh_key_card_prefers_used_by_count_over_date() {
+        let mut app = App::new(5);
+        app.active_tab = ResourceTab::SshKeys;
+        app.ssh_keys = vec![SshKeySummary {
+            name: "work".to_string(),
+            used_by: vec!["web-1".to_string(), "web-2".to_string()],
+            ..Default::default()
+        }];
+        let cards = build(&app, &app.theme.palette());
+        assert!(cards[0].meta.contains('2'), "meta: {}", cards[0].meta);
+    }
+
+    #[test]
+    fn finances_cards_lead_with_the_balance() {
+        let mut app = App::new(5);
+        app.active_tab = ResourceTab::Finances;
+        app.finances = Some(FinancesSummary {
+            balance: 1234.5,
+            currency: "RUB".to_string(),
+            ..Default::default()
+        });
+        let cards = build(&app, &app.theme.palette());
+        assert_eq!(cards.len(), FinancesSummary::CARD_COUNT);
+        assert_eq!(cards[0].meta, "1234.50 RUB");
+    }
+
+    #[test]
+    fn finances_card_entries_match_the_declared_count() {
+        let finances = FinancesSummary::default();
+        assert_eq!(finances.card_entries().len(), FinancesSummary::CARD_COUNT);
     }
 }
