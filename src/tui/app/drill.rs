@@ -130,9 +130,7 @@ impl super::App {
         self.detail_scroll = 0;
         self.detail_open = true;
         self.detail_selected = crate::tui::widgets::details::initial_cursor(self);
-        if let Ok(id) = item.id.parse::<i32>() {
-            self.detail_fetch = Some((item.tab, id));
-        }
+        self.detail_fetch = Some((item.tab, item.id));
         true
     }
 
@@ -146,9 +144,7 @@ impl super::App {
         self.detail_scroll = 0;
         self.detail_open = true;
         self.detail_selected = crate::tui::widgets::details::initial_cursor(self);
-        if let Ok(id) = id.parse::<i32>() {
-            self.detail_fetch = Some((self.active_tab, id));
-        }
+        self.detail_fetch = Some((self.active_tab, id));
         true
     }
 
@@ -163,7 +159,7 @@ impl super::App {
     /// Takes the pending deep-detail fetch for the loop to run in the
     /// background.
     #[must_use]
-    pub const fn take_detail_fetch(&mut self) -> Option<(ResourceTab, i32)> {
+    pub const fn take_detail_fetch(&mut self) -> Option<(ResourceTab, String)> {
         self.detail_fetch.take()
     }
 
@@ -194,4 +190,43 @@ fn looks_like_flap(cached: &DrillView, fresh: &DrillView) -> bool {
             .items
             .iter()
             .all(|f| cached.items.iter().any(|c| c.tab == f.tab && c.id == f.id))
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::tui::app::{App, ResourceTab, VpcSummary};
+
+    #[test]
+    fn string_id_detail_fetch_and_extra_cache_round_trip() {
+        let mut app = App::new(5);
+        app.active_tab = ResourceTab::Vpc;
+        app.vpcs = vec![VpcSummary {
+            id:       "8b3f9c2a-uuid".to_string(),
+            name:     "net".to_string(),
+            subnet:   "10.0.0.0/24".to_string(),
+            location: "ru-1".to_string()
+        }];
+
+        assert!(app.open_selected_detail());
+        let fetch = app.take_detail_fetch();
+        assert_eq!(
+            fetch,
+            Some((ResourceTab::Vpc, "8b3f9c2a-uuid".to_string())),
+            "a uuid-id resource must queue its raw string id"
+        );
+        assert_eq!(app.take_detail_fetch(), None, "the fetch is taken once");
+
+        let (tab, id) = fetch.unwrap();
+        let sections = vec![(
+            "Ports".to_string(),
+            vec![("10.0.0.2".to_string(), "dnat+snat".to_string())]
+        )];
+        app.detail_extra.insert((tab, id), sections.clone());
+        assert_eq!(
+            app.detail_extra
+                .get(&(ResourceTab::Vpc, "8b3f9c2a-uuid".to_string())),
+            Some(&sections),
+            "extras cached under the string id must be readable back"
+        );
+    }
 }

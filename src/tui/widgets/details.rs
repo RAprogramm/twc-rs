@@ -317,10 +317,7 @@ const COLUMN_GAP: u16 = 3;
 /// Appends the background-fetched deep-detail sections (connection, nested
 /// databases, tariff, ...) for the resource currently shown, when loaded.
 fn append_extra_sections(text: &mut Vec<DetailLine>, app: &App, palette: Palette) {
-    let Some(id) = app
-        .selected_resource()
-        .and_then(|(id, _)| id.parse::<i32>().ok())
-    else {
+    let Some((id, _)) = app.selected_resource() else {
         return;
     };
     let Some(sections) = app.detail_extra.get(&(app.active_tab, id)) else {
