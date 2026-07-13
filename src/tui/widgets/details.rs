@@ -260,42 +260,81 @@ fn chart_rows(app: &App, inner: Rect) -> u16 {
     }
 }
 
-/// Renders the live CPU and RAM sparklines side by side.
+/// Renders every live metric series as a sparkline: CPU and RAM as
+/// percentages, network in/out as humanized rates. The charts flow into as
+/// many columns as the panel width fits, so four series still read well on
+/// a narrow terminal.
 fn render_charts(frame: &mut Frame, area: Rect, app: &App, palette: Palette) {
     use ratatui::widgets::Sparkline;
 
-    let halves = ratatui::layout::Layout::horizontal([
-        ratatui::layout::Constraint::Percentage(50),
-        ratatui::layout::Constraint::Percentage(50)
-    ])
-    .spacing(2)
-    .split(area);
+    /// One metric series ready for the sparkline grid: its title, samples,
+    /// line color and the formatter for the latest value in the chart title.
+    type ChartSeries = (String, Vec<f64>, Color, fn(f64) -> String);
 
-    let chart = |title: String, data: &[f64], color: Color| {
-        #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-        let points: Vec<u64> = data.iter().map(|v| (v.max(0.0) * 100.0) as u64).collect();
-        let last = data.last().copied().unwrap_or(0.0);
-        Sparkline::default()
-            .block(
-                Block::default()
-                    .borders(Borders::TOP)
-                    .border_style(Style::default().fg(palette.border))
-                    .title(Line::from(Span::styled(
-                        format!(" {title} {last:.1}% "),
-                        Style::default().fg(palette.header)
-                    )))
-            )
-            .data(points)
-            .style(Style::default().fg(color))
-    };
-
+    let percent = |v: f64| format!("{v:.1}%");
+    let rate = crate::tui::humanize::bytes_rate;
+    let mut charts: Vec<ChartSeries> = Vec::new();
     if !app.cpu_history.is_empty() {
-        let cpu: Vec<f64> = app.cpu_history.iter().copied().collect();
-        frame.render_widget(chart("CPU".to_string(), &cpu, palette.accent), halves[0]);
+        let data = app.cpu_history.iter().copied().collect();
+        charts.push(("CPU".to_string(), data, palette.accent, percent));
     }
     if !app.ram_history.is_empty() {
-        let ram: Vec<f64> = app.ram_history.iter().copied().collect();
-        frame.render_widget(chart("RAM".to_string(), &ram, palette.success), halves[1]);
+        let data = app.ram_history.iter().copied().collect();
+        charts.push(("RAM".to_string(), data, palette.success, percent));
+    }
+    if !app.net_in_history.is_empty() {
+        let data = app.net_in_history.iter().copied().collect();
+        charts.push((
+            t!("details.net_in").into_owned(),
+            data,
+            palette.warning,
+            rate
+        ));
+    }
+    if !app.net_out_history.is_empty() {
+        let data = app.net_out_history.iter().copied().collect();
+        charts.push((
+            t!("details.net_out").into_owned(),
+            data,
+            palette.header,
+            rate
+        ));
+    }
+    if charts.is_empty() {
+        return;
+    }
+
+    let cols = charts.len().min(usize::from(area.width / 24).max(1));
+    let rows = charts.len().div_ceil(cols);
+    let row_areas =
+        ratatui::layout::Layout::vertical(vec![ratatui::layout::Constraint::Fill(1); rows])
+            .split(area);
+
+    for (row_area, row_charts) in row_areas.iter().zip(charts.chunks(cols)) {
+        let cells = ratatui::layout::Layout::horizontal(vec![
+            ratatui::layout::Constraint::Fill(1);
+            row_charts.len()
+        ])
+        .spacing(2)
+        .split(*row_area);
+        for ((title, data, color, label), cell) in row_charts.iter().zip(cells.iter()) {
+            #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+            let points: Vec<u64> = data.iter().map(|v| (v.max(0.0) * 100.0) as u64).collect();
+            let last = data.last().copied().unwrap_or(0.0);
+            let spark = Sparkline::default()
+                .block(
+                    Block::default()
+                        .borders(Borders::TOP)
+                        .border_style(Style::default().fg(palette.border))
+                        .title(Line::from(Span::styled(
+                            format!(" {title} {} ", label(last)),
+                            Style::default().fg(palette.header)
+                        )))
+                )
+                .data(points)
+                .style(Style::default().fg(*color));
+            frame.render_widget(spark, *cell);
+        }
     }
 }
 

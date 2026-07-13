@@ -346,3 +346,9 @@ details.subdomains:
 details.more:
   en: "… (+%{count} more)"
   ru: "… (ещё %{count})"
+details.net_in:
+  en: "Net in"
+  ru: "Сеть вход"
+details.net_out:
+  en: "Net out"
+  ru: "Сеть выход"
