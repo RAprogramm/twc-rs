@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7 # checkout repository
       - name: Install cargo-deny
-        uses: taiki-e/install-action@v2 # prebuilt tool installer
+        uses: taiki-e/install-action@v2.85.5 # prebuilt tool installer
         with:
           tool: cargo-deny
       - run: cargo deny check

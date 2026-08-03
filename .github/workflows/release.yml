@@ -81,7 +81,7 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable # stable toolchain
       - name: Install cargo-deb
-        uses: taiki-e/install-action@v2 # pinned to major tag
+        uses: taiki-e/install-action@v2.85.5 # pinned to major tag
         with:
           tool: cargo-deb
       - name: Build .deb
