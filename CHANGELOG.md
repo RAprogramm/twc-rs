@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.6](https://github.com/RAprogramm/twc-rs/compare/v4.0.5...v4.0.6) - 2026-08-12
+
+### Fixed
+
+- Honour a caller-installed keyring store on keyring 4.1.6 (#165) ([#164](https://github.com/RAprogramm/twc-rs/issues/164)) ([810b257](https://github.com/RAprogramm/twc-rs/commit/810b257bd7e4befafbae45df9c839d728f86f25a))
+
+
 ## [4.0.5](https://github.com/RAprogramm/twc-rs/compare/v4.0.4...v4.0.5) - 2026-08-12
 
 ### Fixed
