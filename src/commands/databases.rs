@@ -210,7 +210,7 @@ pub async fn list(
             id:       fmt_id(d.id),
             name:     d.name.clone(),
             status:   format!("{:?}", d.status),
-            engine:   d.r#type.clone(),
+            engine:   d.r#type.clone().unwrap_or_else(|| "-".to_string()),
             location: d.location.clone().unwrap_or_else(|| "-".to_string())
         })
         .collect();
@@ -254,21 +254,24 @@ pub async fn info(config: &Configuration, id: i32, format: OutputFormat) -> Resu
 
     match format {
         OutputFormat::Table => {
-            let disk_size = db
-                .disk
-                .as_ref()
-                .and_then(|o| o.as_ref())
-                .map_or(0.0, |disk| disk.size);
+            let disk_size = db.disk.as_ref().map_or(0.0, |disk| disk.size);
             println!("ID:             {}", fmt_id(db.id));
             println!("Name:           {}", db.name);
             println!("Status:         {:?}", db.status);
-            println!("Engine:         {}", String::new());
+            println!(
+                "Engine:         {}",
+                db.r#type.clone().unwrap_or_else(|| "-".to_string())
+            );
             println!(
                 "Port:           {}",
                 db.port.map_or_else(|| "-".to_string(), |p| p.to_string())
             );
             println!("Location:       {:?}", db.location);
-            println!("Preset ID:      {}", db.preset_id);
+            println!(
+                "Preset ID:      {}",
+                db.preset_id
+                    .map_or_else(|| "-".to_string(), |id| id.to_string())
+            );
             println!("Created at:     {}", db.created_at);
             println!("Disk (GB):      {disk_size}");
             println!(
@@ -303,7 +306,7 @@ pub async fn info(config: &Configuration, id: i32, format: OutputFormat) -> Resu
 ///
 /// Returns [`TwcError::Api`] on network or API failures.
 pub async fn delete(config: &Configuration, id: i32) -> Result<(), TwcError> {
-    databases_api::delete_database_cluster(config, id, None, None).await?;
+    databases_api::delete_database_cluster(config, id).await?;
     println!("{}", t!("cli.database_deleted", id => id));
     Ok(())
 }
@@ -489,11 +492,8 @@ pub async fn user_create(
     password: &str,
     format: OutputFormat
 ) -> Result<(), TwcError> {
-    let req = db_models::CreateAdmin::new(
-        login.to_string(),
-        password.to_string(),
-        vec![db_models::create_admin::Privileges::Select]
-    );
+    let mut req = db_models::CreateAdmin::new(login.to_string(), password.to_string());
+    req.privileges = Some(vec![db_models::create_admin::Privileges::Select]);
     let resp = databases_api::create_database_user(config, db_id, req).await?;
     let admin = &resp.admin;
 
@@ -562,14 +562,16 @@ pub async fn user_delete(
 ///
 /// Returns [`TwcError::Api`] on network or API failures.
 pub async fn preset_list(config: &Configuration, format: OutputFormat) -> Result<(), TwcError> {
-    let resp = databases_api::get_databases_presets(config, None).await?;
+    let resp = databases_api::get_databases_presets(config, None, None).await?;
 
     let rows: Vec<PresetRow> = resp
         .databases_presets
         .iter()
         .map(|p| PresetRow {
             id:          p.id.map_or_else(|| "-".to_string(), fmt_id),
-            engine:      p.r#type.clone().unwrap_or_else(|| "-".to_string()),
+            engine:      p
+                .r#type
+                .map_or_else(|| "-".to_string(), |t| format!("{t:?}")),
             cpu:         p.cpu.map_or_else(|| "-".to_string(), |c| format!("{c}")),
             ram:         p.ram.map_or_else(|| "-".to_string(), |r| format!("{r}")),
             disk:        p.disk.map_or_else(|| "-".to_string(), |d| format!("{d}")),
@@ -604,7 +606,8 @@ pub async fn preset_list(config: &Configuration, format: OutputFormat) -> Result
                 println!(
                     "{}\t{}\t{}",
                     p.id.map_or_else(|| "-".to_string(), fmt_id),
-                    p.r#type.clone().unwrap_or_else(|| "-".to_string()),
+                    p.r#type
+                        .map_or_else(|| "-".to_string(), |t| format!("{t:?}")),
                     p.description_short
                         .as_deref()
                         .map_or_else(|| "-".to_string(), ToString::to_string)

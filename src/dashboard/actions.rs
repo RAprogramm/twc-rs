@@ -261,7 +261,7 @@ async fn dispatch_action(
                 .map_err(|e| e.to_string())
         }
         (ResourceTab::Databases, ActionKind::Delete) => {
-            databases_api::delete_database_cluster(config, num()?, None, None)
+            databases_api::delete_database_cluster(config, num()?)
                 .await
                 .map(|_| ())
                 .map_err(|e| e.to_string())
@@ -560,7 +560,7 @@ async fn fetch_database_extra(
     let (users, instances, presets) = tokio::join!(
         databases_api::get_database_users(config, id),
         databases_api::get_database_instances(config, id),
-        databases_api::get_databases_presets(config, None)
+        databases_api::get_databases_presets(config, None, None)
     );
 
     let mut sections = Vec::new();

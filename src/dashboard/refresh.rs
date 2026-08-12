@@ -852,24 +852,31 @@ async fn load_finances(c: &Configuration, tx: &Tx) {
 /// keep only the values actually set.
 #[expect(clippy::cast_possible_truncation)]
 fn map_database(d: &timeweb_rs::models::DatabaseCluster) -> crate::tui::app::DatabaseSummary {
-    use timeweb_rs::models::database_cluster_networks_inner::Type;
+    use timeweb_rs::models::DatabaseClusterNetworksInner as Network;
 
-    let (size_mb, used_mb) = d
-        .disk
-        .as_ref()
-        .and_then(|disk| disk.as_deref())
-        .map_or((0, 0), |disk| {
-            ((disk.size / 1024.0) as i64, (disk.used / 1024.0) as i64)
-        });
-    let ip_of = |wanted: Type| {
-        d.networks
-            .iter()
-            .filter(|n| n.r#type == wanted)
-            .flat_map(|n| n.ips.iter().flatten())
-            .map(|ip| ip.ip.clone())
-            .next()
-            .unwrap_or_default()
-    };
+    let (size_mb, used_mb) = d.disk.as_ref().map_or((0, 0), |disk| {
+        ((disk.size / 1024.0) as i64, (disk.used / 1024.0) as i64)
+    });
+    let public_ip = d
+        .networks
+        .iter()
+        .filter_map(|n| match n {
+            Network::DatabaseClusterNetworksInnerOneOf(public) => public.ips.as_ref(),
+            Network::DatabaseClusterNetworksInnerOneOf1(_) => None
+        })
+        .flatten()
+        .find_map(|ip| ip.ip.clone())
+        .unwrap_or_default();
+    let local_ip = d
+        .networks
+        .iter()
+        .filter_map(|n| match n {
+            Network::DatabaseClusterNetworksInnerOneOf1(local) => local.ips.as_ref(),
+            Network::DatabaseClusterNetworksInnerOneOf(_) => None
+        })
+        .flatten()
+        .find_map(|ip| ip.ip.clone())
+        .unwrap_or_default();
     let config = serde_json::to_value(d.config_parameters.as_ref())
         .ok()
         .and_then(|v| match v {
@@ -889,15 +896,15 @@ fn map_database(d: &timeweb_rs::models::DatabaseCluster) -> crate::tui::app::Dat
         id: d.id as i32,
         name: d.name.clone(),
         status: format!("{:?}", d.status),
-        engine: d.r#type.clone(),
+        engine: d.r#type.clone().unwrap_or_default(),
         size_mb,
         disk_used_mb: used_mb,
         created_at: d.created_at.clone(),
         location: d.location.clone().unwrap_or_default(),
         port: d.port.unwrap_or(0),
-        public_ip: ip_of(Type::Public),
-        local_ip: ip_of(Type::Local),
-        preset_id: d.preset_id,
+        public_ip,
+        local_ip,
+        preset_id: d.preset_id.unwrap_or_default(),
         hash_type: d
             .hash_type
             .map(|h| format!("{h:?}").to_lowercase())

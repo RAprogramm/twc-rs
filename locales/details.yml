@@ -250,12 +250,6 @@ details.local_only:
 details.config:
   en: "Engine parameters"
   ru: "Параметры движка"
-details.yes:
-  en: "yes"
-  ru: "да"
-details.no:
-  en: "no"
-  ru: "нет"
 details.hash_type:
   en: "Password hash"
   ru: "Хеш паролей"
