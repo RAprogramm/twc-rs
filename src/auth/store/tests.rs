@@ -8,16 +8,16 @@ use super::*;
 /// Swaps the process-global keyring store for a test double and restores the
 /// previous store on drop.
 ///
-/// The keyring crate installs its platform store lazily on the first
-/// `Entry::new` via a `Once`, so each constructor first primes that `Once`
-/// (otherwise the real store would overwrite our test store mid-test).
+/// The keyring crate installs its platform store lazily on the first status
+/// query, so each constructor primes that initialization first (otherwise the
+/// real store would overwrite our test store mid-test).
 struct KeyringGuard {
     previous: Option<Arc<CredentialStore>>
 }
 
 impl KeyringGuard {
     fn prime_once() {
-        let _ = keyring::Entry::new("twc-rs-test-prime", "prime");
+        let _ = keyring::Entry::store_status();
     }
 
     fn with_mock() -> Self {

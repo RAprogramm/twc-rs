@@ -51,21 +51,29 @@ pub fn delete_token(config_path: &Path) -> Result<(), super::AuthError> {
     Ok(())
 }
 
+/// Opens the token entry in whichever credential store is currently active.
+///
+/// Asking the keyring facade for its status installs the platform store on the
+/// first call, so a store installed by a caller beforehand stays in place.
+fn keyring_entry() -> Result<keyring_core::Entry, String> {
+    let _ = keyring::Entry::store_status();
+    keyring_core::Entry::new(SERVICE_NAME, ACCOUNT_NAME).map_err(|e| e.to_string())
+}
+
 fn save_to_keyring(token: &str) -> Result<(), String> {
-    let entry = keyring::Entry::new(SERVICE_NAME, ACCOUNT_NAME).map_err(|e| e.to_string())?;
-    entry.set_password(token).map_err(|e| e.to_string())?;
-    Ok(())
+    keyring_entry()?
+        .set_password(token)
+        .map_err(|e| e.to_string())
 }
 
 fn load_from_keyring() -> Result<String, String> {
-    let entry = keyring::Entry::new(SERVICE_NAME, ACCOUNT_NAME).map_err(|e| e.to_string())?;
-    entry.get_password().map_err(|e| e.to_string())
+    keyring_entry()?.get_password().map_err(|e| e.to_string())
 }
 
 fn delete_from_keyring() -> Result<(), String> {
-    let entry = keyring::Entry::new(SERVICE_NAME, ACCOUNT_NAME).map_err(|e| e.to_string())?;
-    entry.delete_credential().map_err(|e| e.to_string())?;
-    Ok(())
+    keyring_entry()?
+        .delete_credential()
+        .map_err(|e| e.to_string())
 }
 
 fn save_to_config(token: &str, config_path: &Path) -> Result<(), super::AuthError> {

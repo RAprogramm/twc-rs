@@ -46,7 +46,7 @@ path = "src/main.rs"
 # The interactive TUI dashboard ships by default. Build without it for a lean,
 # headless CLI with: cargo install twc-rs --no-default-features --features auth
 default = ["auth", "tui"]
-auth = ["dep:open", "dep:tiny_http", "dep:keyring"]
+auth = ["dep:open", "dep:tiny_http", "dep:keyring", "dep:keyring-core"]
 tui = ["dep:ratatui", "dep:crossterm", "dep:tokio-stream"]
 
 [dependencies]
@@ -71,6 +71,7 @@ chrono = { version = "0.4", features = ["serde"] }
 open = { version = "5", optional = true }
 tiny_http = { version = "0.12", optional = true }
 keyring = { version = "4", optional = true }
+keyring-core = { version = "1", optional = true }
 
 # TUI feature deps
 ratatui = { version = "0.30", optional = true }
@@ -92,7 +93,6 @@ predicates = "3"
 tempfile = "3"
 reqwest = "0.13"
 serial_test = "4"
-keyring-core = "1"
 
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }
