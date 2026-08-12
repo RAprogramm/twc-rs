@@ -17,6 +17,7 @@ SPDX-License-Identifier: MIT
 [![crates.io](https://img.shields.io/crates/v/twc-rs.svg?logo=rust&color=fc8d62)](https://crates.io/crates/twc-rs)
 [![downloads](https://img.shields.io/crates/d/twc-rs.svg?color=brightgreen)](https://crates.io/crates/twc-rs)
 [![CI](https://github.com/RAprogramm/twc-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/RAprogramm/twc-rs/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/RAprogramm/twc-rs/graph/badge.svg?token=oXpSEMAGiG)](https://codecov.io/gh/RAprogramm/twc-rs)
 [![Security](https://github.com/RAprogramm/twc-rs/actions/workflows/security.yml/badge.svg)](https://github.com/RAprogramm/twc-rs/actions/workflows/security.yml)
 [![release-plz](https://github.com/RAprogramm/twc-rs/actions/workflows/release-plz.yml/badge.svg)](https://github.com/RAprogramm/twc-rs/actions/workflows/release-plz.yml)
 [![docs](https://img.shields.io/badge/docs-raprogramm.github.io%2Ftwc--rs-blue)](https://raprogramm.github.io/twc-rs/)
@@ -41,6 +42,7 @@ SPDX-License-Identifier: MIT
 - [Использование](#usage)
 - [Автодополнение оболочки](#shell-completions)
 - [Бенчмарки](#benchmarks)
+- [Покрытие тестами](#coverage)
 - [Сборка из исходников](#building-from-source)
 - [Лицензия](#license)
 
@@ -285,6 +287,41 @@ benches/compare.sh ./target/release/twc-rs /tmp/twcbench/bin/twc
 запускает то же сравнение по требованию (Actions → Benchmarks → *Run workflow*) и
 печатает таблицу в summary прогона. Только вручную — никогда на push, поэтому не
 замедляет обычный CI.
+
+<p align="right"><a href="#top">↑ наверх</a></p>
+
+## Покрытие тестами
+
+<a id="coverage"></a>
+
+Каждый push прогоняет тесты под `cargo-llvm-cov` и отправляет отчёт в
+[Codecov](https://codecov.io/gh/RAprogramm/twc-rs) вместе с таймингами тестов и
+поиском нестабильных тестов через Codecov Test Analytics. Локально отчёт
+повторяется так:
+
+```sh
+cargo llvm-cov --all-features --lcov --output-path lcov.info
+cargo llvm-cov --all-features --html      # отчёт для браузера в target/llvm-cov/html
+```
+
+<details>
+<summary>Графики покрытия</summary>
+
+**Sunburst** — внутренний круг это весь проект, дальше папки и отдельные файлы;
+размер сектора — число инструкций, цвет — покрытие.
+
+![Sunburst](https://codecov.io/gh/RAprogramm/twc-rs/graphs/sunburst.svg?token=oXpSEMAGiG)
+
+**Grid** — один блок на файл, размер по числу инструкций, цвет по покрытию.
+
+![Grid](https://codecov.io/gh/RAprogramm/twc-rs/graphs/tree.svg?token=oXpSEMAGiG)
+
+**Icicle** — верхняя полоса это весь проект, ниже папки и файлы, размер и цвет
+те же.
+
+![Icicle](https://codecov.io/gh/RAprogramm/twc-rs/graphs/icicle.svg?token=oXpSEMAGiG)
+
+</details>
 
 <p align="right"><a href="#top">↑ наверх</a></p>
 
