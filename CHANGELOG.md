@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.3](https://github.com/RAprogramm/twc-rs/compare/v4.0.2...v4.0.3) - 2026-07-14
+
+### Fixed
+
+- Bump timeweb-rs to 0.7 and enable its full feature set (#153) ([#152](https://github.com/RAprogramm/twc-rs/issues/152)) ([4d53e68](https://github.com/RAprogramm/twc-rs/commit/4d53e68a54669c24354ccee3c46cf2a7f45eb8ea))
+
+
 ## [4.0.2](https://github.com/RAprogramm/twc-rs/compare/v4.0.1...v4.0.2) - 2026-07-13
 
 ### Changed
