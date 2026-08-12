@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.5](https://github.com/RAprogramm/twc-rs/compare/v4.0.4...v4.0.5) - 2026-08-12
+
+### Fixed
+
+- Bump timeweb-rs to 0.8 and drop duplicate translation keys (#162) ([#161](https://github.com/RAprogramm/twc-rs/issues/161)) ([951e616](https://github.com/RAprogramm/twc-rs/commit/951e61636629da2870ce88b6d14fc89f11c642f4))
+
+
 ## [4.0.3](https://github.com/RAprogramm/twc-rs/compare/v4.0.2...v4.0.3) - 2026-07-14
 
 ### Fixed
