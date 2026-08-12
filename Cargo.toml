@@ -50,7 +50,7 @@ auth = ["dep:open", "dep:tiny_http", "dep:keyring"]
 tui = ["dep:ratatui", "dep:crossterm", "dep:tokio-stream"]
 
 [dependencies]
-timeweb-rs = { version = "0.7", default-features = false, features = [
+timeweb-rs = { version = "0.8", default-features = false, features = [
   "rustls",
   "full",
 ] }
@@ -64,7 +64,7 @@ tabled = "0.21"
 indicatif = "0.18"
 colored = "3"
 dialoguer = "0.12"
-base64 = "0.22"
+base64 = "0.23"
 chrono = { version = "0.4", features = ["serde"] }
 
 # Auth feature deps
@@ -91,7 +91,7 @@ assert_cmd = "2"
 predicates = "3"
 tempfile = "3"
 reqwest = "0.13"
-serial_test = "3"
+serial_test = "4"
 keyring-core = "1"
 
 [lints.clippy]
