@@ -73,7 +73,7 @@ jobs:
       - name: Run tests with coverage
         run: cargo llvm-cov nextest --all-features --lcov --output-path lcov.info --profile ci
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: lcov.info
