@@ -801,3 +801,64 @@ pub async fn auto_prolong(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fmt_id_converts_to_string() {
+        assert_eq!(fmt_id(42), "42");
+        assert_eq!(fmt_id(3.14), "3.14");
+    }
+
+    #[test]
+    fn build_dns_record_a() {
+        let result = build_dns_record("A", "192.168.1.1".to_string());
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn build_dns_record_aaaa() {
+        let result = build_dns_record("AAAA", "::1".to_string());
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn build_dns_record_cname() {
+        let result = build_dns_record("CNAME", "example.com".to_string());
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn build_dns_record_mx() {
+        let result = build_dns_record("MX", "mail.example.com".to_string());
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn build_dns_record_txt() {
+        let result = build_dns_record("TXT", "v=spf1".to_string());
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn build_dns_record_srv() {
+        let result = build_dns_record("SRV", "_tcp.example.com".to_string());
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn build_dns_record_lowercase_returns_error() {
+        let result = build_dns_record("a", "192.168.1.1".to_string());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn build_dns_record_invalid_type_returns_error() {
+        let result = build_dns_record("INVALID", "value".to_string());
+        assert!(result.is_err());
+        let err = result.unwrap_err().to_string();
+        assert!(err.contains("unsupported DNS record type"));
+    }
+}
