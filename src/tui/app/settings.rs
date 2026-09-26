@@ -195,7 +195,7 @@ impl super::App {
     }
 
     /// Moves the picker highlight down.
-    pub fn picker_next(&mut self) {
+    pub const fn picker_next(&mut self) {
         if let Some(p) = self.picker.as_mut()
             && p.selected + 1 < p.options.len()
         {
@@ -204,7 +204,7 @@ impl super::App {
     }
 
     /// Moves the picker highlight up, clamping at the first option.
-    pub fn picker_previous(&mut self) {
+    pub const fn picker_previous(&mut self) {
         if let Some(p) = self.picker.as_mut() {
             p.selected = p.selected.saturating_sub(1);
         }

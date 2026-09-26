@@ -96,7 +96,6 @@ serial_test = "4"
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }
 nursery = { level = "warn", priority = -1 }
-missing-const-for-fn = "allow"
 too-many-arguments = "allow"
 too-many-lines = "allow"
 cast-possible-truncation = "allow"
@@ -112,7 +111,6 @@ duration-suboptimal-units = "allow"
 unnested-or-patterns = "allow"
 redundant-pub-crate = "allow"
 float-cmp = "allow"
-redundant-clone = "allow"
 single-char-pattern = "allow"
 must-use-candidate = "allow"
 module-name-repetitions = "allow"

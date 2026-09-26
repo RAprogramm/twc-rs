@@ -491,7 +491,7 @@ fn shrunken_drill_response_triggers_silent_refetch() {
     app.projects = vec![make_project(9, "Caravan")];
     app.select_project_drill(0);
     let _ = app.take_drill_request();
-    app.apply_drill(9, full.clone());
+    app.apply_drill(9, full);
     assert_eq!(app.drill_view().expect("full").items.len(), 2);
 
     app.apply_drill(9, flapped.clone());
