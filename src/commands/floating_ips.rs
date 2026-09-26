@@ -266,3 +266,48 @@ pub async fn set(config: &Configuration, id: &str, comment: Option<&str>) -> Res
     println!("{}", t!("cli.floating_ip_updated", id => id));
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fmt_id_returns_string() {
+        assert_eq!(fmt_id("abc"), "abc");
+        assert_eq!(fmt_id("123"), "123");
+    }
+
+    #[test]
+    fn parse_zone_valid_zones() {
+        assert!(matches!(
+            parse_zone("spb-1"),
+            Ok(models::AvailabilityZone::Spb1)
+        ));
+        assert!(matches!(
+            parse_zone("msk-1"),
+            Ok(models::AvailabilityZone::Msk1)
+        ));
+    }
+
+    #[test]
+    fn parse_zone_invalid_returns_error() {
+        let result = parse_zone("invalid");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn fmt_resource_id_none_returns_empty() {
+        assert_eq!(fmt_resource_id(None), "");
+    }
+
+    #[test]
+    fn floating_ip_row_display() {
+        let row = FloatingIpRow {
+            id: "fip-1".to_string(),
+            ip: "192.168.1.1".to_string(),
+            zone: "spb-1".to_string(),
+            resource: "server-1".to_string()
+        };
+        assert_eq!(row.to_string(), "fip-1 192.168.1.1 spb-1 server-1");
+    }
+}
