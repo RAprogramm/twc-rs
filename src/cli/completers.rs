@@ -80,3 +80,6 @@ pub fn complete_app(current: &OsStr) -> Vec<CompletionCandidate> {
     }
     candidates
 }
+
+#[cfg(test)]
+mod tests;
