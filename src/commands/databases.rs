@@ -806,4 +806,142 @@ pub async fn list_instances(
     Ok(())
 }
 
-// Tests are managed by the @tester subagent.
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fmt_id_converts_to_string() {
+        assert_eq!(fmt_id(42), "42");
+        assert_eq!(fmt_id("abc"), "abc");
+    }
+
+    #[test]
+    fn opt_display_some_returns_value() {
+        assert_eq!(opt_display(Some("val"), "-"), "val");
+    }
+
+    #[test]
+    fn opt_display_none_returns_default() {
+        assert_eq!(opt_display(None, "-"), "-");
+    }
+
+    #[test]
+    fn parse_db_type_mysql() {
+        assert_eq!(parse_db_type("mysql").unwrap(), "mysql");
+        assert_eq!(parse_db_type("mysql8").unwrap(), "mysql8_4");
+    }
+
+    #[test]
+    fn parse_db_type_postgres() {
+        assert_eq!(parse_db_type("postgres").unwrap(), "postgres14");
+        assert_eq!(parse_db_type("pg").unwrap(), "postgres14");
+        assert_eq!(parse_db_type("postgres17").unwrap(), "postgres17");
+    }
+
+    #[test]
+    fn parse_db_type_redis() {
+        assert_eq!(parse_db_type("redis").unwrap(), "redis7");
+        assert_eq!(parse_db_type("redis8").unwrap(), "redis8_1");
+    }
+
+    #[test]
+    fn parse_db_type_mongodb() {
+        assert_eq!(parse_db_type("mongo").unwrap(), "mongodb7");
+        assert_eq!(parse_db_type("mongodb8").unwrap(), "mongodb8_0");
+    }
+
+    #[test]
+    fn parse_db_type_other_engines() {
+        assert_eq!(parse_db_type("clickhouse").unwrap(), "clickhouse");
+        assert_eq!(parse_db_type("kafka").unwrap(), "kafka");
+        assert_eq!(parse_db_type("rabbitmq").unwrap(), "rabbitmq4_0");
+        assert_eq!(parse_db_type("opensearch").unwrap(), "opensearch");
+    }
+
+    #[test]
+    fn parse_db_type_invalid_returns_error() {
+        let result = parse_db_type("unknown_db");
+        assert!(result.is_err());
+        let err = result.unwrap_err().to_string();
+        assert!(err.contains("unknown database type"));
+    }
+
+    #[test]
+    fn db_row_display() {
+        let row = DbRow {
+            id: "1".to_string(),
+            name: "mydb".to_string(),
+            status: "ready".to_string(),
+            engine: "mysql".to_string(),
+            location: "ru-1".to_string()
+        };
+        assert_eq!(row.to_string(), "1 mydb ready mysql ru-1");
+    }
+
+    #[test]
+    fn backup_row_display() {
+        let row = BackupRow {
+            id: 1,
+            name: "backup-1".to_string(),
+            status: "ready".to_string(),
+            size_mb: 1024,
+            backup_type: "full".to_string(),
+            created_at: "2026-01-01".to_string()
+        };
+        assert_eq!(row.to_string(), "1 backup-1 ready 1024 full 2026-01-01");
+    }
+
+    #[test]
+    fn user_row_display() {
+        let row = UserRow {
+            id: "1".to_string(),
+            login: "admin".to_string(),
+            desc: "primary".to_string(),
+            created: "2026-01-01".to_string(),
+            host: "localhost".to_string()
+        };
+        assert_eq!(row.to_string(), "1 admin primary 2026-01-01 localhost");
+    }
+
+    #[test]
+    fn preset_row_display() {
+        let row = PresetRow {
+            id: "1".to_string(),
+            engine: "mysql".to_string(),
+            cpu: "2".to_string(),
+            ram: "4096".to_string(),
+            disk: "40".to_string(),
+            price: "5000".to_string(),
+            location: "ru-1".to_string(),
+            description: "Basic".to_string()
+        };
+        assert_eq!(
+            row.to_string(),
+            "1 mysql 2 4096 40 5000 ru-1 Basic"
+        );
+    }
+
+    #[test]
+    fn type_row_display() {
+        let row = TypeRow {
+            engine: "mysql".to_string(),
+            version: "8.0".to_string(),
+            name: "MySQL".to_string(),
+            replication: "yes".to_string(),
+            deprecated: "no".to_string()
+        };
+        assert_eq!(row.to_string(), "mysql 8.0 MySQL yes no");
+    }
+
+    #[test]
+    fn instance_row_display() {
+        let row = InstanceRow {
+            id: "1".to_string(),
+            name: "db-1".to_string(),
+            description: "primary".to_string(),
+            created_at: "2026-01-01".to_string()
+        };
+        assert_eq!(row.to_string(), "1 db-1 primary 2026-01-01");
+    }
+}
