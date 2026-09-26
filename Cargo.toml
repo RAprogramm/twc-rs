@@ -94,27 +94,5 @@ reqwest = "0.13"
 serial_test = "4"
 
 [lints.clippy]
-pedantic = { level = "warn", priority = -1 }
-nursery = { level = "warn", priority = -1 }
-too-many-arguments = "allow"
-too-many-lines = "allow"
-cast-possible-truncation = "allow"
-cast-sign-loss = "allow"
-cast-precision-loss = "allow"
-match-same-arms = "allow"
-similar-names = "allow"
-option-if-let-else = "allow"
-uninlined-format-args = "allow"
-unchecked-time-subtraction = "allow"
-needless-pass-by-value = "allow"
-duration-suboptimal-units = "allow"
-unnested-or-patterns = "allow"
-redundant-pub-crate = "allow"
-float-cmp = "allow"
-single-char-pattern = "allow"
-must-use-candidate = "allow"
-module-name-repetitions = "allow"
-missing-errors-doc = "allow"
-missing-panics-doc = "allow"
-doc-markdown = "allow"
-unused-async = "allow"
+pedantic = { level = "deny", priority = -1 }
+nursery = { level = "deny", priority = -1 }
