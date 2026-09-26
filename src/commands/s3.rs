@@ -647,3 +647,76 @@ pub async fn preset_list(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fmt_id_converts_to_string() {
+        assert_eq!(fmt_id(42), "42");
+        assert_eq!(fmt_id("abc"), "abc");
+    }
+
+    #[test]
+    fn fmt_disk_size_converts_kb_to_gb() {
+        assert_eq!(fmt_disk_size(1_048_576.0), "1.00");
+        assert_eq!(fmt_disk_size(2_097_152.0), "2.00");
+        assert_eq!(fmt_disk_size(0.0), "0.00");
+    }
+
+    #[test]
+    fn storage_row_display() {
+        let row = StorageRow {
+            id: "1".to_string(),
+            name: "my-bucket".to_string(),
+            status: "active".to_string(),
+            location: "ru-1".to_string(),
+            r#type: "private".to_string(),
+            size_gb: "10.00".to_string()
+        };
+        assert_eq!(
+            row.to_string(),
+            "1 my-bucket active ru-1 private 10.00"
+        );
+    }
+
+    #[test]
+    fn storage_user_row_display() {
+        let row = StorageUserRow {
+            id: "1".to_string(),
+            access_key: "AKIAIOSFODNN7EXAMPLE".to_string(),
+            secret_key: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY".to_string()
+        };
+        assert_eq!(
+            row.to_string(),
+            "1 AKIAIOSFODNN7EXAMPLE wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+        );
+    }
+
+    #[test]
+    fn subdomain_row_display() {
+        let row = SubdomainRow {
+            id: "1".to_string(),
+            subdomain: "cdn.example.com".to_string(),
+            status: "active".to_string()
+        };
+        assert_eq!(row.to_string(), "1 cdn.example.com active");
+    }
+
+    #[test]
+    fn preset_row_display() {
+        let row = PresetRow {
+            id: "1".to_string(),
+            description: "Standard".to_string(),
+            disk: "100".to_string(),
+            price: "5000".to_string(),
+            location: "ru-1".to_string(),
+            storage_class: "standard".to_string()
+        };
+        assert_eq!(
+            row.to_string(),
+            "1 Standard 100 5000 ru-1 standard"
+        );
+    }
+}
