@@ -245,10 +245,10 @@ mod tests {
     #[test]
     fn image_row_display() {
         let row = ImageRow {
-            id: "img-1".to_string(),
-            name: "Ubuntu".to_string(),
-            status: "active".to_string(),
-            size: "1024 MB".to_string(),
+            id:       "img-1".to_string(),
+            name:     "Ubuntu".to_string(),
+            status:   "active".to_string(),
+            size:     "1024 MB".to_string(),
             location: "ru-1".to_string()
         };
         assert_eq!(row.to_string(), "img-1 Ubuntu active 1024 MB ru-1");

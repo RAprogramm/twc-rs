@@ -300,23 +300,20 @@ mod tests {
     #[test]
     fn vpc_row_display() {
         let row = VpcRow {
-            id: "vpc-1".to_string(),
-            name: "prod".to_string(),
-            subnet: "10.0.0.0/24".to_string(),
-            location: "ru-1".to_string(),
+            id:        "vpc-1".to_string(),
+            name:      "prod".to_string(),
+            subnet:    "10.0.0.0/24".to_string(),
+            location:  "ru-1".to_string(),
             public_ip: "192.168.1.1".to_string()
         };
-        assert_eq!(
-            row.to_string(),
-            "vpc-1 prod 10.0.0.0/24 ru-1 192.168.1.1"
-        );
+        assert_eq!(row.to_string(), "vpc-1 prod 10.0.0.0/24 ru-1 192.168.1.1");
     }
 
     #[test]
     fn vpc_port_row_display() {
         let row = VpcPortRow {
-            id: "port-1".to_string(),
-            ip: "10.0.0.2".to_string(),
+            id:       "port-1".to_string(),
+            ip:       "10.0.0.2".to_string(),
             resource: "server-1".to_string()
         };
         assert_eq!(row.to_string(), "port-1 10.0.0.2 server-1");

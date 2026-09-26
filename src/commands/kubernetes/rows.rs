@@ -150,12 +150,12 @@ mod tests {
     #[test]
     fn cluster_row_display() {
         let row = ClusterRow {
-            id: 1,
-            name: "prod".to_string(),
-            status: "ready".to_string(),
-            k8s_version: "1.28".to_string(),
+            id:             1,
+            name:           "prod".to_string(),
+            status:         "ready".to_string(),
+            k8s_version:    "1.28".to_string(),
             network_driver: "calico".to_string(),
-            created_at: "2026-01-01".to_string()
+            created_at:     "2026-01-01".to_string()
         };
         assert_eq!(row.to_string(), "1 prod ready 1.28 calico 2026-01-01");
     }
@@ -163,10 +163,10 @@ mod tests {
     #[test]
     fn node_group_row_display() {
         let row = NodeGroupRow {
-            id: 1,
-            name: "workers".to_string(),
+            id:         1,
+            name:       "workers".to_string(),
             node_count: 3,
-            preset_id: 10,
+            preset_id:  10,
             created_at: "2026-01-01".to_string()
         };
         assert_eq!(row.to_string(), "1 workers 3 10 2026-01-01");
@@ -175,12 +175,12 @@ mod tests {
     #[test]
     fn node_row_display() {
         let row = NodeRow {
-            id: 1,
-            type_: "worker".to_string(),
-            status: "running".to_string(),
-            cpu: 2,
-            ram: 4096,
-            disk: 40,
+            id:      1,
+            type_:   "worker".to_string(),
+            status:  "running".to_string(),
+            cpu:     2,
+            ram:     4096,
+            disk:    40,
             node_ip: "10.0.0.1".to_string()
         };
         assert_eq!(row.to_string(), "1 worker running 2 4096 40 10.0.0.1");
@@ -189,10 +189,10 @@ mod tests {
     #[test]
     fn addon_row_display() {
         let row = AddonRow {
-            id: 1,
-            type_: "ingress".to_string(),
-            status: "installed".to_string(),
-            version: "1.0".to_string(),
+            id:          1,
+            type_:       "ingress".to_string(),
+            status:      "installed".to_string(),
+            version:     "1.0".to_string(),
             config_type: "helm".to_string()
         };
         assert_eq!(row.to_string(), "1 ingress installed 1.0 helm");
@@ -202,10 +202,10 @@ mod tests {
     fn preset_row_display() {
         let row = PresetRow {
             preset_type: "standard".to_string(),
-            cpu: "2".to_string(),
-            ram: "4096".to_string(),
-            disk: "40".to_string(),
-            price: "1000".to_string()
+            cpu:         "2".to_string(),
+            ram:         "4096".to_string(),
+            disk:        "40".to_string(),
+            price:       "1000".to_string()
         };
         assert_eq!(row.to_string(), "standard 2 4096 40 1000");
     }

@@ -411,12 +411,12 @@ mod tests {
     #[test]
     fn registry_row_display() {
         let row = RegistryRow {
-            id: "1".to_string(),
-            name: "my-registry".to_string(),
+            id:          "1".to_string(),
+            name:        "my-registry".to_string(),
             description: "Main registry".to_string(),
-            preset_id: "10".to_string(),
-            disk: "10 / 50".to_string(),
-            created: "2026-01-01".to_string()
+            preset_id:   "10".to_string(),
+            disk:        "10 / 50".to_string(),
+            created:     "2026-01-01".to_string()
         };
         assert_eq!(
             row.to_string(),
@@ -427,8 +427,8 @@ mod tests {
     #[test]
     fn repository_row_display() {
         let row = RepositoryRow {
-            name: "myapp".to_string(),
-            tag: "latest".to_string(),
+            name:   "myapp".to_string(),
+            tag:    "latest".to_string(),
             digest: "sha256:abc".to_string()
         };
         assert_eq!(row.to_string(), "myapp latest sha256:abc");
@@ -437,11 +437,11 @@ mod tests {
     #[test]
     fn preset_row_display() {
         let row = PresetRow {
-            id: "1".to_string(),
+            id:          "1".to_string(),
             description: "Basic".to_string(),
-            disk: "50".to_string(),
-            price: "5000".to_string(),
-            location: "ru-1".to_string()
+            disk:        "50".to_string(),
+            price:       "5000".to_string(),
+            location:    "ru-1".to_string()
         };
         assert_eq!(row.to_string(), "1 Basic 50 5000 ru-1");
     }

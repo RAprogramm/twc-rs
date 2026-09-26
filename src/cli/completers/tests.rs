@@ -5,7 +5,7 @@ use serial_test::serial;
 use super::*;
 
 struct EnvGuard {
-    xdg_original: Option<String>,
+    xdg_original:       Option<String>,
     twc_token_original: Option<String>
 }
 

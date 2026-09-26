@@ -16,6 +16,9 @@ pub mod cli;
 pub mod commands;
 #[doc(hidden)]
 pub mod config;
+#[cfg(feature = "tui")]
+#[doc(hidden)]
+pub mod dashboard;
 #[doc(hidden)]
 pub mod error;
 #[doc(hidden)]

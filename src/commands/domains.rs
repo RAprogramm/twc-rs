@@ -809,7 +809,7 @@ mod tests {
     #[test]
     fn fmt_id_converts_to_string() {
         assert_eq!(fmt_id(42), "42");
-        assert_eq!(fmt_id(3.14), "3.14");
+        assert_eq!(fmt_id(3.15), "3.15");
     }
 
     #[test]

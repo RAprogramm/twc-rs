@@ -870,10 +870,10 @@ mod tests {
     #[test]
     fn db_row_display() {
         let row = DbRow {
-            id: "1".to_string(),
-            name: "mydb".to_string(),
-            status: "ready".to_string(),
-            engine: "mysql".to_string(),
+            id:       "1".to_string(),
+            name:     "mydb".to_string(),
+            status:   "ready".to_string(),
+            engine:   "mysql".to_string(),
             location: "ru-1".to_string()
         };
         assert_eq!(row.to_string(), "1 mydb ready mysql ru-1");
@@ -882,12 +882,12 @@ mod tests {
     #[test]
     fn backup_row_display() {
         let row = BackupRow {
-            id: 1,
-            name: "backup-1".to_string(),
-            status: "ready".to_string(),
-            size_mb: 1024,
+            id:          1,
+            name:        "backup-1".to_string(),
+            status:      "ready".to_string(),
+            size_mb:     1024,
             backup_type: "full".to_string(),
-            created_at: "2026-01-01".to_string()
+            created_at:  "2026-01-01".to_string()
         };
         assert_eq!(row.to_string(), "1 backup-1 ready 1024 full 2026-01-01");
     }
@@ -895,11 +895,11 @@ mod tests {
     #[test]
     fn user_row_display() {
         let row = UserRow {
-            id: "1".to_string(),
-            login: "admin".to_string(),
-            desc: "primary".to_string(),
+            id:      "1".to_string(),
+            login:   "admin".to_string(),
+            desc:    "primary".to_string(),
             created: "2026-01-01".to_string(),
-            host: "localhost".to_string()
+            host:    "localhost".to_string()
         };
         assert_eq!(row.to_string(), "1 admin primary 2026-01-01 localhost");
     }
@@ -907,29 +907,26 @@ mod tests {
     #[test]
     fn preset_row_display() {
         let row = PresetRow {
-            id: "1".to_string(),
-            engine: "mysql".to_string(),
-            cpu: "2".to_string(),
-            ram: "4096".to_string(),
-            disk: "40".to_string(),
-            price: "5000".to_string(),
-            location: "ru-1".to_string(),
+            id:          "1".to_string(),
+            engine:      "mysql".to_string(),
+            cpu:         "2".to_string(),
+            ram:         "4096".to_string(),
+            disk:        "40".to_string(),
+            price:       "5000".to_string(),
+            location:    "ru-1".to_string(),
             description: "Basic".to_string()
         };
-        assert_eq!(
-            row.to_string(),
-            "1 mysql 2 4096 40 5000 ru-1 Basic"
-        );
+        assert_eq!(row.to_string(), "1 mysql 2 4096 40 5000 ru-1 Basic");
     }
 
     #[test]
     fn type_row_display() {
         let row = TypeRow {
-            engine: "mysql".to_string(),
-            version: "8.0".to_string(),
-            name: "MySQL".to_string(),
+            engine:      "mysql".to_string(),
+            version:     "8.0".to_string(),
+            name:        "MySQL".to_string(),
             replication: "yes".to_string(),
-            deprecated: "no".to_string()
+            deprecated:  "no".to_string()
         };
         assert_eq!(row.to_string(), "mysql 8.0 MySQL yes no");
     }
@@ -937,10 +934,10 @@ mod tests {
     #[test]
     fn instance_row_display() {
         let row = InstanceRow {
-            id: "1".to_string(),
-            name: "db-1".to_string(),
+            id:          "1".to_string(),
+            name:        "db-1".to_string(),
             description: "primary".to_string(),
-            created_at: "2026-01-01".to_string()
+            created_at:  "2026-01-01".to_string()
         };
         assert_eq!(row.to_string(), "1 db-1 primary 2026-01-01");
     }

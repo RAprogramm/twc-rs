@@ -17,17 +17,17 @@ use crate::{error::TwcError, output::OutputFormat};
 /// Parameters for creating a new server.
 pub struct ServerCreateParams<'a> {
     /// Server name.
-    pub name: &'a str,
+    pub name:              &'a str,
     /// Resource preset identifier.
-    pub preset_id: i32,
+    pub preset_id:         i32,
     /// Operating system identifier.
-    pub os_id: i32,
+    pub os_id:             i32,
     /// Optional description.
-    pub comment: Option<&'a str>,
+    pub comment:           Option<&'a str>,
     /// SSH key identifiers to attach.
-    pub ssh_key_ids: &'a [i32],
+    pub ssh_key_ids:       &'a [i32],
     /// Optional project identifier.
-    pub project_id: Option<i32>,
+    pub project_id:        Option<i32>,
     /// Optional availability zone.
     pub availability_zone: Option<&'a str>
 }
@@ -92,14 +92,7 @@ pub async fn create(
         body.comment = Some(text.to_owned());
     }
     if !params.ssh_key_ids.is_empty() {
-        body.ssh_keys_ids = Some(
-            params
-                .ssh_key_ids
-                .iter()
-                .copied()
-                .map(f64::from)
-                .collect()
-        );
+        body.ssh_keys_ids = Some(params.ssh_key_ids.iter().copied().map(f64::from).collect());
     }
     if let Some(project) = params.project_id {
         body.project_id = Some(i64::from(project));

@@ -303,9 +303,9 @@ mod tests {
     #[test]
     fn floating_ip_row_display() {
         let row = FloatingIpRow {
-            id: "fip-1".to_string(),
-            ip: "192.168.1.1".to_string(),
-            zone: "spb-1".to_string(),
+            id:       "fip-1".to_string(),
+            ip:       "192.168.1.1".to_string(),
+            zone:     "spb-1".to_string(),
             resource: "server-1".to_string()
         };
         assert_eq!(row.to_string(), "fip-1 192.168.1.1 spb-1 server-1");

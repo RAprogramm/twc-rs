@@ -172,20 +172,20 @@ pub async fn handle_apps(
         }
         AppsCommands::Create(args) => {
             let params = commands::apps::AppCreateParams {
-                name: &args.name,
-                comment: args.comment.as_deref(),
-                provider_id: &args.provider_id,
-                repository_id: &args.repository_id,
-                preset_id: args.preset_id,
-                app_type: &args.app_type,
-                framework: &args.framework,
-                branch: &args.branch,
-                commit_sha: args.commit_sha.as_deref(),
-                build_cmd: args.build_cmd.as_deref(),
-                run_cmd: args.run_cmd.as_deref(),
-                index_dir: args.index_dir.as_deref(),
+                name:           &args.name,
+                comment:        args.comment.as_deref(),
+                provider_id:    &args.provider_id,
+                repository_id:  &args.repository_id,
+                preset_id:      args.preset_id,
+                app_type:       &args.app_type,
+                framework:      &args.framework,
+                branch:         &args.branch,
+                commit_sha:     args.commit_sha.as_deref(),
+                build_cmd:      args.build_cmd.as_deref(),
+                run_cmd:        args.run_cmd.as_deref(),
+                index_dir:      args.index_dir.as_deref(),
                 is_auto_deploy: args.auto_deploy,
-                project_id: args.project_id
+                project_id:     args.project_id
             };
             commands::apps::create(config, &params, format).await
         }

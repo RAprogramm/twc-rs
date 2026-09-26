@@ -668,23 +668,20 @@ mod tests {
     #[test]
     fn storage_row_display() {
         let row = StorageRow {
-            id: "1".to_string(),
-            name: "my-bucket".to_string(),
-            status: "active".to_string(),
+            id:       "1".to_string(),
+            name:     "my-bucket".to_string(),
+            status:   "active".to_string(),
             location: "ru-1".to_string(),
-            r#type: "private".to_string(),
-            size_gb: "10.00".to_string()
+            r#type:   "private".to_string(),
+            size_gb:  "10.00".to_string()
         };
-        assert_eq!(
-            row.to_string(),
-            "1 my-bucket active ru-1 private 10.00"
-        );
+        assert_eq!(row.to_string(), "1 my-bucket active ru-1 private 10.00");
     }
 
     #[test]
     fn storage_user_row_display() {
         let row = StorageUserRow {
-            id: "1".to_string(),
+            id:         "1".to_string(),
             access_key: "AKIAIOSFODNN7EXAMPLE".to_string(),
             secret_key: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY".to_string()
         };
@@ -697,9 +694,9 @@ mod tests {
     #[test]
     fn subdomain_row_display() {
         let row = SubdomainRow {
-            id: "1".to_string(),
+            id:        "1".to_string(),
             subdomain: "cdn.example.com".to_string(),
-            status: "active".to_string()
+            status:    "active".to_string()
         };
         assert_eq!(row.to_string(), "1 cdn.example.com active");
     }
@@ -707,16 +704,13 @@ mod tests {
     #[test]
     fn preset_row_display() {
         let row = PresetRow {
-            id: "1".to_string(),
-            description: "Standard".to_string(),
-            disk: "100".to_string(),
-            price: "5000".to_string(),
-            location: "ru-1".to_string(),
+            id:            "1".to_string(),
+            description:   "Standard".to_string(),
+            disk:          "100".to_string(),
+            price:         "5000".to_string(),
+            location:      "ru-1".to_string(),
             storage_class: "standard".to_string()
         };
-        assert_eq!(
-            row.to_string(),
-            "1 Standard 100 5000 ru-1 standard"
-        );
+        assert_eq!(row.to_string(), "1 Standard 100 5000 ru-1 standard");
     }
 }

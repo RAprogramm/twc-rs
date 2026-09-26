@@ -175,6 +175,27 @@ const fn drive_type_label(kind: timeweb_rs::models::network_drive_preset::Type) 
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn drive_type_label_nvme() {
+        assert_eq!(
+            drive_type_label(timeweb_rs::models::network_drive_preset::Type::Nvme),
+            "nvme"
+        );
+    }
+
+    #[test]
+    fn drive_type_label_hdd() {
+        assert_eq!(
+            drive_type_label(timeweb_rs::models::network_drive_preset::Type::Hdd),
+            "hdd"
+        );
+    }
+}
+
 /// Creates a network drive from create-form input: `size_text` is parsed as
 /// gigabytes and the required tariff preset is resolved by drive type
 /// (`nvme` or `hdd`) from the presets endpoint, taking the first match.

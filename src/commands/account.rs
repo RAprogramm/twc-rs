@@ -197,7 +197,7 @@ mod tests {
         let values = vec![
             "192.168.1.1".to_string(),
             "10.0.0.1".to_string(),
-            "172.16.0.1".to_string()
+            "172.16.0.1".to_string(),
         ];
         let result = join_or_placeholder(&values);
         assert_eq!(result, "192.168.1.1, 10.0.0.1, 172.16.0.1");
@@ -215,11 +215,11 @@ mod tests {
     #[test]
     fn account_summary_serializes_to_json() {
         let summary = AccountSummary {
-            login: "admin".to_string(),
-            company: "Acme".to_string(),
-            balance: "100.50".to_string(),
+            login:    "admin".to_string(),
+            company:  "Acme".to_string(),
+            balance:  "100.50".to_string(),
             currency: "RUB".to_string(),
-            blocked: false
+            blocked:  false
         };
         let json = serde_json::to_string(&summary).unwrap();
         assert!(json.contains("\"login\":\"admin\""));
@@ -232,10 +232,10 @@ mod tests {
     #[test]
     fn access_summary_serializes_to_json() {
         let summary = AccessSummary {
-            ip_restrictions_enabled: true,
+            ip_restrictions_enabled:      true,
             country_restrictions_enabled: false,
-            allowed_ips: vec!["192.168.1.1".to_string()],
-            allowed_countries: vec!["RU".to_string()]
+            allowed_ips:                  vec!["192.168.1.1".to_string()],
+            allowed_countries:            vec!["RU".to_string()]
         };
         let json = serde_json::to_string(&summary).unwrap();
         assert!(json.contains("\"ip_restrictions_enabled\":true"));

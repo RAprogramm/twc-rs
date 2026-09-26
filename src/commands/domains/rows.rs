@@ -150,26 +150,23 @@ mod tests {
     #[test]
     fn domain_row_display() {
         let row = DomainRow {
-            id: "1".to_string(),
-            fqdn: "example.com".to_string(),
-            status: "active".to_string(),
-            expires: "2026-12-31".to_string(),
+            id:           "1".to_string(),
+            fqdn:         "example.com".to_string(),
+            status:       "active".to_string(),
+            expires:      "2026-12-31".to_string(),
             auto_prolong: "true".to_string(),
-            days_left: "365".to_string()
+            days_left:    "365".to_string()
         };
-        assert_eq!(
-            row.to_string(),
-            "1 example.com active 2026-12-31 true 365"
-        );
+        assert_eq!(row.to_string(), "1 example.com active 2026-12-31 true 365");
     }
 
     #[test]
     fn dns_record_row_display() {
         let row = DnsRecordRow {
-            id: "1".to_string(),
-            r#type: "A".to_string(),
-            value: "192.168.1.1".to_string(),
-            ttl: "300".to_string(),
+            id:       "1".to_string(),
+            r#type:   "A".to_string(),
+            value:    "192.168.1.1".to_string(),
+            ttl:      "300".to_string(),
             priority: "10".to_string()
         };
         assert_eq!(row.to_string(), "1 A 192.168.1.1 300 10");
@@ -179,7 +176,7 @@ mod tests {
     fn name_server_row_display() {
         let row = NameServerRow {
             host: "ns1.example.com".to_string(),
-            ips: "192.168.1.1".to_string()
+            ips:  "192.168.1.1".to_string()
         };
         assert_eq!(row.to_string(), "ns1.example.com 192.168.1.1");
     }
@@ -187,9 +184,9 @@ mod tests {
     #[test]
     fn subdomain_row_display() {
         let row = SubdomainRow {
-            id: "1".to_string(),
+            id:   "1".to_string(),
             fqdn: "sub.example.com".to_string(),
-            ip: "192.168.1.1".to_string()
+            ip:   "192.168.1.1".to_string()
         };
         assert_eq!(row.to_string(), "1 sub.example.com 192.168.1.1");
     }
@@ -197,11 +194,11 @@ mod tests {
     #[test]
     fn tld_row_display() {
         let row = TldRow {
-            id: "1".to_string(),
-            name: "com".to_string(),
-            price: "100".to_string(),
-            registrar: "reg".to_string(),
-            is_published: "true".to_string(),
+            id:            "1".to_string(),
+            name:          "com".to_string(),
+            price:         "100".to_string(),
+            registrar:     "reg".to_string(),
+            is_published:  "true".to_string(),
             is_registered: "false".to_string()
         };
         assert_eq!(row.to_string(), "1 com 100 reg true false");
@@ -210,12 +207,15 @@ mod tests {
     #[test]
     fn domain_request_row_display() {
         let row = DomainRequestRow {
-            id: "1".to_string(),
-            fqdn: "example.com".to_string(),
-            r#type: "registration".to_string(),
-            date: "2026-01-01".to_string(),
+            id:      "1".to_string(),
+            fqdn:    "example.com".to_string(),
+            r#type:  "registration".to_string(),
+            date:    "2026-01-01".to_string(),
             message: "pending".to_string()
         };
-        assert_eq!(row.to_string(), "1 example.com registration 2026-01-01 pending");
+        assert_eq!(
+            row.to_string(),
+            "1 example.com registration 2026-01-01 pending"
+        );
     }
 }

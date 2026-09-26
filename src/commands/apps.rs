@@ -16,33 +16,33 @@ use crate::{error::TwcError, output::OutputFormat};
 /// Parameters for creating a new app.
 pub struct AppCreateParams<'a> {
     /// App name.
-    pub name: &'a str,
+    pub name:           &'a str,
     /// Optional description.
-    pub comment: Option<&'a str>,
+    pub comment:        Option<&'a str>,
     /// Git provider identifier.
-    pub provider_id: &'a str,
+    pub provider_id:    &'a str,
     /// Repository identifier.
-    pub repository_id: &'a str,
+    pub repository_id:  &'a str,
     /// Resource preset identifier.
-    pub preset_id: i64,
+    pub preset_id:      i64,
     /// App type (backend, frontend, etc.).
-    pub app_type: &'a str,
+    pub app_type:       &'a str,
     /// Framework name.
-    pub framework: &'a str,
+    pub framework:      &'a str,
     /// Git branch name.
-    pub branch: &'a str,
+    pub branch:         &'a str,
     /// Optional commit SHA to deploy.
-    pub commit_sha: Option<&'a str>,
+    pub commit_sha:     Option<&'a str>,
     /// Optional build command.
-    pub build_cmd: Option<&'a str>,
+    pub build_cmd:      Option<&'a str>,
     /// Optional run command (required for backend).
-    pub run_cmd: Option<&'a str>,
+    pub run_cmd:        Option<&'a str>,
     /// Optional index directory (required for frontend).
-    pub index_dir: Option<&'a str>,
+    pub index_dir:      Option<&'a str>,
     /// Whether to enable auto-deploy.
     pub is_auto_deploy: bool,
     /// Optional project identifier.
-    pub project_id: Option<i64>
+    pub project_id:     Option<i64>
 }
 
 /// Formats a float identifier for display.
