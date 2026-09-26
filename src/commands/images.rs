@@ -231,3 +231,26 @@ pub async fn upload(config: &Configuration, id: &str, file: &str) -> Result<(), 
     println!("{}", t!("cli.image_uploaded", file => file_name, id => id));
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fmt_id_converts_to_string() {
+        assert_eq!(fmt_id(42), "42");
+        assert_eq!(fmt_id(0), "0");
+    }
+
+    #[test]
+    fn image_row_display() {
+        let row = ImageRow {
+            id: "img-1".to_string(),
+            name: "Ubuntu".to_string(),
+            status: "active".to_string(),
+            size: "1024 MB".to_string(),
+            location: "ru-1".to_string()
+        };
+        assert_eq!(row.to_string(), "img-1 Ubuntu active 1024 MB ru-1");
+    }
+}
