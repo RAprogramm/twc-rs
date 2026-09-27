@@ -5,6 +5,55 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.9](https://github.com/RAprogramm/twc-rs/compare/v4.0.8...v4.0.9) - 2026-09-27
+
+### Fixed
+
+- Resolve clippy warnings ([#166](https://github.com/RAprogramm/twc-rs/issues/166)) ([359e1ba](https://github.com/RAprogramm/twc-rs/commit/359e1ba80064cad8167052ef73c38de31a715f35))
+
+
+### Changed
+
+- Group function parameters into structs ([2824589](https://github.com/RAprogramm/twc-rs/commit/28245896fbceabb3c254263c4a2d2a95aff1bc3e))
+
+- Replace mod.rs files with flat module structure ([#166](https://github.com/RAprogramm/twc-rs/issues/166)) ([6fd5475](https://github.com/RAprogramm/twc-rs/commit/6fd547559efae31b6de4834eaf5a42b31cfcbfd7))
+
+
+### Testing
+
+- Add unit tests for dashboard module and fix clippy warning ([6d04caa](https://github.com/RAprogramm/twc-rs/commit/6d04caa9c36e4f7f26c4067db381b6283dc039c0))
+
+- Add unit tests for domains module DNS record building ([3dcd571](https://github.com/RAprogramm/twc-rs/commit/3dcd57119e515df6f3881c8de9a29e80e7b7a32e))
+
+- Add unit tests for S3 module display formatting and disk size conversion ([bac94d6](https://github.com/RAprogramm/twc-rs/commit/bac94d6a6de8e475a450cf9273f8b4100df7056f))
+
+- Add unit tests for registry module display formatting ([378afb0](https://github.com/RAprogramm/twc-rs/commit/378afb05fc9eb56d58a1cb180d5b74c334f3f330))
+
+- Add unit tests for databases module display formatting and parsing ([c66526e](https://github.com/RAprogramm/twc-rs/commit/c66526e927f7d69d28efc71aad4e3f462ec22c12))
+
+- Add unit tests for balancers module display formatting ([5d96435](https://github.com/RAprogramm/twc-rs/commit/5d96435d2f425fd8fbae4d4038e0cc2dac937162))
+
+- Add unit tests for VPC module display formatting ([5f8a874](https://github.com/RAprogramm/twc-rs/commit/5f8a87444145ce2bc2a829086c3bcb4f2094645d))
+
+- Add unit tests for floating IPs module ([91de831](https://github.com/RAprogramm/twc-rs/commit/91de831c0fd89459add6b074a862b6942dbec148))
+
+- Add unit tests for firewall module display formatting ([df1baa3](https://github.com/RAprogramm/twc-rs/commit/df1baa3c9e004a24e52ff11b6f0fe35afe55f57b))
+
+- Add unit tests for images module display formatting ([39927d0](https://github.com/RAprogramm/twc-rs/commit/39927d06b19723e7eadd73b61d7d4efb9d7ddefa))
+
+- Add unit tests for kubernetes row display formatting ([9b1cef6](https://github.com/RAprogramm/twc-rs/commit/9b1cef67e1bac51b35827c4cf60b94d77d0e87c8))
+
+- Add unit tests for server row display formatting ([b3b33fb](https://github.com/RAprogramm/twc-rs/commit/b3b33fb40b9cb3ca405176e3ba12b1d0ddb40a26))
+
+- Add unit tests for domain row display formatting ([bb65bb2](https://github.com/RAprogramm/twc-rs/commit/bb65bb2f566e1143b1824572de9b2013d3e0ebec))
+
+- Add unit tests for commands account module ([1ea6cbd](https://github.com/RAprogramm/twc-rs/commit/1ea6cbdbe44ea48bc70f2d9479ba761dc5853ea6))
+
+- Add unit tests for cli completers module ([bb98669](https://github.com/RAprogramm/twc-rs/commit/bb98669b573fc4bf4bcf8eedab7cb121d24bd6a0))
+
+- Add unit tests for auth flow mask_token function ([#166](https://github.com/RAprogramm/twc-rs/issues/166)) ([ed866d0](https://github.com/RAprogramm/twc-rs/commit/ed866d01b2ae6f54dfee0619d6835ec4f37bfbd8))
+
+
 ## [4.0.6](https://github.com/RAprogramm/twc-rs/compare/v4.0.5...v4.0.6) - 2026-08-12
 
 ### Fixed
