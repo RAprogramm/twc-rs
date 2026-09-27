@@ -174,3 +174,73 @@ pub async fn access(config: &Configuration, format: OutputFormat) -> Result<(), 
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn join_or_placeholder_empty_returns_placeholder() {
+        let result = join_or_placeholder(&[]);
+        assert_eq!(result, t!("cli.account_access_none").into_owned());
+    }
+
+    #[test]
+    fn join_or_placeholder_single_value() {
+        let values = vec!["192.168.1.1".to_string()];
+        let result = join_or_placeholder(&values);
+        assert_eq!(result, "192.168.1.1");
+    }
+
+    #[test]
+    fn join_or_placeholder_multiple_values() {
+        let values = vec![
+            "192.168.1.1".to_string(),
+            "10.0.0.1".to_string(),
+            "172.16.0.1".to_string(),
+        ];
+        let result = join_or_placeholder(&values);
+        assert_eq!(result, "192.168.1.1, 10.0.0.1, 172.16.0.1");
+    }
+
+    #[test]
+    fn account_row_display_formats_correctly() {
+        let row = AccountRow {
+            field: "Login".to_string(),
+            value: "admin".to_string()
+        };
+        assert_eq!(row.to_string(), "Login: admin");
+    }
+
+    #[test]
+    fn account_summary_serializes_to_json() {
+        let summary = AccountSummary {
+            login:    "admin".to_string(),
+            company:  "Acme".to_string(),
+            balance:  "100.50".to_string(),
+            currency: "RUB".to_string(),
+            blocked:  false
+        };
+        let json = serde_json::to_string(&summary).unwrap();
+        assert!(json.contains("\"login\":\"admin\""));
+        assert!(json.contains("\"company\":\"Acme\""));
+        assert!(json.contains("\"balance\":\"100.50\""));
+        assert!(json.contains("\"currency\":\"RUB\""));
+        assert!(json.contains("\"blocked\":false"));
+    }
+
+    #[test]
+    fn access_summary_serializes_to_json() {
+        let summary = AccessSummary {
+            ip_restrictions_enabled:      true,
+            country_restrictions_enabled: false,
+            allowed_ips:                  vec!["192.168.1.1".to_string()],
+            allowed_countries:            vec!["RU".to_string()]
+        };
+        let json = serde_json::to_string(&summary).unwrap();
+        assert!(json.contains("\"ip_restrictions_enabled\":true"));
+        assert!(json.contains("\"country_restrictions_enabled\":false"));
+        assert!(json.contains("\"allowed_ips\":[\"192.168.1.1\"]"));
+        assert!(json.contains("\"allowed_countries\":[\"RU\"]"));
+    }
+}

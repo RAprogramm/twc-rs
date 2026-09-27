@@ -13,6 +13,38 @@ use timeweb_rs::{
 
 use crate::{error::TwcError, output::OutputFormat};
 
+/// Parameters for creating a new app.
+pub struct AppCreateParams<'a> {
+    /// App name.
+    pub name:           &'a str,
+    /// Optional description.
+    pub comment:        Option<&'a str>,
+    /// Git provider identifier.
+    pub provider_id:    &'a str,
+    /// Repository identifier.
+    pub repository_id:  &'a str,
+    /// Resource preset identifier.
+    pub preset_id:      i64,
+    /// App type (backend, frontend, etc.).
+    pub app_type:       &'a str,
+    /// Framework name.
+    pub framework:      &'a str,
+    /// Git branch name.
+    pub branch:         &'a str,
+    /// Optional commit SHA to deploy.
+    pub commit_sha:     Option<&'a str>,
+    /// Optional build command.
+    pub build_cmd:      Option<&'a str>,
+    /// Optional run command (required for backend).
+    pub run_cmd:        Option<&'a str>,
+    /// Optional index directory (required for frontend).
+    pub index_dir:      Option<&'a str>,
+    /// Whether to enable auto-deploy.
+    pub is_auto_deploy: bool,
+    /// Optional project identifier.
+    pub project_id:     Option<i64>
+}
+
 /// Formats a float identifier for display.
 fn fmt_id<T: std::fmt::Display>(v: T) -> String {
     v.to_string()
@@ -478,64 +510,51 @@ fn parse_framework(value: &str) -> Result<&'static str, TwcError> {
 /// be parsed, or on any network or API failure.
 pub async fn create(
     config: &Configuration,
-    name: &str,
-    comment: Option<&str>,
-    provider_id: &str,
-    repository_id: &str,
-    preset_id: i64,
-    app_type: &str,
-    framework: &str,
-    branch: &str,
-    commit_sha: Option<&str>,
-    build_cmd: Option<&str>,
-    run_cmd: Option<&str>,
-    index_dir: Option<&str>,
-    is_auto_deploy: bool,
-    project_id: Option<i64>,
+    params: &AppCreateParams<'_>,
     format: OutputFormat
 ) -> Result<(), TwcError> {
-    let type_value = parse_app_type(app_type)?;
-    let framework_value = parse_framework(framework)?;
+    let type_value = parse_app_type(params.app_type)?;
+    let framework_value = parse_framework(params.framework)?;
 
-    if type_value == "backend" && run_cmd.is_none() {
+    if type_value == "backend" && params.run_cmd.is_none() {
         return Err(TwcError::Api(
             t!("cli.app_backend_needs_run_cmd").into_owned()
         ));
     }
-    if type_value == "frontend" && index_dir.is_none() {
+    if type_value == "frontend" && params.index_dir.is_none() {
         return Err(TwcError::Api(
             t!("cli.app_frontend_needs_index_dir").into_owned()
         ));
     }
 
     let mut body = serde_json::json!({
-        "provider_id": provider_id,
+        "provider_id": params.provider_id,
         "type": type_value,
-        "repository_id": repository_id,
-        "build_cmd": build_cmd.unwrap_or_default(),
-        "branch_name": branch,
-        "is_auto_deploy": is_auto_deploy,
-        "commit_sha": commit_sha.unwrap_or_default(),
-        "name": name,
-        "comment": comment.unwrap_or_default(),
-        "preset_id": preset_id,
+        "repository_id": params.repository_id,
+        "build_cmd": params.build_cmd.unwrap_or_default(),
+        "branch_name": params.branch,
+        "is_auto_deploy": params.is_auto_deploy,
+        "commit_sha": params.commit_sha.unwrap_or_default(),
+        "name": params.name,
+        "comment": params.comment.unwrap_or_default(),
+        "preset_id": params.preset_id,
         "framework": framework_value
     });
 
     if let Some(map) = body.as_object_mut() {
-        if let Some(cmd) = run_cmd {
+        if let Some(cmd) = params.run_cmd {
             map.insert(
                 "run_cmd".to_owned(),
                 serde_json::Value::String(cmd.to_owned())
             );
         }
-        if let Some(dir) = index_dir {
+        if let Some(dir) = params.index_dir {
             map.insert(
                 "index_dir".to_owned(),
                 serde_json::Value::String(dir.to_owned())
             );
         }
-        if let Some(project) = project_id {
+        if let Some(project) = params.project_id {
             map.insert("project_id".to_owned(), serde_json::Value::from(project));
         }
     }

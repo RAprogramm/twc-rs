@@ -169,3 +169,35 @@ async fn fetch_app_stats(
         net_out
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tail_skip_short_input_returns_zero() {
+        assert_eq!(tail_skip(10), 0);
+        assert_eq!(tail_skip(0), 0);
+        assert_eq!(tail_skip(59), 0);
+    }
+
+    #[test]
+    fn tail_skip_exact_boundary() {
+        assert_eq!(tail_skip(60), 0);
+    }
+
+    #[test]
+    fn tail_skip_long_input() {
+        assert_eq!(tail_skip(61), 1);
+        assert_eq!(tail_skip(120), 60);
+    }
+
+    #[test]
+    fn stats_timestamp_formats_correctly() {
+        let dt = chrono::DateTime::from_timestamp(1_700_000_000, 0).unwrap();
+        let result = stats_timestamp(dt);
+        assert!(result.contains('T'));
+        assert!(!result.contains('Z'));
+        assert!(!result.contains('+'));
+    }
+}

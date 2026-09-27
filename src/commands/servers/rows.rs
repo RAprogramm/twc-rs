@@ -217,3 +217,128 @@ impl fmt::Display for BackupRow {
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn server_row_display() {
+        let row = ServerRow {
+            id:       "1".to_string(),
+            name:     "web-1".to_string(),
+            status:   "On".to_string(),
+            cpu:      "2".to_string(),
+            ram:      "4096".to_string(),
+            os:       "Ubuntu 24.04".to_string(),
+            location: "ru-1".to_string()
+        };
+        assert_eq!(row.to_string(), "1 web-1 On 2 4096 Ubuntu 24.04 ru-1");
+    }
+
+    #[test]
+    fn preset_row_display() {
+        let row = PresetRow {
+            id:          "1".to_string(),
+            location:    "ru-1".to_string(),
+            cpu:         "2".to_string(),
+            ram:         "4096".to_string(),
+            disk:        "40".to_string(),
+            price:       "1000".to_string(),
+            description: "Basic".to_string()
+        };
+        assert_eq!(row.to_string(), "1 ru-1 2 4096 40 1000 Basic");
+    }
+
+    #[test]
+    fn os_row_display() {
+        let row = OsRow {
+            id:      "1".to_string(),
+            family:  "ubuntu".to_string(),
+            name:    "Ubuntu".to_string(),
+            version: "24.04".to_string()
+        };
+        assert_eq!(row.to_string(), "1 ubuntu Ubuntu 24.04");
+    }
+
+    #[test]
+    fn software_row_display() {
+        let row = SoftwareRow {
+            id:            "1".to_string(),
+            name:          "Docker".to_string(),
+            installations: "5".to_string()
+        };
+        assert_eq!(row.to_string(), "1 Docker 5");
+    }
+
+    #[test]
+    fn configurator_row_display() {
+        let row = ConfiguratorRow {
+            id:            "1".to_string(),
+            location:      "ru-1".to_string(),
+            disk_type:     "SSD".to_string(),
+            cpu_frequency: "3.3".to_string()
+        };
+        assert_eq!(row.to_string(), "1 ru-1 SSD 3.3");
+    }
+
+    #[test]
+    fn disk_row_display() {
+        let row = DiskRow {
+            id:     "1".to_string(),
+            size:   "40960".to_string(),
+            used:   "10240".to_string(),
+            r#type: "SSD".to_string(),
+            status: "active".to_string()
+        };
+        assert_eq!(row.to_string(), "1 40960 10240 SSD active");
+    }
+
+    #[test]
+    fn ip_row_display() {
+        let row = IpRow {
+            ip:      "192.168.1.1".to_string(),
+            r#type:  "public".to_string(),
+            ptr:     "host.example.com".to_string(),
+            is_main: "true".to_string()
+        };
+        assert_eq!(row.to_string(), "192.168.1.1 public host.example.com true");
+    }
+
+    #[test]
+    fn log_row_display() {
+        let row = LogRow {
+            id:        "1".to_string(),
+            logged_at: "2026-01-01".to_string(),
+            event:     "created".to_string()
+        };
+        assert_eq!(row.to_string(), "1 2026-01-01 created");
+    }
+
+    #[test]
+    fn backup_row_display() {
+        let row = BackupRow {
+            id:         "1".to_string(),
+            disk_id:    "10".to_string(),
+            status:     "ready".to_string(),
+            created_at: "2026-01-01".to_string(),
+            size:       "40960".to_string()
+        };
+        assert_eq!(row.to_string(), "1 10 ready 2026-01-01 40960");
+    }
+
+    #[test]
+    fn backup_row_serializes_to_json() {
+        let row = BackupRow {
+            id:         "1".to_string(),
+            disk_id:    "10".to_string(),
+            status:     "ready".to_string(),
+            created_at: "2026-01-01".to_string(),
+            size:       "40960".to_string()
+        };
+        let json = serde_json::to_string(&row).unwrap();
+        assert!(json.contains("\"id\":\"1\""));
+        assert!(json.contains("\"disk_id\":\"10\""));
+        assert!(json.contains("\"status\":\"ready\""));
+    }
+}

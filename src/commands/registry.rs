@@ -397,3 +397,52 @@ pub async fn preset_list(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fmt_id_converts_to_string() {
+        assert_eq!(fmt_id(42), "42");
+        assert_eq!(fmt_id(0), "0");
+    }
+
+    #[test]
+    fn registry_row_display() {
+        let row = RegistryRow {
+            id:          "1".to_string(),
+            name:        "my-registry".to_string(),
+            description: "Main registry".to_string(),
+            preset_id:   "10".to_string(),
+            disk:        "10 / 50".to_string(),
+            created:     "2026-01-01".to_string()
+        };
+        assert_eq!(
+            row.to_string(),
+            "1 my-registry Main registry 10 10 / 50 2026-01-01"
+        );
+    }
+
+    #[test]
+    fn repository_row_display() {
+        let row = RepositoryRow {
+            name:   "myapp".to_string(),
+            tag:    "latest".to_string(),
+            digest: "sha256:abc".to_string()
+        };
+        assert_eq!(row.to_string(), "myapp latest sha256:abc");
+    }
+
+    #[test]
+    fn preset_row_display() {
+        let row = PresetRow {
+            id:          "1".to_string(),
+            description: "Basic".to_string(),
+            disk:        "50".to_string(),
+            price:       "5000".to_string(),
+            location:    "ru-1".to_string()
+        };
+        assert_eq!(row.to_string(), "1 Basic 50 5000 ru-1");
+    }
+}

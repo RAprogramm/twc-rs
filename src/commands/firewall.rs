@@ -505,3 +505,47 @@ pub async fn resource_remove(
     );
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fmt_id_returns_string() {
+        assert_eq!(fmt_id("abc"), "abc");
+        assert_eq!(fmt_id("123"), "123");
+    }
+
+    #[test]
+    fn group_row_display() {
+        let row = GroupRow {
+            id:         "fw-1".to_string(),
+            name:       "web".to_string(),
+            policy:     "allow".to_string(),
+            created_at: "2026-01-01".to_string(),
+            updated_at: "2026-01-02".to_string()
+        };
+        assert_eq!(row.to_string(), "fw-1 web allow 2026-01-01 2026-01-02");
+    }
+
+    #[test]
+    fn rule_row_display() {
+        let row = RuleRow {
+            id:          "rule-1".to_string(),
+            direction:   "ingress".to_string(),
+            protocol:    "tcp".to_string(),
+            port:        "443".to_string(),
+            description: "HTTPS".to_string()
+        };
+        assert_eq!(row.to_string(), "rule-1 ingress tcp 443 HTTPS");
+    }
+
+    #[test]
+    fn resource_row_display() {
+        let row = ResourceRow {
+            id:     "res-1".to_string(),
+            r#type: "server".to_string()
+        };
+        assert_eq!(row.to_string(), "res-1 server");
+    }
+}

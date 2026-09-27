@@ -639,3 +639,65 @@ pub async fn preset_list(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fmt_id_converts_to_string() {
+        assert_eq!(fmt_id(42), "42");
+        assert_eq!(fmt_id("abc"), "abc");
+    }
+
+    #[test]
+    fn balancer_row_display() {
+        let row = BalancerRow {
+            id:       "1".to_string(),
+            name:     "lb-1".to_string(),
+            status:   "active".to_string(),
+            proto:    "http".to_string(),
+            algo:     "roundrobin".to_string(),
+            ip:       "192.168.1.1".to_string(),
+            location: "ru-1".to_string()
+        };
+        assert_eq!(
+            row.to_string(),
+            "1 lb-1 active http roundrobin 192.168.1.1 ru-1"
+        );
+    }
+
+    #[test]
+    fn rule_row_display() {
+        let row = RuleRow {
+            id:             "1".to_string(),
+            balancer_proto: "http".to_string(),
+            balancer_port:  80.0,
+            server_proto:   "http".to_string(),
+            server_port:    8080.0
+        };
+        assert_eq!(row.to_string(), "1 http 80 http 8080");
+    }
+
+    #[test]
+    fn ip_row_display() {
+        let row = IpRow {
+            ip: "192.168.1.1".to_string()
+        };
+        assert_eq!(row.to_string(), "192.168.1.1");
+    }
+
+    #[test]
+    fn preset_row_display() {
+        let row = PresetRow {
+            id:              "1".to_string(),
+            description:     "Basic".to_string(),
+            bandwidth:       "100".to_string(),
+            replica_count:   "2".to_string(),
+            request_per_sec: "1000".to_string(),
+            price:           "5000".to_string(),
+            location:        "ru-1".to_string()
+        };
+        assert_eq!(row.to_string(), "1 Basic 100 2 1000 5000 ru-1");
+    }
+}

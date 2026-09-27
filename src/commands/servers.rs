@@ -14,6 +14,24 @@ use timeweb_rs::{
 
 use crate::{error::TwcError, output::OutputFormat};
 
+/// Parameters for creating a new server.
+pub struct ServerCreateParams<'a> {
+    /// Server name.
+    pub name:              &'a str,
+    /// Resource preset identifier.
+    pub preset_id:         i32,
+    /// Operating system identifier.
+    pub os_id:             i32,
+    /// Optional description.
+    pub comment:           Option<&'a str>,
+    /// SSH key identifiers to attach.
+    pub ssh_key_ids:       &'a [i32],
+    /// Optional project identifier.
+    pub project_id:        Option<i32>,
+    /// Optional availability zone.
+    pub availability_zone: Option<&'a str>
+}
+
 /// Formats a float identifier for display.
 fn fmt_id<T: std::fmt::Display>(v: T) -> String {
     v.to_string()
@@ -62,30 +80,24 @@ fn parse_zone(s: &str) -> Result<models::AvailabilityZone, TwcError> {
 /// and API failures.
 pub async fn create(
     config: &Configuration,
-    name: &str,
-    preset_id: i32,
-    os_id: i32,
-    comment: Option<&str>,
-    ssh_key_ids: &[i32],
-    project_id: Option<i32>,
-    availability_zone: Option<&str>
+    params: &ServerCreateParams<'_>
 ) -> Result<(), TwcError> {
-    let mut body = models::CreateServer::new(name.to_owned());
-    body.preset_id = Some(i64::from(preset_id));
-    body.os_id = Some(i64::from(os_id));
+    let mut body = models::CreateServer::new(params.name.to_owned());
+    body.preset_id = Some(i64::from(params.preset_id));
+    body.os_id = Some(i64::from(params.os_id));
     body.bandwidth = Some(100.0);
     body.is_ddos_guard = Some(false);
 
-    if let Some(text) = comment {
+    if let Some(text) = params.comment {
         body.comment = Some(text.to_owned());
     }
-    if !ssh_key_ids.is_empty() {
-        body.ssh_keys_ids = Some(ssh_key_ids.iter().copied().map(f64::from).collect());
+    if !params.ssh_key_ids.is_empty() {
+        body.ssh_keys_ids = Some(params.ssh_key_ids.iter().copied().map(f64::from).collect());
     }
-    if let Some(project) = project_id {
+    if let Some(project) = params.project_id {
         body.project_id = Some(i64::from(project));
     }
-    if let Some(zone) = availability_zone {
+    if let Some(zone) = params.availability_zone {
         body.availability_zone = Some(parse_zone(zone)?);
     }
 

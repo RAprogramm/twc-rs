@@ -83,17 +83,16 @@ pub async fn handle_server(
             project_id,
             availability_zone
         } => {
-            commands::servers::create(
-                config,
-                &name,
+            let params = commands::servers::ServerCreateParams {
+                name: &name,
                 preset_id,
                 os_id,
-                comment.as_deref(),
-                &ssh_key,
+                comment: comment.as_deref(),
+                ssh_key_ids: &ssh_key,
                 project_id,
-                availability_zone.as_deref()
-            )
-            .await
+                availability_zone: availability_zone.as_deref()
+            };
+            commands::servers::create(config, &params).await
         }
         ServerCommands::Set {
             id,
@@ -172,25 +171,23 @@ pub async fn handle_apps(
             commands::apps::deploy_logs(config, &id, deploy_id.as_deref(), debug, format).await
         }
         AppsCommands::Create(args) => {
-            commands::apps::create(
-                config,
-                &args.name,
-                args.comment.as_deref(),
-                &args.provider_id,
-                &args.repository_id,
-                args.preset_id,
-                &args.app_type,
-                &args.framework,
-                &args.branch,
-                args.commit_sha.as_deref(),
-                args.build_cmd.as_deref(),
-                args.run_cmd.as_deref(),
-                args.index_dir.as_deref(),
-                args.auto_deploy,
-                args.project_id,
-                format
-            )
-            .await
+            let params = commands::apps::AppCreateParams {
+                name:           &args.name,
+                comment:        args.comment.as_deref(),
+                provider_id:    &args.provider_id,
+                repository_id:  &args.repository_id,
+                preset_id:      args.preset_id,
+                app_type:       &args.app_type,
+                framework:      &args.framework,
+                branch:         &args.branch,
+                commit_sha:     args.commit_sha.as_deref(),
+                build_cmd:      args.build_cmd.as_deref(),
+                run_cmd:        args.run_cmd.as_deref(),
+                index_dir:      args.index_dir.as_deref(),
+                is_auto_deploy: args.auto_deploy,
+                project_id:     args.project_id
+            };
+            commands::apps::create(config, &params, format).await
         }
     }
 }
