@@ -42,6 +42,10 @@ assets = [
 name = "twc-rs"
 path = "src/main.rs"
 
+[[bench]]
+name = "core"
+harness = false
+
 [features]
 # The interactive TUI dashboard ships by default. Build without it for a lean,
 # headless CLI with: cargo install twc-rs --no-default-features --features auth
@@ -92,6 +96,7 @@ predicates = "3"
 tempfile = "3"
 reqwest = "0.13"
 serial_test = "4"
+divan = { version = "6.0.0", package = "codspeed-divan-compat" }
 
 [lints.clippy]
 pedantic = { level = "deny", priority = -1 }
