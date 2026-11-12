@@ -174,7 +174,7 @@ fn nav_line<'a>(
     width: u16,
     palette: &Palette
 ) -> Line<'a> {
-    let count = item.count.map(|c| c.to_string()).unwrap_or_default();
+    let count = item.count.map_or_default(|c| c.to_string());
     let label_room = usize::from(width)
         .saturating_sub(6)
         .saturating_sub(count.len());

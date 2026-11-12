@@ -45,7 +45,7 @@ fn main() -> std::io::Result<()> {
 
     for sub in cmd.get_subcommands().filter(|s| s.get_name() != "help") {
         let name = sub.get_name().to_owned();
-        let about = sub.get_about().map(ToString::to_string).unwrap_or_default();
+        let about = sub.get_about().map_or_default(ToString::to_string);
         _ = writeln!(index, "| [`{name}`]({name}.md) | {about} |");
         _ = writeln!(summary_cli, "  - [{name}](cli/{name}.md)");
         let page = render_group(sub);

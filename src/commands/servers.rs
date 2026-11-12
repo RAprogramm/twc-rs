@@ -348,7 +348,7 @@ pub async fn list_os(config: &Configuration, format: OutputFormat) -> Result<(),
         .servers_os
         .iter()
         .map(|o| OsRow {
-            id:      o.id.map(fmt_id).unwrap_or_default(),
+            id:      o.id.map_or_default(fmt_id),
             family:  o.family.clone().unwrap_or_default(),
             name:    o.name.clone().unwrap_or_default(),
             version: o.version.clone().unwrap_or_default()
@@ -391,9 +391,9 @@ pub async fn list_software(config: &Configuration, format: OutputFormat) -> Resu
         .servers_software
         .iter()
         .map(|s| SoftwareRow {
-            id:            s.id.map(fmt_id).unwrap_or_default(),
+            id:            s.id.map_or_default(fmt_id),
             name:          s.name.clone().unwrap_or_default(),
-            installations: s.installations.map(fmt_id).unwrap_or_default()
+            installations: s.installations.map_or_default(fmt_id)
         })
         .collect();
 
@@ -839,7 +839,7 @@ pub async fn backup_create(
     body.comment = comment.map(String::from);
 
     let resp = servers_api::create_server_disk_backup(config, id, disk_id, Some(body)).await?;
-    let backup_id = resp.backup.map(|b| fmt_id(b.id)).unwrap_or_default();
+    let backup_id = resp.backup.map_or_default(|b| fmt_id(b.id));
     println!("{}", t!("cli.server_backup_created", id => backup_id));
     Ok(())
 }

@@ -195,10 +195,7 @@ pub async fn info(config: &Configuration, id: &str, format: OutputFormat) -> Res
             println!("Status:     {:?}", app.status);
             println!("IP:         {}", app.ip.clone().unwrap_or_default());
             println!("Location:   {}", app.location.clone().unwrap_or_default());
-            println!(
-                "Preset ID:  {}",
-                app.preset_id.map(fmt_id).unwrap_or_default()
-            );
+            println!("Preset ID:  {}", app.preset_id.map_or_default(fmt_id));
         }
         OutputFormat::Json | OutputFormat::Yaml => {
             if let Some(out) = crate::output::serialized(format, &resp.app) {

@@ -159,7 +159,7 @@ pub fn run(format: OutputFormat) -> Result<(), TwcError> {
 
     if report.len() > 1 {
         if matches!(format, OutputFormat::Table) {
-            let active = report.first().map(|c| c.path.clone()).unwrap_or_default();
+            let active = report.first().map_or_default(|c| c.path.clone());
             eprintln!(
                 "{}",
                 t!("cli.doctor_conflict", count => report.len(), active => active)

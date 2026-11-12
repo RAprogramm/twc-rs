@@ -522,11 +522,7 @@ async fn load_firewalls(c: &Configuration, tx: &Tx) {
                 .map(|g| FirewallSummary {
                     id:     g.id.clone(),
                     name:   g.name.clone(),
-                    policy: g
-                        .policy
-                        .as_ref()
-                        .map(ToString::to_string)
-                        .unwrap_or_default()
+                    policy: g.policy.as_ref().map_or_default(ToString::to_string)
                 })
                 .collect()
         )
@@ -682,7 +678,7 @@ fn map_app(a: &timeweb_rs::models::App) -> crate::tui::app::AppSummary {
                 cfg.ram.unwrap_or(0.0) as i64,
                 cfg.network_bandwidth.unwrap_or(0.0) as i64,
                 cfg.cpu_frequency.clone().unwrap_or_default(),
-                cfg.disk_type.map(|d| format!("{d:?}")).unwrap_or_default()
+                cfg.disk_type.map_or_default(|d| format!("{d:?}"))
             )
         });
     let (disk_used_mb, disk_size_mb) = a
@@ -698,38 +694,27 @@ fn map_app(a: &timeweb_rs::models::App) -> crate::tui::app::AppSummary {
         status: enum_label(&a.status),
         ip: a.ip.clone().unwrap_or_default(),
         location: a.location.clone().unwrap_or_default(),
-        app_type: a.r#type.as_ref().map(enum_label).unwrap_or_default(),
-        framework: a.framework.as_deref().map(enum_label).unwrap_or_default(),
+        app_type: a.r#type.as_ref().map_or_default(enum_label),
+        framework: a.framework.as_deref().map_or_default(enum_label),
         language: a.language.clone().unwrap_or_default(),
         branch: a.branch_name.clone().unwrap_or_default(),
-        commit: a
-            .commit_sha
-            .as_deref()
-            .map(short_commit)
-            .unwrap_or_default(),
+        commit: a.commit_sha.as_deref().map_or_default(short_commit),
         auto_deploy: a.is_auto_deploy.unwrap_or(false),
         comment: a.comment.clone().unwrap_or_default(),
         domains: a
             .domains
             .as_ref()
-            .map(|d| d.iter().filter_map(|x| x.fqdn.clone()).collect())
-            .unwrap_or_default(),
+            .map_or_default(|d| d.iter().filter_map(|x| x.fqdn.clone()).collect()),
         repository: a
             .repository
             .as_ref()
-            .map(|r| r.full_name.clone())
-            .unwrap_or_default(),
-        repo_url: a
-            .repository
-            .as_ref()
-            .map(|r| r.url.clone())
-            .unwrap_or_default(),
+            .map_or_default(|r| r.full_name.clone()),
+        repo_url: a.repository.as_ref().map_or_default(|r| r.url.clone()),
         repo_private: a.repository.as_ref().is_some_and(|r| r.is_private),
         provider: a
             .provider
             .as_ref()
-            .map(|p| format!("{:?}", p.r#type).to_lowercase())
-            .unwrap_or_default(),
+            .map_or_default(|p| format!("{:?}", p.r#type).to_lowercase()),
         env_version: a.env_version.clone().flatten().unwrap_or_default(),
         env_count: a
             .envs
@@ -747,7 +732,7 @@ fn map_app(a: &timeweb_rs::models::App) -> crate::tui::app::AppSummary {
         cfg_disk_type,
         disk_used_mb,
         disk_size_mb,
-        started_at: a.start_time.map(|t| t.to_rfc3339()).unwrap_or_default()
+        started_at: a.start_time.map_or_default(|t| t.to_rfc3339())
     }
 }
 
@@ -909,8 +894,7 @@ fn map_database(d: &timeweb_rs::models::DatabaseCluster) -> crate::tui::app::Dat
         preset_id: d.preset_id.unwrap_or_default(),
         hash_type: d
             .hash_type
-            .map(|h| format!("{h:?}").to_lowercase())
-            .unwrap_or_default(),
+            .map_or_default(|h| format!("{h:?}").to_lowercase()),
         local_only: !d.is_enabled_public_network,
         config
     }

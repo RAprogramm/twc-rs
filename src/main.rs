@@ -51,7 +51,7 @@ fn main() {
 #[expect(clippy::too_many_lines)]
 async fn run() -> Result<(), TwcError> {
     let cli = Cli::parse();
-    let language = AppConfig::load().map(|c| c.language).unwrap_or_default();
+    let language = AppConfig::load().map_or_default(|c| c.language);
     rust_i18n::set_locale(language.locale());
     let format = OutputFormat::parse(&cli.format).map_err(TwcError::Api)?;
 
