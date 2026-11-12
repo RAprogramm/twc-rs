@@ -4,12 +4,39 @@ all-features = true
 [advisories]
 version = 2
 yanked = "deny"
+ignore = [
+    # RUSTSEC-2026-0370/0371/0372: zvariant, zbus_names and zvariant_derive were
+    # merged into zbus 6 and are no longer published standalone. They reach this
+    # graph only through keyring's Linux store (keyring 4.2.0 -> secret-service
+    # 5.2 -> zbus 5), and keyring 4.2.0 is the latest release. secret-service
+    # 6.0.0-rc.1 is the first zbus 6-based release; drop these ignores once
+    # secret-service 6 goes stable and keyring ships a zbus 6-based store.
+    "RUSTSEC-2026-0370",
+    "RUSTSEC-2026-0371",
+    "RUSTSEC-2026-0372",
+]
 
 [bans]
 multiple-versions = "warn"
 wildcards = "deny"
 allow = []
 deny = []
+skip = [
+    # Transitive duplicates that cannot be unified from this workspace:
+    # rust-i18n 4.2.4 (latest) pins the old toml 0.8 / itertools 0.11 / globwalk
+    # stack, syn 2 and syn 3 coexist during the ecosystem-wide syn 3 migration,
+    # and core-foundation is split across the macOS security crates.
+    { name = "bitflags", reason = "globwalk (rust-i18n) pins 1.x, crossterm/ratatui use 2.x" },
+    { name = "core-foundation", reason = "system-configuration pins 0.9, security-framework uses 0.10 (macOS only)" },
+    { name = "itertools", reason = "rust-i18n-support pins 0.11, ratatui uses 0.14" },
+    { name = "serde-saphyr", reason = "rust-i18n-support pins 1.x, workspace uses 2.x" },
+    { name = "serde_spanned", reason = "rust-i18n-support pins toml 0.8, workspace uses toml 1" },
+    { name = "syn", reason = "proc-macro ecosystem is mid-migration from syn 2 to syn 3" },
+    { name = "toml", reason = "rust-i18n-support pins 0.8, workspace uses 1" },
+    { name = "toml_datetime", reason = "rust-i18n-support pins 0.6 via toml 0.8, workspace uses 1" },
+    { name = "toml_edit", reason = "rust-i18n-support pins 0.22 via toml 0.8, proc-macro-crate uses 0.25" },
+    { name = "winnow", reason = "toml_edit 0.22 pins 0.7, toml 1 and zvariant use 1" },
+]
 
 [licenses]
 version = 2
@@ -17,11 +44,9 @@ allow = [
     "MIT",
     "Apache-2.0",
     "Apache-2.0 WITH LLVM-exception",
-    "BSD-2-Clause",
     "BSD-3-Clause",
     "ISC",
     "Unicode-3.0",
-    "Unicode-DFS-2016",
     "Zlib",
     "MPL-2.0",
     "CC0-1.0",
