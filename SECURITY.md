@@ -45,3 +45,20 @@ Every RustSec advisory hitting the dependency graph is triaged as follows:
 Every ignore entry is auditable and self-expiring: the scheduled
 `ignore-expiry` job re-runs the advisories check with the ignores stripped
 and reports on the tracking issue the moment an ignore becomes obsolete.
+
+## Supply-Chain Vetting (cargo-vet)
+
+`cargo vet check --locked` runs on every pull request and push to `main`.
+The store in `supply-chain/` imports audits from trusted peer stores
+(Mozilla, Google, Bytecode Alliance, Zcash, ISRG, Embark Studios, Ariel OS,
+Fermyon); `--locked` means new imports require a committed change to
+`supply-chain/imports.lock`. Remaining `[[exemptions]]` entries are the
+review backlog and shrink whenever an imported store covers a dependency.
+
+`twc-rs` itself is declared first-party (`audit-as-crates-io = false`):
+release version bumps must not require a vetting commit, because the new
+version is not on crates.io yet when the automated release PR runs CI.
+If this project ever publishes its store for downstream peers to import,
+flip the policy back to `true` and certify each published release with a
+wildcard audit (`cargo vet certify twc-rs --wildcard ...`), renewing it
+annually with `cargo vet renew`.
