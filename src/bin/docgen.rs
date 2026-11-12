@@ -122,14 +122,12 @@ fn render_leaf(page: &mut String, cmd: &clap::Command, name: &str, group: Option
         let env = arg
             .get_env()
             .and_then(|e| e.to_str())
-            .map(|e| format!("`{e}`"))
-            .unwrap_or_default();
+            .map_or_default(|e| format!("`{e}`"));
         let default = arg
             .get_default_values()
             .first()
             .and_then(|v| v.to_str())
-            .map(|v| format!("`{v}`"))
-            .unwrap_or_default();
+            .map_or_default(|v| format!("`{v}`"));
         let required = if arg.is_required_set() { "yes" } else { "" };
         _ = writeln!(rows, "| {flag} | {help} | {required} | {env} | {default} |");
     }

@@ -87,9 +87,7 @@ async fn run() -> Result<(), TwcError> {
                 let has_token = cfg.token.is_some();
                 println!(
                     "Config path: {}",
-                    AppConfig::path()
-                        .map(|p| p.display().to_string())
-                        .unwrap_or_default()
+                    AppConfig::path().map_or_default(|p| p.display().to_string())
                 );
                 println!("Token set:   {has_token}");
                 Ok(())
