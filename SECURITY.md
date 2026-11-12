@@ -54,6 +54,10 @@ The store in `supply-chain/` imports audits from trusted peer stores
 Fermyon); `--locked` means new imports require a committed change to
 `supply-chain/imports.lock`. Remaining `[[exemptions]]` entries are the
 review backlog and shrink whenever an imported store covers a dependency.
+Exemptions are pinned to exact versions: every dependency-update commit must
+also run `cargo vet regenerate exemptions` so the backlog tracks the
+lockfile (this never fabricates audits — it only re-pins what was already
+unaudited).
 
 `twc-rs` itself is declared first-party (`audit-as-crates-io = false`):
 release version bumps must not require a vetting commit, because the new
