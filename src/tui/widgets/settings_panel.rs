@@ -92,7 +92,7 @@ mod tests {
         let cards = cards(&app);
         assert_eq!(cards.len(), SETTING_ROWS.len());
         assert!(cards[0].status.is_none());
-        assert!(!cards[0].meta.is_empty());
+        assert_ne!(cards[0].meta, "");
         assert!(cards[2].status.is_some());
     }
 }

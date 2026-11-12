@@ -34,7 +34,7 @@ fn scan_path_skips_non_executable_and_missing() {
     fs::write(a.path().join("twc-rs"), "not executable").expect("write plain file");
 
     let joined = env::join_paths([a.path(), b.path()]).expect("join paths");
-    assert!(scan_path(&joined, "twc-rs").is_empty());
+    assert_eq!(scan_path(&joined, "twc-rs"), [] as [std::path::PathBuf; 0]);
 }
 
 #[cfg(unix)]
@@ -56,5 +56,5 @@ fn scan_path_dedupes_symlinked_directories() {
 #[test]
 fn scan_path_skips_empty_entries() {
     let joined = std::ffi::OsString::from("::");
-    assert!(scan_path(&joined, "twc-rs").is_empty());
+    assert_eq!(scan_path(&joined, "twc-rs"), [] as [std::path::PathBuf; 0]);
 }
