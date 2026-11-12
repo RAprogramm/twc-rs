@@ -202,7 +202,7 @@ async fn load_account(c: &Configuration, tx: &Tx) {
                 String::from("active")
             };
             DataSlice::Account(AccountInfo {
-                login: resp.status.login.clone().unwrap_or_default(),
+                login: resp.status.login.clone(),
                 account_id: resp.status.company_info.id,
                 balance: String::new(),
                 status
@@ -522,7 +522,11 @@ async fn load_firewalls(c: &Configuration, tx: &Tx) {
                 .map(|g| FirewallSummary {
                     id:     g.id.clone(),
                     name:   g.name.clone(),
-                    policy: g.policy.to_string()
+                    policy: g
+                        .policy
+                        .as_ref()
+                        .map(ToString::to_string)
+                        .unwrap_or_default()
                 })
                 .collect()
         )
@@ -747,7 +751,6 @@ fn map_app(a: &timeweb_rs::models::App) -> crate::tui::app::AppSummary {
     }
 }
 
-#[expect(clippy::cast_possible_truncation)]
 async fn load_ai_agents(c: &Configuration, tx: &Tx) {
     use tui::app::AiAgentSummary;
 
@@ -760,11 +763,11 @@ async fn load_ai_agents(c: &Configuration, tx: &Tx) {
                 resp.agents
                     .iter()
                     .map(|a| AiAgentSummary {
-                        id:           a.id as i32,
+                        id:           a.id,
                         name:         a.name.clone(),
                         status:       format!("{:?}", a.status),
-                        tokens_used:  a.used_tokens as i64,
-                        tokens_total: a.total_tokens as i64
+                        tokens_used:  i64::from(a.used_tokens.unwrap_or_default()),
+                        tokens_total: i64::from(a.total_tokens.unwrap_or_default())
                     })
                     .collect()
             )
@@ -772,7 +775,6 @@ async fn load_ai_agents(c: &Configuration, tx: &Tx) {
     );
 }
 
-#[expect(clippy::cast_possible_truncation)]
 async fn load_knowledge_bases(c: &Configuration, tx: &Tx) {
     use tui::app::KnowledgeBaseSummary;
 
@@ -785,9 +787,9 @@ async fn load_knowledge_bases(c: &Configuration, tx: &Tx) {
                 resp.knowledge_bases
                     .iter()
                     .map(|kb| KnowledgeBaseSummary {
-                        id:             kb.id as i32,
+                        id:             kb.id,
                         name:           kb.name.clone(),
-                        document_count: kb.documents_count as i32,
+                        document_count: kb.documents_count,
                         status:         format!("{:?}", kb.status)
                     })
                     .collect()

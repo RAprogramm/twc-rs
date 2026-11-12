@@ -91,6 +91,7 @@ fn from_timeweb_io_error() {
 fn from_timeweb_response_error_with_entity() {
     use timeweb_rs::apis::ResponseContent;
     let content = ResponseContent::<String> {
+        headers: reqwest::header::HeaderMap::new(),
         status:  reqwest::StatusCode::UNAUTHORIZED,
         content: String::new(),
         entity:  Some("unauthorized".to_string())
@@ -105,6 +106,7 @@ fn from_timeweb_response_error_with_entity() {
 fn from_timeweb_response_error_without_entity() {
     use timeweb_rs::apis::ResponseContent;
     let content = ResponseContent::<String> {
+        headers: reqwest::header::HeaderMap::new(),
         status:  reqwest::StatusCode::NOT_FOUND,
         content: String::new(),
         entity:  None
@@ -126,6 +128,7 @@ fn error_trait_is_implemented() {
 fn error_source_is_none_for_response_error() {
     use timeweb_rs::apis::ResponseContent;
     let content = ResponseContent::<String> {
+        headers: reqwest::header::HeaderMap::new(),
         status:  reqwest::StatusCode::BAD_REQUEST,
         content: String::new(),
         entity:  None

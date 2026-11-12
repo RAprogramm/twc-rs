@@ -380,7 +380,7 @@ pub async fn node_list(
             cpu:     n.cpu,
             ram:     n.ram,
             disk:    n.disk,
-            node_ip: n.node_ip.clone()
+            node_ip: n.node_ip.clone().unwrap_or_default()
         })
         .collect();
 
@@ -401,7 +401,12 @@ pub async fn node_list(
         }
         OutputFormat::Quiet => {
             for n in &resp.nodes {
-                println!("{}\t{}\t{}", n.id, n.node_ip, n.status);
+                println!(
+                    "{}\t{}\t{}",
+                    n.id,
+                    n.node_ip.as_deref().unwrap_or_default(),
+                    n.status
+                );
             }
         }
     }
