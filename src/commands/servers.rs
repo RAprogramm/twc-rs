@@ -37,24 +37,21 @@ fn fmt_id<T: std::fmt::Display>(v: T) -> String {
     v.to_string()
 }
 
-/// Parses an availability zone code (e.g. `spb-1`) into the SDK enum.
+/// Parses an availability zone code (e.g. `spb-1`) into a validated SDK string.
 ///
 /// # Errors
 ///
 /// Returns [`TwcError::Api`] for an unrecognized zone code.
-fn parse_zone(s: &str) -> Result<models::AvailabilityZone, TwcError> {
-    match s.to_lowercase().as_str() {
-        "spb-1" => Ok(models::AvailabilityZone::Spb1),
-        "spb-2" => Ok(models::AvailabilityZone::Spb2),
-        "spb-3" => Ok(models::AvailabilityZone::Spb3),
-        "spb-4" => Ok(models::AvailabilityZone::Spb4),
-        "msk-1" => Ok(models::AvailabilityZone::Msk1),
-        "nsk-1" => Ok(models::AvailabilityZone::Nsk1),
-        "ams-1" => Ok(models::AvailabilityZone::Ams1),
-        "ala-1" => Ok(models::AvailabilityZone::Ala1),
-        "fra-1" => Ok(models::AvailabilityZone::Fra1),
-        other => Err(TwcError::Api(
-            t!("cli.server_invalid_zone", value => other).to_string()
+fn parse_zone(s: &str) -> Result<String, TwcError> {
+    let zone = s.to_lowercase();
+    if matches!(
+        zone.as_str(),
+        "spb-1" | "spb-2" | "spb-3" | "spb-4" | "msk-1" | "nsk-1" | "ams-1" | "ala-1" | "fra-1"
+    ) {
+        Ok(zone)
+    } else {
+        Err(TwcError::Api(
+            t!("cli.server_invalid_zone", value => zone).to_string()
         ))
     }
 }

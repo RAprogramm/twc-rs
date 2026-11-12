@@ -54,7 +54,7 @@ pub async fn show(config: &Configuration, format: OutputFormat) -> Result<(), Tw
     let finances = payments_api::get_finances(config).await?.finances;
 
     let summary = AccountSummary {
-        login:    status.login.clone().unwrap_or_default(),
+        login:    status.login.clone(),
         company:  status.company_info.name.clone(),
         balance:  format!("{:.2}", finances.balance),
         currency: finances.currency.clone(),

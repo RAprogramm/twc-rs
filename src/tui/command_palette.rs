@@ -317,7 +317,7 @@ mod tests {
         let cp = CommandPalette::new(sample());
         assert_eq!(cp.filtered_commands().len(), 3);
         assert_eq!(cp.selected, 0);
-        assert!(cp.query.is_empty());
+        assert_eq!(cp.query, "");
     }
 
     #[test]
@@ -424,7 +424,7 @@ mod tests {
             title: "Only One".to_string(),
             hint:  "o".to_string()
         }]);
-        assert!(cp.query.is_empty());
+        assert_eq!(cp.query, "");
         assert_eq!(cp.selected, 0);
         assert_eq!(cp.filtered_commands().len(), 1);
     }

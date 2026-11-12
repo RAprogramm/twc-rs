@@ -44,7 +44,7 @@ impl Drop for EnvGuard {
 #[test]
 fn complete_app_returns_empty_for_non_utf8() {
     let result = complete_app(OsStr::new("\u{FFFD}"));
-    assert!(result.is_empty());
+    assert_eq!(result, [] as [clap_complete::CompletionCandidate; 0]);
 }
 
 #[test]
@@ -54,7 +54,7 @@ fn complete_app_returns_empty_without_token() {
     let _guard = EnvGuard::set(dir.path());
 
     let result = complete_app(OsStr::new("app"));
-    assert!(result.is_empty());
+    assert_eq!(result, [] as [clap_complete::CompletionCandidate; 0]);
 }
 
 #[test]
@@ -64,5 +64,5 @@ fn complete_app_returns_empty_for_empty_prefix() {
     let _guard = EnvGuard::set(dir.path());
 
     let result = complete_app(OsStr::new(""));
-    assert!(result.is_empty());
+    assert_eq!(result, [] as [clap_complete::CompletionCandidate; 0]);
 }

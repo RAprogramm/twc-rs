@@ -77,8 +77,8 @@ fn new_app_defaults() {
 fn account_default() {
     let app = App::new(5);
     assert_eq!(app.account.account_id, 0);
-    assert!(app.account.balance.is_empty());
-    assert!(app.account.status.is_empty());
+    assert_eq!(app.account.balance, "");
+    assert_eq!(app.account.status, "");
 }
 
 #[test]
@@ -759,8 +759,8 @@ fn per_tab_action_sets() {
     assert_eq!(ResourceTab::Domains.actions(), &[ActionKind::Delete]);
     assert_eq!(ResourceTab::Firewall.actions(), &[ActionKind::Delete]);
     assert_eq!(ResourceTab::Vpc.actions(), &[ActionKind::Delete]);
-    assert!(ResourceTab::Finances.actions().is_empty());
-    assert!(ResourceTab::Mail.actions().is_empty());
+    assert_eq!(ResourceTab::Finances.actions(), []);
+    assert_eq!(ResourceTab::Mail.actions(), []);
 }
 
 #[test]
@@ -907,7 +907,7 @@ fn filter_resets_on_nav_change() {
     assert!(app.filter_active());
     app.nav_down();
     assert!(!app.filter_active());
-    assert!(app.filter.is_empty());
+    assert_eq!(app.filter, "");
 }
 
 #[test]
@@ -988,7 +988,7 @@ fn slices_stream_in_progressively() {
     app.apply_slice(DataSlice::Servers(vec![make_server(1, "s1", "On")]));
     assert_eq!(app.servers.len(), 1);
     app.load_finished();
-    assert!(app.last_load_errors.is_empty());
+    assert_eq!(app.last_load_errors, [] as [std::string::String; 0]);
     assert!(app.status_message.is_some());
 }
 
@@ -1022,7 +1022,7 @@ fn slice_errors_roll_over_and_recover() {
     app.load_started();
     app.apply_slice(DataSlice::Servers(vec![make_server(1, "s1", "On")]));
     app.load_finished();
-    assert!(app.last_load_errors.is_empty());
+    assert_eq!(app.last_load_errors, [] as [std::string::String; 0]);
     assert!(app.error_message.is_none());
     assert!(app.status_message.is_some());
 }

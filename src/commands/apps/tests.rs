@@ -163,6 +163,9 @@ fn filter_tail_takes_last_lines_after_since() {
         kept,
         lines(&["2026-07-05T09:00:00Z two", "2026-07-05T10:00:00Z three"])
     );
-    assert!(filter_log_lines(&input, None, Some(0)).is_empty());
+    assert_eq!(
+        filter_log_lines(&input, None, Some(0)),
+        [] as [std::string::String; 0]
+    );
     assert_eq!(filter_log_lines(&input, None, Some(10)), input);
 }

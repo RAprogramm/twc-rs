@@ -5,7 +5,7 @@ the development loop, commit conventions, and how to add a new command.
 
 ## Prerequisites
 
-- **Rust 1.96+** (the declared MSRV). Install via [rustup](https://rustup.rs/).
+- **Rust 1.99+** (the declared MSRV). Install via [rustup](https://rustup.rs/).
 - **Nightly rustfmt** for formatting: `rustup toolchain install nightly --component rustfmt`.
 - **[`just`](https://github.com/casey/just)** task runner: `cargo install just`.
 

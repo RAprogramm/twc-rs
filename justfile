@@ -45,4 +45,4 @@ completions SHELL:
 
 # Verify the crate builds on the declared MSRV.
 msrv:
-    cargo +1.96.0 check --all-features
+    cargo +1.99.0 check --all-features

@@ -563,6 +563,11 @@ pub async fn create(
         TwcError::Api(t!("cli.app_invalid_input", value => e.to_string()).into_owned())
     })?;
 
+    #[expect(
+        deprecated,
+        reason = "the apps create command surface matches the v1 endpoint; the v2 endpoint \
+                  requires a language field the CLI does not expose yet"
+    )]
     let resp = apps_api::create_app(config, request).await?;
     let app = &resp.app;
 
