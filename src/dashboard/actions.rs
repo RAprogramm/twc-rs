@@ -326,9 +326,11 @@ async fn dispatch_action(
                 .await
                 .map_err(|e| e.to_string())
         }
-        (ResourceTab::AiAgents, ActionKind::Delete) => ai_agents_api::delete_agent(config, num()?)
-            .await
-            .map_err(|e| e.to_string()),
+        (ResourceTab::AiAgents, ActionKind::Delete) => {
+            ai_agents_api::delete_agent(config, num()?, None)
+                .await
+                .map_err(|e| e.to_string())
+        }
         (ResourceTab::KnowledgeBases, ActionKind::Delete) => {
             knowledge_bases_api::delete_knowledgebase(config, num()?)
                 .await

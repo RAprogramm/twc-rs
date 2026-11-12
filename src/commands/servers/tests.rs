@@ -7,6 +7,17 @@ fn fmt_id_formats_integers() {
 }
 
 #[test]
+fn parse_zone_valid_zones() {
+    assert!(matches!(parse_zone("spb-1"), Ok(z) if z == "spb-1"));
+    assert!(matches!(parse_zone("FRA-1"), Ok(z) if z == "fra-1"));
+}
+
+#[test]
+fn parse_zone_invalid_returns_error() {
+    assert!(parse_zone("invalid").is_err());
+}
+
+#[test]
 fn server_row_display() {
     let row = ServerRow {
         id:       "1".to_string(),

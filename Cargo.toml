@@ -3,7 +3,7 @@ name = "twc-rs"
 version = "4.0.9"
 default-run = "twc-rs"
 edition = "2024"
-rust-version = "1.98"
+rust-version = "1.99"
 authors = ["RAprogramm <andrey.rozanov.vl@gmail.com>"]
 description = "Fast single-binary CLI and interactive TUI dashboard for Timeweb Cloud"
 license = "MIT"
@@ -50,7 +50,7 @@ auth = ["dep:open", "dep:tiny_http", "dep:keyring", "dep:keyring-core"]
 tui = ["dep:ratatui", "dep:crossterm", "dep:tokio-stream"]
 
 [dependencies]
-timeweb-rs = { version = "0.9", default-features = false, features = [
+timeweb-rs = { version = "0.10", default-features = false, features = [
   "rustls",
   "full",
 ] }
