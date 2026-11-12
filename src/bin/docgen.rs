@@ -81,10 +81,7 @@ fn render_group(cmd: &clap::Command) -> String {
     }
     page.push_str("| Subcommand | Description |\n|---|---|\n");
     for leaf in &leaves {
-        let about = leaf
-            .get_about()
-            .map(ToString::to_string)
-            .unwrap_or_default();
+        let about = leaf.get_about().map_or_default(ToString::to_string);
         _ = writeln!(
             page,
             "| [`{sub}`](#twc-rs-{name}-{sub}) | {about} |",
@@ -120,8 +117,7 @@ fn render_leaf(page: &mut String, cmd: &clap::Command, name: &str, group: Option
         }
         let help = arg
             .get_help()
-            .map(ToString::to_string)
-            .unwrap_or_default()
+            .map_or_default(ToString::to_string)
             .replace('\n', " ");
         let env = arg
             .get_env()
