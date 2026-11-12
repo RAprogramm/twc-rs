@@ -27,6 +27,23 @@ jobs:
           tool: cargo-deny
       - run: cargo deny check
 
+  # cargo-vet audits the provenance and safety of third-party code. Imports
+  # from trusted stores (Mozilla, Google, Bytecode Alliance, Zcash, ISRG,
+  # Embark Studios, Ariel OS, Fermyon) are locked in supply-chain/imports.lock;
+  # --locked forbids adding new imports without a commit. Remaining exemptions
+  # in supply-chain/config.toml are the review backlog.
+  cargo-vet:
+    name: cargo-vet
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7 # checkout repository
+      - name: Install cargo-vet
+        uses: taiki-e/install-action@v2 # prebuilt tool installer
+        with:
+          tool: cargo-vet
+      - run: cargo vet check --locked
+
   # Weekly audit of the [advisories] ignore list in deny.toml: strips the
   # ignore block into a temporary config and re-runs the advisories check.
   # If the check passes, upstream has shipped the fix and the ignores are
