@@ -8,9 +8,11 @@ ignore = [
     # RUSTSEC-2026-0370/0371/0372: zvariant, zbus_names and zvariant_derive were
     # merged into zbus 6 and are no longer published standalone. They reach this
     # graph only through keyring's Linux store (keyring 4.2.0 -> secret-service
-    # 5.2 -> zbus 5), and keyring 4.2.0 is the latest release. secret-service
-    # 6.0.0-rc.1 is the first zbus 6-based release; drop these ignores once
-    # secret-service 6 goes stable and keyring ships a zbus 6-based store.
+    # 5.2 -> zbus 5), and keyring 4.2.0 is the latest release. Tracked in
+    # https://github.com/RAprogramm/twc-rs/issues/189; the scheduled
+    # ignore-expiry job in .github/workflows/security.yml verifies weekly that
+    # these ignores are still required and must be removed when it reports them
+    # obsolete.
     "RUSTSEC-2026-0370",
     "RUSTSEC-2026-0371",
     "RUSTSEC-2026-0372",

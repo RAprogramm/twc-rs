@@ -21,6 +21,10 @@ jobs:
   upload-assets:
     name: Build ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write # upload release assets
+      id-token: write # mint Sigstore signing certificate for attestations
+      attestations: write # persist build provenance attestations
     strategy:
       fail-fast: false
       matrix:
@@ -60,6 +64,7 @@ jobs:
       # build-tool is chosen per target: cargo-zigbuild for Linux cross builds,
       # cargo for native macOS/Windows targets.
       - name: Build and upload binary
+        id: build
         uses: taiki-e/upload-rust-binary-action@f0d45ae91ee7b8ee928de7a9d04d893a08bcbec6 # v1
         with:
           bin: twc-rs
@@ -70,10 +75,20 @@ jobs:
           checksum: sha256
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || github.ref }}
+      # SLSA build provenance for the uploaded archive, signed via Sigstore
+      # keyless and verifiable with: gh attestation verify <archive> --repo RAprogramm/twc-rs
+      - name: Attest build provenance
+        uses: actions/attest@v4.2.2 # SLSA build provenance attestation
+        with:
+          subject-path: ${{ steps.build.outputs.tar || steps.build.outputs.zip }}
 
   deb:
     name: Build .deb package
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # upload release assets
+      id-token: write # mint Sigstore signing certificate for attestations
+      attestations: write # persist build provenance attestations
     steps:
       - uses: actions/checkout@v7 # checkout repository
         with:
@@ -86,9 +101,40 @@ jobs:
           tool: cargo-deb
       - name: Build .deb
         run: cargo deb -- --features tui
+      - name: Attest build provenance
+        uses: actions/attest@v4.2.2 # SLSA build provenance attestation
+        with:
+          subject-path: target/debian/*.deb
       # Attach the .deb to the existing release without touching its notes.
       - name: Upload .deb to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
         run: gh release upload "${RELEASE_TAG}" target/debian/*.deb --clobber
+
+  sbom:
+    name: Generate SBOM
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # upload release assets
+      id-token: write # mint Sigstore signing certificate for attestations
+      attestations: write # persist SBOM attestation
+    steps:
+      - uses: actions/checkout@v7 # checkout repository
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+      - name: Install cargo-cyclonedx
+        run: cargo install cargo-cyclonedx --locked --version 0.5.10
+      # CycloneDX JSON SBOM for every possible target (the release ships
+      # Linux/macOS/Windows binaries) with all release features enabled.
+      - name: Generate CycloneDX SBOM
+        run: cargo cyclonedx -f json --all-features --target all
+      - name: Attest SBOM
+        uses: actions/attest@v4.2.2 # CycloneDX SBOM attestation
+        with:
+          subject-path: "*.cdx.json"
+      - name: Upload SBOM to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+        run: gh release upload "${RELEASE_TAG}" ./*.cdx.json --clobber

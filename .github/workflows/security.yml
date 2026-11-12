@@ -26,3 +26,38 @@ jobs:
         with:
           tool: cargo-deny
       - run: cargo deny check
+
+  # Weekly audit of the [advisories] ignore list in deny.toml: strips the
+  # ignore block into a temporary config and re-runs the advisories check.
+  # If the check passes, upstream has shipped the fix and the ignores are
+  # obsolete — the job comments on the tracking issue and fails so the
+  # scheduled run notifies us. See https://github.com/RAprogramm/twc-rs/issues/189
+  ignore-expiry:
+    name: ignore-expiry
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7 # checkout repository
+      - name: Install cargo-deny
+        uses: taiki-e/install-action@v2 # prebuilt tool installer
+        with:
+          tool: cargo-deny
+      - name: Check whether advisory ignores are still required
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ! grep -q '^ignore = \[' deny.toml; then
+            echo "No advisory ignores configured, nothing to audit."
+            exit 0
+          fi
+          awk '/^ignore = \[/{skip=1; next} skip && /^\]/{skip=0; next} !skip' deny.toml > /tmp/deny-no-ignore.toml
+          if cargo deny check advisories --config /tmp/deny-no-ignore.toml; then
+            gh issue comment 189 --body "Scheduled ignore-expiry audit: 'cargo deny check advisories' passes without the ignores. Upstream has shipped the fix — remove RUSTSEC-2026-0370/0371/0372 from deny.toml (see the checklist in this issue)."
+            echo "::error::Advisory ignores in deny.toml are obsolete and must be removed (see issue #189)."
+            exit 1
+          fi
+          echo "Advisory ignores are still required (upstream fix not available yet)."

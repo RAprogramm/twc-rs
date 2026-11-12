@@ -2,3 +2,5 @@
 /docs/book/book
 /docs/book/src/cli
 /docs/book/src/SUMMARY.md
+*.cdx.json
+*.cdx.xml
