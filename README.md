@@ -19,6 +19,7 @@ managed from one native binary. No Python, no `pip`, no virtualenv.
 [![CI](https://github.com/RAprogramm/twc-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/RAprogramm/twc-rs/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/RAprogramm/twc-rs/graph/badge.svg?token=oXpSEMAGiG)](https://codecov.io/gh/RAprogramm/twc-rs)
 [![Security](https://github.com/RAprogramm/twc-rs/actions/workflows/security.yml/badge.svg)](https://github.com/RAprogramm/twc-rs/actions/workflows/security.yml)
+[![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://app.codspeed.io/RAprogramm/twc-rs?utm_source=badge)
 [![release-plz](https://github.com/RAprogramm/twc-rs/actions/workflows/release-plz.yml/badge.svg)](https://github.com/RAprogramm/twc-rs/actions/workflows/release-plz.yml)
 [![docs](https://img.shields.io/badge/docs-raprogramm.github.io%2Ftwc--rs-blue)](https://raprogramm.github.io/twc-rs/)
 [![license](https://img.shields.io/crates/l/twc-rs.svg?color=blue)](LICENSE)
