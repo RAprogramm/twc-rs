@@ -30,7 +30,7 @@ fmt-check:
 
 # Lint with clippy; warnings are errors.
 lint:
-    cargo clippy --all-features --all-targets -- -D warnings
+    cargo clippy --workspace --all-targets --all-features -- -D warnings -W clippy::pedantic -W clippy::nursery
 
 # Full pre-push gate: formatting, lints, and tests.
 check: fmt-check lint test

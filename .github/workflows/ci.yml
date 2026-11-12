@@ -42,7 +42,7 @@ jobs:
         with:
           components: clippy
       - uses: Swatinem/rust-cache@v2 # shared cargo cache
-      - run: cargo clippy --all-features --all-targets -- -D warnings
+      - run: cargo clippy --workspace --all-targets --all-features -- -D warnings -W clippy::pedantic -W clippy::nursery
 
   test:
     name: Tests
