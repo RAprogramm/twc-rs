@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.0](https://github.com/RAprogramm/twc-rs/compare/v4.0.9...v4.1.0) - 2026-11-12
+
+### Added
+
+- Migrate to timeweb-rs 0.10 and raise MSRV to 1.99 ([8c37363](https://github.com/RAprogramm/twc-rs/commit/8c3736317d71a7343eeef3ba2d619a47e945fb4c))
+
+
 ## [4.0.9](https://github.com/RAprogramm/twc-rs/compare/v4.0.8...v4.0.9) - 2026-09-27
 
 ### Fixed
