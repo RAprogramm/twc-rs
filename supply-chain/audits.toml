@@ -1,4 +1,8 @@
 
 # cargo-vet audits file
 
-[audits]
+[[audits.timeweb-rs]]
+who = "RAprogramm"
+criteria = "safe-to-deploy"
+version = "0.10.2"
+notes = "Metadata-only release: CHANGELOG.md, Cargo.toml, Cargo.toml.orig and a new justfile. No changes under src/, no unsafe code, no new dependencies."

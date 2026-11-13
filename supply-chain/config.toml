@@ -1311,10 +1311,6 @@ criteria = "safe-to-deploy"
 version = "0.2.32"
 criteria = "safe-to-deploy"
 
-[[exemptions.timeweb-rs]]
-version = "0.10.1"
-criteria = "safe-to-deploy"
-
 [[exemptions.tinystr]]
 version = "0.8.5"
 criteria = "safe-to-deploy"
