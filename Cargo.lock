@@ -4017,9 +4017,9 @@ dependencies = [
 
 [[package]]
 name = "timeweb-rs"
-version = "0.10.1"
+version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e21ce5aeab42ae1ab2f6ac02ebb81430103afb095237e79c8b13d4c19bade3d4"
+checksum = "302c49c8aeb43c9c561643ee6899a17a5d5ce06faf0e59bcc32c77a8263008f6"
 dependencies = [
  "chrono",
  "futures-core",
