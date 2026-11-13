@@ -1,4 +1,13 @@
 
 # cargo-vet audits file
 
+[[wildcard-audits.timeweb-rs]]
+who = "RAprogramm"
+criteria = "safe-to-deploy"
+trusted-publisher = "github:RAprogramm/timeweb-rs"
+start = "2026-05-21"
+end = "2027-11-13"
+renew = true
+notes = "First-party crate published through trusted publishing from github:RAprogramm/timeweb-rs"
+
 [audits]

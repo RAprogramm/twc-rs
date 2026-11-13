@@ -39,6 +39,14 @@ check: fmt-check lint test
 cov:
     cargo llvm-cov --all-features --workspace
 
+# Audit the dependency tree, the same way CI does.
+vet:
+    cargo vet check --locked
+
+# Extend the wildcard audits that are about to expire.
+vet-renew:
+    cargo vet renew --expiring
+
 # Print a shell completion script for SHELL (bash, zsh, fish, ...).
 completions SHELL:
     cargo run -- completions {{SHELL}}
