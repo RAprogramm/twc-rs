@@ -36,6 +36,11 @@ user-id = 4484
 user-login = "hsivonen"
 user-name = "Henri Sivonen"
 
+[[publisher.timeweb-rs]]
+version = "0.10.2"
+when = "2026-11-13"
+trusted-publisher = "github:RAprogramm/timeweb-rs"
+
 [[publisher.unicode-segmentation]]
 version = "1.13.3"
 when = "2026-06-01"

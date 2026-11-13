@@ -51,6 +51,22 @@ They drive the changelog and the automatic version bump performed by release-plz
 Append `!` (e.g. `feat!:`) or a `BREAKING CHANGE:` footer for a major bump.
 Dependabot uses the `chore` prefix so dependency PRs stay out of the changelog.
 
+## Dependency audits
+
+`cargo vet` runs in CI as a required status check, so every dependency version
+in `Cargo.lock` needs an audit. The first-party crate `timeweb-rs` is covered
+by a wildcard audit (`supply-chain/audits.toml`): it trusts every version
+published through trusted publishing from `github:RAprogramm/timeweb-rs` inside
+the audited window. Bumping it therefore needs no manual `cargo vet certify`.
+
+The window is one year long. `cargo vet check` warns before it expires; extend
+it with `just vet-renew` (or `cargo vet renew --expiring`) and commit the
+updated `supply-chain/audits.toml`.
+
+Third-party crates are audited per version. Review the diff with
+`cargo vet diff <crate> <old> <new>` and record the result with
+`cargo vet certify <crate> <new>`.
+
 ## Architecture overview
 
 twc-rs is a single binary crate. Features: `default = ["auth"]` plus `tui`;
